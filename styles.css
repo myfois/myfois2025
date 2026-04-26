@@ -230,6 +230,12 @@ details[open] summary::after { content: "–"; }
   font-size: 0.9rem;
 }
 
+.response-box p,
+.request-box p {
+  margin: 0.3em 0;
+  line-height: 1.35;
+}
+
 @media (max-width: 680px) {
   .header-inner { align-items: flex-start; flex-direction: column; }
   main, .header-inner, .site-footer { padding: 18px; }
