@@ -195,7 +195,34 @@ details[open] summary::after { content: "–"; }
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   padding: 16px;
+}
+
+/* Use this class only for genuinely plain-text email/FOI responses.
+   Do not use it around HTML paragraphs, because it preserves indentation and line breaks. */
+.plain-text {
   white-space: pre-wrap;
+}
+
+/* Keeps pasted HTML email/request text compact and readable. */
+.response-box p {
+  margin: 0.45rem 0;
+}
+
+.response-box p:first-child { margin-top: 0; }
+.response-box p:last-child { margin-bottom: 0; }
+
+.response-box ul,
+.response-box ol {
+  margin: 0.5rem 0 0.5rem 1.3rem;
+  padding: 0;
+}
+
+.response-box li {
+  margin: 0.22rem 0;
+}
+
+.response-box strong {
+  font-weight: 750;
 }
 
 .site-footer {
