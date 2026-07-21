@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UDR05 — UEL International Student Explorer (HESA Table 28)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #1F3864; --midblue: #2E5395; --lightblue: #D9E2F3; --gold: #FFC000;
+    --green: #1e7e34; --red: #b02a2a; --grey: #f2f2f2; --text: #2b2b2b;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, "Segoe UI", sans-serif; margin: 0; background: #f5f6f8; color: var(--text); }
+  header { background: var(--navy); color: #fff; padding: 20px 28px; }
+  header h1 { margin: 0; font-size: 21px; }
+  header p { margin: 5px 0 0; font-size: 13px; color: #cdd7ea; }
+
+  .layout { max-width: 1200px; margin: 0 auto; padding: 22px 24px 60px; }
+
+  .stat-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 22px; }
+  .stat-box { background: #fff; border: 1px solid #e2e2e2; border-radius: 8px; padding: 10px 16px; min-width: 170px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .stat-box .n { font-size: 20px; font-weight: bold; color: var(--navy); }
+  .stat-box .l { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: #888; }
+  .stat-box .s { font-size: 11.5px; color: #999; }
+
+  .panel { background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 20px; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .panel .sub { font-size: 12.5px; color: #888; margin-bottom: 12px; }
+
+  .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; font-size: 13px; }
+  button { padding: 5px 9px; border: 1px solid #bbb; border-radius: 5px; font-size: 13px; background: #fff; cursor: pointer; }
+  button.active, button:hover { background: var(--lightblue); border-color: var(--navy); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid #eee; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: var(--midblue); color: #fff; font-size: 10px; text-transform: uppercase; cursor: pointer; user-select: none; }
+  th:hover { background: var(--navy); }
+  th.sorted::after { content: " \25BC"; font-size: 9px; }
+  th.sorted.asc::after { content: " \25B2"; }
+  tr:nth-child(even) td { background: #fafbfd; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+
+  canvas { max-height: 400px; }
+  .chart-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+  @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.good { background: #eaf4ea; border-left-color: var(--green); }
+  .pill { display: inline-block; background: var(--lightblue); color: var(--navy); font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 9px; margin-right: 5px; }
+
+  footer { font-size: 11.5px; color: #888; padding: 20px 0 0; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">UDR05</span> &mdash; UEL International Student Explorer</h1>
+  <p>HESA Table 28 &ndash; non-UK domiciled HE student enrolments by country/region of permanent address, 2014/15&ndash;2024/25. All levels, all modes, University of East London (UKPRN 10007144).</p>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout flag">
+    <span class="pill">SCOPE</span> This is <b>non-UK domiciled students only</b> &ndash; permanent address outside the UK, all levels of study (undergraduate + postgraduate), all modes. It does not include UK students, and "domicile" here means permanent address, not fee status or visa route. Figures are rounded by HESA's disclosure control.
+  </div>
+
+  <div class="panel">
+    <h2>The headline trend</h2>
+    <div class="sub">Non-UK enrolments vs. total enrolments, and non-UK share of the whole student body</div>
+    <canvas id="headlineChart"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Where they come from</h2>
+    <div class="sub">By geographic region of permanent address, all 11 years</div>
+    <canvas id="regionChart"></canvas>
+    <div class="callout" id="regionNote" style="margin-top:14px"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Top countries</h2>
+    <div class="sub">Top 8 countries by 2024/25 enrolment, trend over time</div>
+    <div class="chart-grid">
+      <div><canvas id="countryLineChart"></canvas></div>
+      <div><canvas id="countryBarChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Undergraduate vs. postgraduate</h2>
+    <div class="sub">Non-UK enrolment split by level of study</div>
+    <canvas id="levelChart"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Full country table</h2>
+    <div class="sub">Click a column header to sort. All countries with any UEL enrolment in the years shown.</div>
+    <table id="mainTable"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout">
+      <b>Asia is effectively the entire story:</b> Asia grew from 520 non-UK students in 2014/15 to 12,090 in 2024/25 &ndash; from 29% to 91% of all non-UK enrolment. <b>India</b> alone accounts for 7,965 of UEL's 13,230 non-UK students in 2024/25 (60%), with <b>Nepal</b> (2,410) and <b>Pakistan</b> (1,210) the next largest and both growing fastest in just the last 1&ndash;2 years.
+    </div>
+    <div class="callout flag">
+      <span class="pill">OFFSETTING TREND</span> The <b>European Union</b> total fell every year on record: 565 in 2014/15 down to 130 in 2024/25 &ndash; consistent with the post-Brexit change in EU fee status and loan eligibility. Non-EU/Asian growth has more than made up for this, but it means "international" at UEL today looks structurally different from ten years ago, not just larger.
+    </div>
+    <div class="callout">
+      Growth has been <b>more postgraduate than undergraduate</b>: postgraduate non-UK enrolment reached 8,990 in 2024/25 versus 4,240 undergraduate &ndash; roughly two-thirds postgraduate. That's relevant context for the Business/Computing enrolment story elsewhere in this analysis, since it points toward taught master's recruitment as a major driver, though Table 28 alone can't confirm which subjects those postgraduates are in.
+    </div>
+    <p style="font-size:13.5px;color:#555">This still can't be joined to subject (Business, Computing, etc.) or to NSS directly &ndash; Table 28 has no subject dimension. It answers "has UEL's student body become more international, and from where" on its own terms; it does not by itself prove that Business/Computing's NSS trends are being driven by this shift.</p>
+  </div>
+
+  <footer>
+    Source: HESA Table 28, "Non-UK domiciled HE students by HE provider and country of domicile", 2014/15&ndash;2024/25, University of East London (UKPRN 10007144), all levels of study and all modes of study. Total enrolment comparison from HESA Table 49 (same provider, same years). Figures rounded to the nearest 5 by HESA's disclosure control; region/country subtotals may not sum exactly to published totals.
+  <br><b>Data files:</b> Data/HESA Student Table 28/UEL/UEL_table28_2014-15.csv through UEL_table28_2024-25.csv (11 files, one per year); cross-check totals from Data/HESA Student Table 49/UEL/UEL_table49_*.csv.
+</footer>
+
+</div>
+
+<script id="t28-data" type="application/json">{"years": ["2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "totalNonUK": [1785, 1285, 1195, 1315, 1875, 3610, 5220, 6715, 10355, 8850, 13230], "totalEnrolment": [15855, 13630, 13215, 13090, 13395, 15355, 17395, 19550, 22450, 20735, 26755], "ugNonUK": [830, 720, 665, 705, 845, 1165, 1335, 1300, 1945, 2315, 4240], "pgNonUK": [950, 560, 530, 610, 1030, 2440, 3885, 5415, 8410, 6540, 8990], "countrySeries": {"India": [160, 70, 60, 210, 595, 2305, 3810, 4995, 7980, 6720, 7965], "Nepal": [25, 15, 5, 5, 10, 40, 70, 185, 415, 725, 2410], "Pakistan": [50, 40, 30, 30, 25, 40, 65, 90, 190, 185, 1210], "Nigeria": [210, 115, 85, 70, 110, 115, 215, 325, 615, 390, 375], "Sri Lanka": [35, 15, 5, 0, 5, 10, 20, 45, 135, 100, 230], "United States": [60, 60, 110, 150, 190, 215, 170, 180, 145, 90, 110], "Bangladesh": [65, 40, 25, 35, 25, 10, 10, 20, 30, 30, 100], "Iran": [30, 20, 15, 10, 10, 10, 15, 25, 40, 35, 70], "Uzbekistan": [0, 0, 0, 0, 10, 10, 20, 45, 65, 50, 45], "Turkey": [15, 15, 20, 25, 25, 20, 15, 20, 25, 15, 40], "Kenya": [10, 5, 0, 5, 5, 0, 5, 5, 5, 5, 40], "Egypt": [10, 65, 15, 5, 10, 5, 10, 15, 15, 10, 35], "Ghana": [10, 10, 10, 5, 5, 5, 15, 20, 30, 25, 30], "United Arab Emirates": [5, 5, 15, 10, 15, 15, 25, 45, 60, 30, 30], "France": [35, 30, 25, 25, 25, 20, 20, 20, 20, 20, 20]}, "regionSeries": {"Africa": [315, 230, 145, 130, 170, 170, 300, 435, 745, 505, 585], "Asia": [520, 305, 250, 415, 805, 2535, 4070, 5470, 8920, 7905, 12090], "Australasia": [10, 10, 5, 5, 10, 5, 5, 5, 10, 10, 15], "European Union": [565, 455, 445, 440, 495, 480, 475, 345, 210, 135, 130], "Middle East": [125, 95, 105, 55, 80, 80, 105, 145, 185, 120, 155], "North America": [125, 105, 155, 185, 230, 255, 200, 220, 180, 120, 150], "Other Europe": [105, 65, 70, 75, 75, 65, 60, 80, 90, 50, 80], "South America": [25, 25, 15, 5, 5, 15, 10, 15, 15, 10, 30]}}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('t28-data').textContent);
+const YEARS = DATA.years;
+const LATEST = YEARS[YEARS.length-1];
+const FIRST = YEARS[0];
+
+function fmtInt(v) { return v == null ? "–" : Math.round(v).toLocaleString(); }
+function fmtPct(v) { return v == null ? "–" : v.toFixed(1) + "%"; }
+function fmtGrowth(v) { return v == null ? "–" : (v >= 0 ? "+" : "") + v.toFixed(1) + "%"; }
+
+const pctSeries = DATA.totalNonUK.map((v,i) => DATA.totalEnrolment[i] ? 100*v/DATA.totalEnrolment[i] : null);
+const latestPct = pctSeries[pctSeries.length-1];
+const firstPct = pctSeries[0];
+const totalGrowth = 100*(DATA.totalNonUK[DATA.totalNonUK.length-1]-DATA.totalNonUK[0])/DATA.totalNonUK[0];
+
+document.getElementById('statRow').innerHTML = `
+  <div class="stat-box"><div class="n">${fmtInt(DATA.totalNonUK[DATA.totalNonUK.length-1])}</div><div class="l">Non-UK students, ${LATEST}</div><div class="s">up from ${fmtInt(DATA.totalNonUK[0])} in ${FIRST}</div></div>
+  <div class="stat-box"><div class="n">${fmtPct(latestPct)}</div><div class="l">Share of total enrolment</div><div class="s">was ${fmtPct(firstPct)} in ${FIRST}</div></div>
+  <div class="stat-box"><div class="n">${fmtGrowth(totalGrowth)}</div><div class="l">Growth, ${FIRST}→${LATEST}</div><div class="s">non-UK enrolment</div></div>
+`;
+
+// --- Headline chart: dual axis ---
+new Chart(document.getElementById('headlineChart'), {
+  type: 'bar',
+  data: {
+    labels: YEARS,
+    datasets: [
+      { type: 'bar', label: 'Non-UK enrolments', data: DATA.totalNonUK, backgroundColor: '#2E5395', yAxisID: 'y' },
+      { type: 'bar', label: 'Total enrolments', data: DATA.totalEnrolment, backgroundColor: '#D9E2F3', yAxisID: 'y' },
+      { type: 'line', label: 'Non-UK share (%)', data: pctSeries, borderColor: '#b02a2a', backgroundColor: '#b02a2a', yAxisID: 'y1', tension: 0.2, borderWidth: 2.5 }
+    ]
+  },
+  options: {
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+    scales: {
+      y: { type: 'linear', position: 'left', title: { display: true, text: 'Enrolments' } },
+      y1: { type: 'linear', position: 'right', title: { display: true, text: 'Non-UK share (%)' }, grid: { drawOnChartArea: false }, min: 0, max: 60 }
+    }
+  }
+});
+
+// --- Region chart (stacked area via line with fill) ---
+const regionPalette = { Asia:'#1F3864', 'European Union':'#FFC000', Africa:'#1e7e34', 'Middle East':'#b02a2a', 'North America':'#7893c2', 'Other Europe':'#e8c1a0', Australasia:'#8e5ea2', 'South America':'#3cba9f' };
+const regionDatasets = Object.entries(DATA.regionSeries).map(([reg, series]) => ({
+  label: reg, data: series, borderColor: regionPalette[reg] || '#999', backgroundColor: (regionPalette[reg]||'#999') + '55',
+  fill: true, tension: 0.2, borderWidth: 1.5
+}));
+new Chart(document.getElementById('regionChart'), {
+  type: 'line',
+  data: { labels: YEARS, datasets: regionDatasets },
+  options: {
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10.5 } } } },
+    scales: { y: { stacked: true, title: { display: true, text: 'Enrolments' } } }
+  }
+});
+const asiaFirst = DATA.regionSeries['Asia'][0], asiaLast = DATA.regionSeries['Asia'][DATA.regionSeries['Asia'].length-1];
+const asiaShareFirst = (100*asiaFirst/DATA.totalNonUK[0]).toFixed(0);
+const asiaShareLast = (100*asiaLast/DATA.totalNonUK[DATA.totalNonUK.length-1]).toFixed(0);
+document.getElementById('regionNote').innerHTML = `Asia went from ${asiaShareFirst}% of non-UK enrolment in ${FIRST} to ${asiaShareLast}% in ${LATEST} (${fmtInt(asiaFirst)} → ${fmtInt(asiaLast)} students). Every other region is now a small fraction of the total by comparison.`;
+
+// --- Country charts ---
+const countryEntries = Object.entries(DATA.countrySeries);
+const top8 = countryEntries.sort((a,b) => b[1][b[1].length-1] - a[1][a[1].length-1]).slice(0,8);
+const cPalette = ['#1F3864','#2E5395','#b02a2a','#1e7e34','#FFC000','#7893c2','#8e5ea2','#3cba9f'];
+new Chart(document.getElementById('countryLineChart'), {
+  type: 'line',
+  data: { labels: YEARS, datasets: top8.map(([c,s],i) => ({ label: c, data: s, borderColor: cPalette[i], backgroundColor: cPalette[i], fill:false, tension:0.2, borderWidth:2.5 })) },
+  options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10.5 } } }, title: { display: true, text: 'Trend, top 8 countries', font: { size: 12 } } }, scales: { y: { title: { display: true, text: 'Enrolments' } } } }
+});
+new Chart(document.getElementById('countryBarChart'), {
+  type: 'bar',
+  data: { labels: top8.map(([c]) => c), datasets: [{ data: top8.map(([c,s]) => s[s.length-1]), backgroundColor: '#2E5395' }] },
+  options: { indexAxis: 'y', plugins: { legend: { display: false }, title: { display: true, text: `${LATEST} enrolment`, font: { size: 12 } } }, scales: { x: { title: { display: true, text: 'Enrolments' } } } }
+});
+
+// --- Level of study chart ---
+new Chart(document.getElementById('levelChart'), {
+  type: 'line',
+  data: {
+    labels: YEARS,
+    datasets: [
+      { label: 'Undergraduate', data: DATA.ugNonUK, borderColor: '#2E5395', backgroundColor: '#2E539555', fill: true, tension: 0.2 },
+      { label: 'Postgraduate', data: DATA.pgNonUK, borderColor: '#b02a2a', backgroundColor: '#b02a2a55', fill: true, tension: 0.2 }
+    ]
+  },
+  options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { stacked: true, title: { display: true, text: 'Non-UK enrolments' } } } }
+});
+
+// --- Full table ---
+let sortKey = LATEST, sortDir = 'desc';
+function renderTable() {
+  const rows = countryEntries.map(([c,s]) => ({ country: c, series: s, latest: s[s.length-1], growth: s[0] ? 100*(s[s.length-1]-s[0])/s[0] : null }));
+  rows.sort((a,b) => {
+    let av, bv;
+    if (sortKey === 'country') { av = a.country; bv = b.country; return sortDir==='desc' ? bv.localeCompare(av) : av.localeCompare(bv); }
+    if (sortKey === 'growth') { av = a.growth; bv = b.growth; }
+    else { const idx = YEARS.indexOf(sortKey); av = a.series[idx]; bv = b.series[idx]; }
+    if (av == null) return 1; if (bv == null) return -1;
+    return sortDir === 'desc' ? bv - av : av - bv;
+  });
+  let html = `<tr><th data-key="country">Country</th>${YEARS.map(y => `<th data-key="${y}"${y===sortKey?' class="sorted"':''}>${y}</th>`).join('')}<th data-key="growth">Growth</th></tr>`;
+  rows.forEach(r => {
+    const gCls = r.growth == null ? '' : (r.growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${r.country}</td>${r.series.map(v => `<td>${fmtInt(v)}</td>`).join('')}<td class="${gCls}">${fmtGrowth(r.growth)}</td></tr>`;
+  });
+  document.getElementById('mainTable').innerHTML = html;
+  document.querySelectorAll('#mainTable th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.key === sortKey);
+    th.classList.toggle('asc', th.dataset.key === sortKey && sortDir === 'asc');
+    th.addEventListener('click', () => {
+      if (sortKey === th.dataset.key) { sortDir = sortDir === 'desc' ? 'asc' : 'desc'; }
+      else { sortKey = th.dataset.key; sortDir = 'desc'; }
+      renderTable();
+    });
+  });
+}
+renderTable();
+</script>
+
+</body>
+</html>

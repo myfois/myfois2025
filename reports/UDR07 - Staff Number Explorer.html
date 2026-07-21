@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UDR07 — UEL Staff Number Explorer</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .controls { position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 1px solid var(--line); padding: 10px 24px; display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .control-group label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--grey); margin-bottom: 4px; }
+  select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
+  .segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .segmented button { border: none; background: #fff; padding: 6px 12px; font-size: 13px; cursor: pointer; color: #333; }
+  .segmented button.active { background: var(--navy); color: #fff; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .chart-row { margin-top: 16px; }
+  .chart-row h3 { font-size: 13px; color: var(--navy); margin: 0 0 8px; }
+  .tall-wrap-big { position: relative; height: 560px; }
+  .tall-wrap-big canvas { max-height: none !important; height: 100% !important; width: 100% !important; }
+  .chk-row { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ddd; }
+  .chk-item { font-size: 12px; color: #333; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
+  .chk-item input { cursor: pointer; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">UDR07</span> &mdash; UEL Staff Number Explorer <span style="font-size:14px;font-weight:normal;color:#a9bce0">v1</span></h1>
+  <p>HESA Staff Table 1 &mdash; academic, non-academic, and academic-atypical staff by occupation, 2014/15&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+</header>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Mode of employment</label>
+    <div class="segmented" id="modeControl">
+      <button data-val="All" class="active">All modes</button>
+      <button data-val="Full-time">Full-time</button>
+      <button data-val="Part-time">Part-time</button>
+    </div>
+  </div>
+  <div class="control-group">
+    <label>Chart style</label>
+    <div class="segmented" id="stackControl">
+      <button data-val="stacked" class="active">Stacked</button>
+      <button data-val="grouped">Grouped</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout flag">
+    <span class="pill">SCOPE</span> "Academic" and "Non-academic" staff are both on standard (non-atypical) contracts and always sum to the whole-institution total. "Atypical academic" staff (e.g. guest lecturers, hourly-paid teaching) are reported as a <b>separate population</b> by HESA &ndash; they are not part of the total above and should not be added to it.
+  </div>
+
+  <div class="panel">
+    <h2>Total staff &mdash; by type, over time</h2>
+    <div class="sub">Academic / Non-academic / Atypical academic, responsive to the Mode filter above</div>
+    <canvas id="totalsChart" role="img" aria-label="Bar chart of academic, non-academic, and atypical academic staff numbers by year." aria-describedby="totalsTable"></canvas>
+    <table id="totalsTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Occupation breakdown &mdash; trend</h2>
+    <div class="sub">Fixed at All modes. Split into three bands by latest-year scale (100+, 10&ndash;99, under 10), each on its own linear axis. Untick a category below any chart to hide it. Categories with zero UEL staff in every year (Academic: Clerical and manual; Non-academic: Process, plant and machine operatives; three Atypical-academic sub-categories) are omitted.</div>
+    <div class="chart-row"><h3 id="occBigLabel"></h3><canvas id="occBigChart"></canvas><div class="chk-row" id="occBigChecks"></div></div>
+    <div class="chart-row"><h3 id="occMidLabel"></h3><canvas id="occMidChart"></canvas><div class="chk-row" id="occMidChecks"></div></div>
+    <div class="chart-row"><h3 id="occSmallLabel"></h3><canvas id="occSmallChart"></canvas><div class="chk-row" id="occSmallChecks"></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Occupation breakdown &mdash; latest year &amp; growth</h2>
+    <div class="sub">Fixed at All modes. All non-zero categories labelled, no skipped labels.</div>
+    <div class="tall-wrap-big"><canvas id="occBarChart" role="img" aria-label="Horizontal bar chart ranking staff occupation categories by latest-year headcount." aria-describedby="occGrowthTable"></canvas></div>
+    <table id="occGrowthTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Full data table</h2>
+    <div class="sub">Academic / Non-academic / Atypical academic totals, all years, for the selected Mode filter. Click a column to sort.</div>
+    <table id="mainTable"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout">
+      <b>Non-academic (professional services) staff outnumber academic staff.</b> In 2024/25, UEL reported 1,095 academic staff against 1,110 non-academic staff on standard contracts, plus a further 430 academic-atypical staff (guest/hourly-paid teaching) reported separately.
+    </div>
+    <div class="callout flag">
+      <span class="pill">CAVEAT</span> This table has no subject or department dimension, so occupation counts cannot be linked to specific academic schools or the enrolment growth seen in the Student Origin Explorer. Figures are rounded to the nearest 5 by HESA's disclosure control; category sums may not exactly match published totals.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Staff Table 1 ("HE staff by HE provider, mode of employment, atypical marker, academic marker, and activity standard occupational classification"), 2014/15&ndash;2024/25, University of East London (UKPRN 10007144). Figures rounded to the nearest 5 by HESA's disclosure control.
+<br><b>Data files:</b> Data/HESA Staff Table 1/UEL/UEL_staff_table1.csv (UEL-filtered extract of Data/HESA Staff Table 1/ALL/table-1.csv).
+</footer>
+
+<script id="staff-data" type="application/json">{"years": ["2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "modes": ["All", "Full-time", "Part-time"], "totals": {"2014/15": {"All": {"totalAll": 1660.0, "totalAcademic": 910.0, "totalNonAcademic": 755.0, "totalAtypical": 1085.0}, "Full-time": {"totalAll": 1100.0, "totalAcademic": 485.0, "totalNonAcademic": 615.0, "totalAtypical": 0.0}, "Part-time": {"totalAll": 560.0, "totalAcademic": 425.0, "totalNonAcademic": 135.0, "totalAtypical": 1085.0}}, "2015/16": {"All": {"totalAll": 1730.0, "totalAcademic": 895.0, "totalNonAcademic": 830.0, "totalAtypical": 770.0}, "Full-time": {"totalAll": 1190.0, "totalAcademic": 500.0, "totalNonAcademic": 690.0, "totalAtypical": 0.0}, "Part-time": {"totalAll": 540.0, "totalAcademic": 395.0, "totalNonAcademic": 145.0, "totalAtypical": 770.0}}, "2016/17": {"All": {"totalAll": 1705.0, "totalAcademic": 920.0, "totalNonAcademic": 785.0, "totalAtypical": 790.0}, "Full-time": {"totalAll": 1145.0, "totalAcademic": 495.0, "totalNonAcademic": 650.0, "totalAtypical": 0.0}, "Part-time": {"totalAll": 560.0, "totalAcademic": 425.0, "totalNonAcademic": 135.0, "totalAtypical": 790.0}}, "2017/18": {"All": {"totalAll": 1530.0, "totalAcademic": 860.0, "totalNonAcademic": 675.0, "totalAtypical": 785.0}, "Full-time": {"totalAll": 1015.0, "totalAcademic": 445.0, "totalNonAcademic": 570.0, "totalAtypical": 0.0}, "Part-time": {"totalAll": 520.0, "totalAcademic": 415.0, "totalNonAcademic": 105.0, "totalAtypical": 785.0}}, "2018/19": {"All": {"totalAll": 1490.0, "totalAcademic": 830.0, "totalNonAcademic": 660.0, "totalAtypical": 550.0}, "Full-time": {"totalAll": 1005.0, "totalAcademic": 440.0, "totalNonAcademic": 560.0, "totalAtypical": 0.0}, "Part-time": {"totalAll": 485.0, "totalAcademic": 390.0, "totalNonAcademic": 95.0, "totalAtypical": 550.0}}, "2019/20": {"All": {"totalAll": 1655.0, "totalAcademic": 860.0, "totalNonAcademic": 800.0, "totalAtypical": 525.0}, "Full-time": {"totalAll": 1110.0, "totalAcademic": 420.0, "totalNonAcademic": 690.0, "totalAtypical": 0.0}, "Part-time": {"totalAll": 545.0, "totalAcademic": 440.0, "totalNonAcademic": 105.0, "totalAtypical": 525.0}}, "2020/21": {"All": {"totalAll": 1600.0, "totalAcademic": 815.0, "totalNonAcademic": 780.0, "totalAtypical": 705.0}, "Full-time": {"totalAll": 1095.0, "totalAcademic": 410.0, "totalNonAcademic": 685.0, "totalAtypical": 0.0}, "Part-time": {"totalAll": 505.0, "totalAcademic": 405.0, "totalNonAcademic": 100.0, "totalAtypical": 705.0}}, "2021/22": {"All": {"totalAll": 1740.0, "totalAcademic": 930.0, "totalNonAcademic": 810.0, "totalAtypical": 685.0}, "Full-time": {"totalAll": 1140.0, "totalAcademic": 445.0, "totalNonAcademic": 700.0, "totalAtypical": 0.0}, "Part-time": {"totalAll": 595.0, "totalAcademic": 485.0, "totalNonAcademic": 110.0, "totalAtypical": 685.0}}, "2022/23": {"All": {"totalAll": 1960.0, "totalAcademic": 1055.0, "totalNonAcademic": 905.0, "totalAtypical": 455.0}, "Full-time": {"totalAll": 1290.0, "totalAcademic": 495.0, "totalNonAcademic": 795.0, "totalAtypical": 0.0}, "Part-time": {"totalAll": 670.0, "totalAcademic": 560.0, "totalNonAcademic": 110.0, "totalAtypical": 455.0}}, "2023/24": {"All": {"totalAll": 2205.0, "totalAcademic": 1140.0, "totalNonAcademic": 1070.0, "totalAtypical": 535.0}, "Full-time": {"totalAll": 1455.0, "totalAcademic": 510.0, "totalNonAcademic": 945.0, "totalAtypical": 0.0}, "Part-time": {"totalAll": 755.0, "totalAcademic": 630.0, "totalNonAcademic": 125.0, "totalAtypical": 535.0}}, "2024/25": {"All": {"totalAll": 2205.0, "totalAcademic": 1095.0, "totalNonAcademic": 1110.0, "totalAtypical": 430.0}, "Full-time": {"totalAll": 1525.0, "totalAcademic": 520.0, "totalNonAcademic": 1005.0, "totalAtypical": 0.0}, "Part-time": {"totalAll": 680.0, "totalAcademic": 570.0, "totalNonAcademic": 110.0, "totalAtypical": 425.0}}}, "occupations": {"Academic: Associate professional occupations": [0, 10.0, 0, 0, 0, 0, 0, 5.0, 10.0, 5.0, 5.0], "Academic: Clerical and manual occupations": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "Academic: Managers, directors and senior officials": [5.0, 0, 0, 0, 0, 0, 0, 10.0, 20.0, 20.0, 15.0], "Academic: Professional occupations": [905.0, 880.0, 920.0, 855.0, 830.0, 860.0, 815.0, 915.0, 1030.0, 1115.0, 1070.0], "Non-academic: Administrative and secretarial occupations": [295.0, 325.0, 325.0, 280.0, 265.0, 295.0, 280.0, 295.0, 285.0, 425.0, 455.0], "Non-academic: Associate professional occupations": [185.0, 175.0, 190.0, 145.0, 145.0, 165.0, 140.0, 130.0, 135.0, 120.0, 110.0], "Non-academic: Caring, leisure and other service occupations": [15.0, 10.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0], "Non-academic: Elementary occupations": [10.0, 10.0, 10.0, 10.0, 10.0, 80.0, 70.0, 70.0, 70.0, 55.0, 60.0], "Non-academic: Managers, directors and senior officials": [85.0, 120.0, 50.0, 40.0, 45.0, 50.0, 80.0, 100.0, 140.0, 150.0, 160.0], "Non-academic: Process, plant and machine operatives": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "Non-academic: Professional occupations": [130.0, 135.0, 145.0, 145.0, 145.0, 150.0, 165.0, 165.0, 215.0, 270.0, 280.0], "Non-academic: Sales and customer service occupations": [25.0, 35.0, 40.0, 35.0, 30.0, 35.0, 25.0, 30.0, 30.0, 30.0, 25.0], "Non-academic: Skilled trades occupations": [10.0, 25.0, 20.0, 15.0, 15.0, 20.0, 15.0, 15.0, 20.0, 20.0, 20.0], "Atypical academic: Associate professional occupations": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "Atypical academic: Clerical and manual occupations": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "Atypical academic: Managers, directors and senior officials": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "Atypical academic: Professional occupations": [1085.0, 770.0, 790.0, 785.0, 550.0, 525.0, 705.0, 685.0, 455.0, 530.0, 430.0]}}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('staff-data').textContent);
+const YEARS = DATA.years;
+const FIRST = YEARS[0];
+const LATEST = YEARS[YEARS.length - 1];
+
+const state = { mode: 'All', stack: 'stacked' };
+const charts = {};
+
+if (window.ChartDataLabels) {
+  Chart.register(ChartDataLabels);
+  Chart.defaults.set('plugins.datalabels', { display: false });
+}
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtInt(v) { return v == null ? "–" : Math.round(v).toLocaleString(); }
+function fmtGrowth(v) { return v == null ? "–" : (v >= 0 ? "+" : "") + v.toFixed(1) + "%"; }
+function t(yr) { return DATA.totals[yr][state.mode]; }
+
+function renderStatRow() {
+  const latest = t(LATEST), first = t(FIRST);
+  const academicGrowth = first.totalAcademic ? 100*(latest.totalAcademic-first.totalAcademic)/first.totalAcademic : null;
+  const nonAcademicGrowth = first.totalNonAcademic ? 100*(latest.totalNonAcademic-first.totalNonAcademic)/first.totalNonAcademic : null;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n">${fmtInt(latest.totalAll)}</div><div class="l">Total staff, ${LATEST}</div><div class="s">${state.mode}</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(latest.totalAcademic)}</div><div class="l">Academic</div><div class="s">${fmtGrowth(academicGrowth)} since ${FIRST}</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(latest.totalNonAcademic)}</div><div class="l">Non-academic</div><div class="s">${fmtGrowth(nonAcademicGrowth)} since ${FIRST}</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(latest.totalAtypical)}</div><div class="l">Atypical academic</div><div class="s">separate population, not in total</div></div>
+  `;
+}
+
+function renderTotalsChart() {
+  destroyChart('totals');
+  const academic = YEARS.map(yr => t(yr).totalAcademic);
+  const nonAcademic = YEARS.map(yr => t(yr).totalNonAcademic);
+  const atypical = YEARS.map(yr => t(yr).totalAtypical);
+  charts.totals = new Chart(document.getElementById('totalsChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: 'Academic', data: academic, backgroundColor: '#1F3864', stack: state.stack==='stacked'?'s':undefined },
+        { label: 'Non-academic', data: nonAcademic, backgroundColor: '#b02a2a', stack: state.stack==='stacked'?'s':undefined },
+        { label: 'Atypical academic', data: atypical, backgroundColor: '#FFC000', stack: state.stack==='stacked'?'atyp':undefined }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { stacked: state.stack==='stacked', title: { display: true, text: 'Staff (headcount)' } }, x: { stacked: state.stack==='stacked' } }
+    }
+  });
+  const rows = [
+    { name: 'Academic', series: academic },
+    { name: 'Non-academic', series: nonAcademic },
+    { name: 'Atypical academic', series: atypical },
+    { name: 'Total (Academic + Non-academic)', series: YEARS.map(yr => t(yr).totalAll) }
+  ];
+  let html = `<tr><th>Category</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}<th>Growth</th></tr>`;
+  rows.forEach(r => {
+    const first = r.series[0], latest = r.series[r.series.length-1];
+    const growth = first ? 100*(latest-first)/first : null;
+    const cls = growth == null ? '' : (growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${r.name}</td>${r.series.map(v=>`<td>${fmtInt(v)}</td>`).join('')}<td class="${cls}">${fmtGrowth(growth)}</td></tr>`;
+  });
+  document.getElementById('totalsTable').innerHTML = html;
+}
+
+// --- Occupation breakdown: tiered magnitude bands + colour-blind-safe palette + tick-boxes ---
+// Same pattern as the Student Origin Explorer's countries/UK-areas trend charts.
+const cPalette = ['#E69F00','#56B4E9','#009E73','#F0E442','#0072B2','#D55E00','#CC79A7','#000000'];
+
+function splitIntoTiers(entries) {
+  const sorted = [...entries].sort((a,b) => b[1][b[1].length-1] - a[1][a[1].length-1]);
+  return {
+    big: sorted.filter(([,s]) => s[s.length-1] >= 100),
+    mid: sorted.filter(([,s]) => s[s.length-1] >= 10 && s[s.length-1] < 100),
+    small: sorted.filter(([,s]) => s[s.length-1] < 10)
+  };
+}
+
+function renderTierChart(chartId, checksId, labelId, tierLabel, entries, paletteOffset) {
+  document.getElementById(labelId).textContent = `${tierLabel} (${entries.map(([n])=>n).join(', ') || 'none'})`;
+  destroyChart(chartId);
+  const datasets = entries.map(([c,s],i) => {
+    const idx = paletteOffset + i;
+    const cycle = Math.floor(idx / cPalette.length);
+    return {
+      label: c, data: s.map(v=>v===0?null:v),
+      borderColor: cPalette[idx % cPalette.length], backgroundColor: cPalette[idx % cPalette.length],
+      borderDash: cycle === 0 ? [] : cycle === 1 ? [6,3] : [2,2],
+      fill: false, tension: 0.2, borderWidth: 2.5
+    };
+  });
+  charts[chartId] = new Chart(document.getElementById(chartId), {
+    type: 'line',
+    data: { labels: YEARS, datasets },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10 } } } }, scales: { y: { title: { display: true, text: 'Staff (headcount)' } } } }
+  });
+  const checksEl = document.getElementById(checksId);
+  checksEl.innerHTML = entries.map(([c],i) =>
+    `<label class="chk-item"><input type="checkbox" checked data-idx="${i}"> ${c}</label>`).join('');
+  checksEl.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('change', (e) => {
+      const idx = +e.target.dataset.idx;
+      const ch = charts[chartId];
+      ch.data.datasets[idx].hidden = !e.target.checked;
+      ch.update();
+    });
+  });
+}
+
+function renderGrowthTable(tableId, entries) {
+  const rows = entries.map(([name, s]) => {
+    const first = s[0], latest = s[s.length-1];
+    const growth = first ? 100*(latest-first)/first : null;
+    return { name, first, latest, growth };
+  }).sort((a,b) => b.latest - a.latest);
+  let html = `<tr><th>Occupation</th><th>${FIRST}</th><th>${LATEST}</th><th>Growth</th></tr>`;
+  rows.forEach(r => {
+    const cls = r.growth == null ? '' : (r.growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${r.name}</td><td>${fmtInt(r.first)}</td><td>${fmtInt(r.latest)}</td><td class="${cls}">${fmtGrowth(r.growth)}</td></tr>`;
+  });
+  document.getElementById(tableId).innerHTML = html;
+}
+
+function renderOccupations() {
+  const allEntries = Object.entries(DATA.occupations).filter(([,s]) => s.some(v => v !== 0));
+  const { big, mid, small } = splitIntoTiers(allEntries);
+  renderTierChart('occBigChart', 'occBigChecks', 'occBigLabel', '100 and above', big, 0);
+  renderTierChart('occMidChart', 'occMidChecks', 'occMidLabel', '10 to 99', mid, big.length);
+  renderTierChart('occSmallChart', 'occSmallChecks', 'occSmallLabel', 'Under 10', small, big.length+mid.length);
+
+  const sorted = [...allEntries].sort((a,b) => b[1][b[1].length-1]-a[1][a[1].length-1]);
+  destroyChart('occBar');
+  charts.occBar = new Chart(document.getElementById('occBarChart'), {
+    type: 'bar',
+    data: { labels: sorted.map(([c])=>c), datasets: [{ data: sorted.map(([c,s])=>s[s.length-1]), backgroundColor: '#2E5395' }] },
+    options: {
+      indexAxis: 'y', maintainAspectRatio: false,
+      plugins: { legend: { display: false }, title: { display: true, text: `${LATEST}, staff occupation categories`, font: { size: 12 } },
+        datalabels: { display: true, anchor: 'end', align: 'end', color: '#1F3864', font: { size: 10, weight: 'bold' }, formatter: v => v.toLocaleString() } },
+      scales: { y: { ticks: { autoSkip: false, font: { size: 10.5 } } } }
+    }
+  });
+  renderGrowthTable('occGrowthTable', sorted);
+}
+
+// Full table
+let sortKey = LATEST, sortDir = 'desc';
+function renderTable() {
+  const rows = [
+    { name: 'Academic', series: YEARS.map(yr => t(yr).totalAcademic) },
+    { name: 'Non-academic', series: YEARS.map(yr => t(yr).totalNonAcademic) },
+    { name: 'Total (Academic + Non-academic)', series: YEARS.map(yr => t(yr).totalAll) },
+    { name: 'Atypical academic (separate population)', series: YEARS.map(yr => t(yr).totalAtypical) }
+  ];
+  rows.forEach(r => { r.growth = r.series[0] ? 100*(r.series[r.series.length-1]-r.series[0])/r.series[0] : null; });
+  rows.sort((a,b) => {
+    if (sortKey === 'name') return sortDir==='desc' ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
+    let av, bv;
+    if (sortKey === 'growth') { av = a.growth; bv = b.growth; }
+    else { const idx = YEARS.indexOf(sortKey); av = a.series[idx]; bv = b.series[idx]; }
+    return sortDir === 'desc' ? (bv-av) : (av-bv);
+  });
+  let html = '<tr>';
+  html += `<th data-key="name">Category</th>`;
+  YEARS.forEach(y => html += `<th data-key="${y}">${y}</th>`);
+  html += `<th data-key="growth">Growth</th></tr>`;
+  rows.forEach(r => {
+    const gCls = r.growth == null ? '' : (r.growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${r.name}</td>${r.series.map(v => `<td>${fmtInt(v)}</td>`).join('')}<td class="${gCls}">${fmtGrowth(r.growth)}</td></tr>`;
+  });
+  document.getElementById('mainTable').innerHTML = html;
+  document.querySelectorAll('#mainTable th').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      sortDir = (sortKey === key && sortDir === 'desc') ? 'asc' : 'desc';
+      sortKey = key;
+      renderTable();
+    });
+  });
+}
+
+function renderAll() {
+  renderStatRow();
+  renderTotalsChart();
+  renderTable();
+}
+
+renderAll();
+renderOccupations();
+
+document.getElementById('modeControl').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  state.mode = e.target.dataset.val;
+  document.querySelectorAll('#modeControl button').forEach(b => b.classList.toggle('active', b === e.target));
+  renderAll();
+});
+document.getElementById('stackControl').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  state.stack = e.target.dataset.val;
+  document.querySelectorAll('#stackControl button').forEach(b => b.classList.toggle('active', b === e.target));
+  renderTotalsChart();
+});
+</script>
+</body>
+</html>

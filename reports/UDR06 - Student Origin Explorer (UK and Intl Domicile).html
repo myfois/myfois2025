@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UDR06 — UEL Student Origin Explorer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root {
+    --navy: #1F3864; --midblue: #2E5395; --lightblue: #D9E2F3; --gold: #FFC000;
+    --green: #1e7e34; --red: #b02a2a; --grey: #f2f2f2; --text: #2b2b2b;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, "Segoe UI", sans-serif; margin: 0; background: #f5f6f8; color: var(--text); }
+  header { background: var(--navy); color: #fff; padding: 20px 28px; }
+  header h1 { margin: 0; font-size: 21px; }
+  header p { margin: 5px 0 0; font-size: 13px; color: #cdd7ea; }
+
+  .controls {
+    background: #fff; padding: 14px 28px; border-bottom: 1px solid #dde;
+    display: flex; flex-wrap: wrap; gap: 20px; align-items: center; position: sticky; top: 0; z-index: 20;
+  }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: #666; font-weight: bold; }
+  select { padding: 6px 9px; border: 1px solid #bbb; border-radius: 5px; font-size: 13px; background: #fff; min-width: 170px; }
+  .segmented { display: flex; border: 1px solid var(--navy); border-radius: 6px; overflow: hidden; }
+  .segmented button { border: none; background: #fff; color: var(--navy); padding: 7px 13px; font-size: 12.5px; cursor: pointer; font-weight: 600; border-right: 1px solid var(--navy); }
+  .segmented button:last-child { border-right: none; }
+  .segmented button.active { background: var(--navy); color: #fff; }
+  .segmented button:hover:not(.active) { background: var(--lightblue); }
+
+  .layout { max-width: 1220px; margin: 0 auto; padding: 22px 24px 60px; }
+
+  .stat-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 22px; }
+  .stat-box { background: #fff; border: 1px solid #e2e2e2; border-radius: 8px; padding: 10px 16px; min-width: 170px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .stat-box .n { font-size: 20px; font-weight: bold; color: var(--navy); }
+  .stat-box .l { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: #888; }
+  .stat-box .s { font-size: 11.5px; color: #999; }
+
+  .panel { background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 20px; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .panel .sub { font-size: 12.5px; color: #888; margin-bottom: 12px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid #eee; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: var(--midblue); color: #fff; font-size: 10px; text-transform: uppercase; cursor: pointer; user-select: none; }
+  th:hover { background: var(--navy); }
+  th.sorted::after { content: " \25BC"; font-size: 9px; }
+  th.sorted.asc::after { content: " \25B2"; }
+  tr:nth-child(even) td { background: #fafbfd; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+
+  canvas { max-height: 400px; }
+  .chart-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+  @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+  .chart-row { margin-top: 16px; }
+  .chart-row h3 { font-size: 13px; color: var(--navy); margin: 0 0 8px; }
+  .pct-wrap { position: relative; height: 300px; }
+  .tall-wrap-big { position: relative; height: 620px; }
+  .pct-wrap canvas, .tall-wrap-big canvas { max-height: none !important; height: 100% !important; width: 100% !important; }
+  .chk-row { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ddd; }
+  .chk-item { font-size: 12px; color: #333; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
+  .chk-item input { cursor: pointer; }
+
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.good { background: #eaf4ea; border-left-color: var(--green); }
+  .pill { display: inline-block; background: var(--lightblue); color: var(--navy); font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 9px; margin-right: 5px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tabs button { padding: 7px 14px; border: 1px solid #ccc; background: #fff; border-radius: 6px 6px 0 0; font-size: 13px; cursor: pointer; font-weight: 600; color: #555; }
+  .tabs button.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  footer { font-size: 11.5px; color: #888; padding: 20px 0 0; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">UDR06</span> &mdash; UEL Student Origin Explorer <span style="font-size:14px;font-weight:normal;color:#8fa3c9">v2</span></h1>
+  <p>Combined UK (Table 59) &amp; Intl (Table 28) domicile data, 2014/15&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+</header>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Level of study</label>
+    <select id="levelSelect">
+      <option value="All">All levels</option>
+      <option value="All undergraduate">All undergraduate</option>
+      <option value="First degree">First degree</option>
+      <option value="Other undergraduate">Other undergraduate</option>
+      <option value="All postgraduate">All postgraduate</option>
+      <option value="Postgraduate (taught)">Postgraduate (taught)</option>
+      <option value="Postgraduate (research)">Postgraduate (research)</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label>Mode of study</label>
+    <div class="segmented" id="modeControl">
+      <button data-val="All" class="active">All modes</button>
+      <button data-val="Full-time">Full-time</button>
+      <button data-val="Part-time">Part-time</button>
+    </div>
+  </div>
+  <div class="control-group">
+    <label>Chart style</label>
+    <div class="segmented" id="stackControl">
+      <button data-val="stacked" class="active">Stacked</button>
+      <button data-val="grouped">Grouped</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout flag">
+    <span class="pill">SCOPE</span> All charts and tables respond to the Level/Mode filters above <b>except</b> the "Countries &amp; UK areas" tab, which is fixed at All levels / All modes to keep the country and local-authority detail readable (that level of geographic granularity isn't published separately per level+mode combination in a usable way).
+  </div>
+
+  <div class="panel">
+    <h2>UK vs. Intl, over time</h2>
+    <div class="sub">The headline split, responsive to the filters above</div>
+    <canvas id="ukNonukChart" role="img" aria-label="Bar chart of UK vs Intl enrolment by year. Exact figures are in the callout below."></canvas>
+    <div class="callout" id="headlineNote" style="margin-top:14px"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Total students &mdash; by domicile &amp; level</h2>
+    <div class="sub">UK undergraduate / Intl undergraduate / UK postgraduate / Intl postgraduate, over time. Uses the Mode filter above; ignores the Level filter (this panel already breaks students down by level).</div>
+    <canvas id="domicileLevelChart" role="img" aria-label="Bar chart of UK and Intl enrolment split by undergraduate and postgraduate level, by year." aria-describedby="domicileLevelTable"></canvas>
+    <table id="domicileLevelTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="ugpg">Undergrad vs. postgrad</button>
+    <button class="tab-btn" data-tab="nonuk">Intl breakdown (regions)</button>
+    <button class="tab-btn" data-tab="countries">Countries &amp; UK areas</button>
+    <button class="tab-btn" data-tab="table">Full data table</button>
+  </div>
+
+  <div class="tab-content active" id="tab-ugpg">
+    <div class="callout" style="margin-bottom:0">
+      <span class="pill">NSS NOTE</span> NSS surveys <b>final-year undergraduates only</b> &ndash; postgraduates are never included (they have a separate survey, PTES/PRES). So the undergraduate rows below are the ones directly relevant to NSS; the postgraduate rows are institution-wide context only. This section uses the Mode filter above but ignores the Level filter, since the whole point is to compare levels side by side.
+    </div>
+
+    <div class="panel">
+      <h2>Row 1 &mdash; Undergraduate vs. Postgraduate</h2>
+      <div class="sub">Total enrolment (left), Intl share (%) shown as its own 100% stacked bar per category below</div>
+      <canvas id="ugpgTotalsChart" role="img" aria-label="Bar chart of undergraduate vs postgraduate total enrolment by year." aria-describedby="ugpgTable"></canvas>
+      <div class="chart-row"><h3 id="ugpgPctALabel"></h3><div class="pct-wrap"><canvas id="ugpgPctChartA"></canvas></div></div>
+      <div class="chart-row"><h3 id="ugpgPctBLabel"></h3><div class="pct-wrap"><canvas id="ugpgPctChartB"></canvas></div></div>
+      <table id="ugpgTable" style="margin-top:14px"></table>
+    </div>
+
+    <div class="panel">
+      <h2>Row 2 &mdash; Within Undergraduate: First degree vs. Other undergraduate</h2>
+      <div class="sub">First degree = bachelor's. Other undergraduate = foundation degrees, HNDs/HNCs, CertHE/DipHE, etc.</div>
+      <canvas id="ugSplitTotalsChart" role="img" aria-label="Bar chart of first degree vs other undergraduate total enrolment by year." aria-describedby="ugSplitTable"></canvas>
+      <div class="chart-row"><h3 id="ugSplitPctALabel"></h3><div class="pct-wrap"><canvas id="ugSplitPctChartA"></canvas></div></div>
+      <div class="chart-row"><h3 id="ugSplitPctBLabel"></h3><div class="pct-wrap"><canvas id="ugSplitPctChartB"></canvas></div></div>
+      <table id="ugSplitTable" style="margin-top:14px"></table>
+    </div>
+
+    <div class="panel">
+      <h2>Row 3 &mdash; Within Postgraduate: Taught vs. Research</h2>
+      <div class="sub">Postgraduate (taught) = MAs, MScs, PGCE. Postgraduate (research) = PhDs, research master's.</div>
+      <canvas id="pgSplitTotalsChart" role="img" aria-label="Bar chart of postgraduate taught vs postgraduate research total enrolment by year." aria-describedby="pgSplitTable"></canvas>
+      <div class="chart-row"><h3 id="pgSplitPctALabel"></h3><div class="pct-wrap"><canvas id="pgSplitPctChartA"></canvas></div></div>
+      <div class="chart-row"><h3 id="pgSplitPctBLabel"></h3><div class="pct-wrap"><canvas id="pgSplitPctChartB"></canvas></div></div>
+      <table id="pgSplitTable" style="margin-top:14px"></table>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-nonuk">
+    <div class="panel">
+      <h2>Intl regions, over time</h2>
+      <div class="sub">Geographic region of permanent address</div>
+      <canvas id="nonukRegionsChart" role="img" aria-label="Line chart of Intl enrolment by world region, by year. Exact figures are in the Full data table tab."></canvas>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-countries">
+    <div class="panel">
+      <h2>Top Intl countries &mdash; trend</h2>
+      <div class="sub">Fixed at All levels / All modes. Split into three bands by latest-year scale (1,000+, 100&ndash;999, under 100), each on its own linear axis so lines are actually visible. Untick a country below any chart to hide it.</div>
+      <div class="chart-row"><h3 id="countryLineBigLabel">1,000 and above</h3><canvas id="countryLineBigChart"></canvas><div class="chk-row" id="countryLineBigChecks"></div></div>
+      <div class="chart-row"><h3 id="countryLineMidLabel">100 to 999</h3><canvas id="countryLineMidChart"></canvas><div class="chk-row" id="countryLineMidChecks"></div></div>
+      <div class="chart-row"><h3 id="countryLineSmallLabel">Under 100</h3><canvas id="countryLineSmallChart"></canvas><div class="chk-row" id="countryLineSmallChecks"></div></div>
+    </div>
+    <div class="panel">
+      <h2>Top Intl countries &mdash; latest year &amp; growth</h2>
+      <div class="sub">Fixed at All levels / All modes. All 20 countries labelled, no skipped labels.</div>
+      <div class="tall-wrap-big"><canvas id="countryBarChart" role="img" aria-label="Horizontal bar chart ranking the top 20 Intl countries by latest-year enrolment." aria-describedby="countryGrowthTable"></canvas></div>
+      <table id="countryGrowthTable" style="margin-top:14px"></table>
+    </div>
+    <div class="panel">
+      <h2>Top UK local areas &mdash; trend</h2>
+      <div class="sub">Fixed at All levels / All modes. Split into three bands by latest-year scale (1,000+, 100&ndash;999, under 100), each on its own linear axis. Untick an area below any chart to hide it.</div>
+      <div class="chart-row"><h3 id="laLineBigLabel">1,000 and above</h3><canvas id="laLineBigChart"></canvas><div class="chk-row" id="laLineBigChecks"></div></div>
+      <div class="chart-row"><h3 id="laLineMidLabel">100 to 999</h3><canvas id="laLineMidChart"></canvas><div class="chk-row" id="laLineMidChecks"></div></div>
+      <div class="chart-row"><h3 id="laLineSmallLabel">Under 100</h3><canvas id="laLineSmallChart"></canvas><div class="chk-row" id="laLineSmallChecks"></div></div>
+    </div>
+    <div class="panel">
+      <h2>Top UK local areas &mdash; latest year &amp; growth</h2>
+      <div class="sub">Fixed at All levels / All modes. All 20 areas labelled, no skipped labels.</div>
+      <div class="tall-wrap-big"><canvas id="laBarChart" role="img" aria-label="Horizontal bar chart ranking the top 20 UK local areas by latest-year enrolment." aria-describedby="laGrowthTable"></canvas></div>
+      <table id="laGrowthTable" style="margin-top:14px"></table>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-table">
+    <div class="panel">
+      <h2>Full data table</h2>
+      <div class="sub">Nations and regions, all years, for the selected Level/Mode. Click a column to sort.</div>
+      <table id="mainTable"></table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout">
+      <b>Growth is almost entirely international.</b> UK enrolment was essentially flat over ten years (14,060 in 2014/15 → 13,005 in 2024/25, dipping as low as 11,520 along the way), while Intl enrolment grew more than 7-fold (1,785 → 13,230). By 2024/25 Intl students are essentially half of UEL's entire population.
+    </div>
+    <div class="callout">
+      <b>Within the UK side</b>, Greater London alone supplies 61% of UEL's English intake (7,690 of 12,690 in 2024/25) &ndash; this is a fundamentally London-facing institution on the domestic side, and that hasn't changed.
+    </div>
+    <div class="callout flag">
+      <span class="pill">LIMITATION</span> Neither Table 28 nor Table 59 has a subject dimension, so nothing here can confirm whether Business and Computing specifically are where the international growth concentrated (only that postgraduate Intl numbers are much larger than undergraduate Intl numbers &ndash; see the Level of study filter above). Confirming a subject-level link would need HESA's raw Student record or Heidi Plus.
+    </div>
+  </div>
+
+  <footer>
+    Sources: HESA Table 28 ("Non-UK domiciled HE students by HE provider and country of domicile") and Table 59 ("UK domiciled HE students by HE provider and domicile"), both 2014/15&ndash;2024/25, University of East London (UKPRN 10007144). Total enrolment cross-check from HESA Table 49. Figures rounded to the nearest 5 by HESA's disclosure control; subtotals may not sum exactly to published totals.
+  <br><b>Data files:</b> Data/HESA Student Table 28/UEL/UEL_table28_2014-15.csv through UEL_table28_2024-25.csv (11 files); Data/HESA Student Table 59/UEL/UEL_table59_2014-15.csv through UEL_table59_2024-25.csv (11 files); cross-check totals from Data/HESA Student Table 49/UEL/UEL_table49_*.csv.
+</footer>
+
+</div>
+
+<script id="origin-data" type="application/json">{"years": ["2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "levels": ["All", "First degree", "Other undergraduate", "Postgraduate (taught)", "Postgraduate (research)", "All undergraduate", "All postgraduate"], "modes": ["All", "Full-time", "Part-time"], "nonUkRegions": ["Africa", "Asia", "Australasia", "European Union", "Middle East", "North America", "Other Europe", "South America"], "ukNations": ["England", "Wales", "Scotland", "Northern Ireland", "Other"], "headline": {"2014/15": {"All": {"All": {"nations": {"England": 13855, "Wales": 90, "Scotland": 40, "Northern Ireland": 60}, "regions": {"European Union": 565, "Other Europe": 105, "Africa": 315, "Asia": 520, "Australasia": 10, "Middle East": 125, "North America": 125, "South America": 25}, "totalUK": 14060, "totalNonUK": 1785}, "Full-time": {"nations": {"England": 10605, "Wales": 70, "Scotland": 30, "Northern Ireland": 30}, "regions": {"European Union": 415, "Other Europe": 75, "Africa": 240, "Asia": 405, "Australasia": 0, "Middle East": 100, "North America": 100, "South America": 15}, "totalUK": 10740, "totalNonUK": 1350}, "Part-time": {"nations": {"England": 3250, "Wales": 20, "Scotland": 10, "Northern Ireland": 30}, "regions": {"European Union": 150, "Other Europe": 30, "Africa": 70, "Asia": 120, "Australasia": 5, "Middle East": 25, "North America": 25, "South America": 10}, "totalUK": 3320, "totalNonUK": 435}}, "First degree": {"All": {"nations": {"England": 10455, "Wales": 70, "Scotland": 25, "Northern Ireland": 25}, "regions": {"European Union": 340, "Other Europe": 50, "Africa": 115, "Asia": 150, "Australasia": 0, "Middle East": 50, "North America": 60, "South America": 10}, "totalUK": 10580, "totalNonUK": 780}, "Full-time": {"nations": {"England": 9215, "Wales": 60, "Scotland": 20, "Northern Ireland": 25}, "regions": {"European Union": 300, "Other Europe": 50, "Africa": 95, "Asia": 130, "Australasia": 0, "Middle East": 40, "North America": 60, "South America": 5}, "totalUK": 9330, "totalNonUK": 680}, "Part-time": {"nations": {"England": 1240, "Wales": 10, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 40, "Other Europe": 5, "Africa": 20, "Asia": 20, "Australasia": 0, "Middle East": 5, "North America": 5, "South America": 0}, "totalUK": 1250, "totalNonUK": 95}}, "Other undergraduate": {"All": {"nations": {"England": 260, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 5, "Africa": 5, "Asia": 30, "Australasia": 0, "Middle East": 5, "North America": 5, "South America": 0}, "totalUK": 260, "totalNonUK": 55}, "Full-time": {"nations": {"England": 175, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 5, "Asia": 10, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 180, "totalNonUK": 20}, "Part-time": {"nations": {"England": 85, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 0, "Asia": 25, "Australasia": 0, "Middle East": 0, "North America": 5, "South America": 0}, "totalUK": 85, "totalNonUK": 35}}, "Postgraduate (taught)": {"All": {"nations": {"England": 2755, "Wales": 15, "Scotland": 10, "Northern Ireland": 30}, "regions": {"European Union": 185, "Other Europe": 45, "Africa": 165, "Asia": 310, "Australasia": 5, "Middle East": 50, "North America": 50, "South America": 10}, "totalUK": 2815, "totalNonUK": 825}, "Full-time": {"nations": {"England": 1030, "Wales": 5, "Scotland": 0, "Northern Ireland": 5}, "regions": {"European Union": 100, "Other Europe": 25, "Africa": 115, "Asia": 245, "Australasia": 0, "Middle East": 40, "North America": 35, "South America": 5}, "totalUK": 1040, "totalNonUK": 565}, "Part-time": {"nations": {"England": 1720, "Wales": 10, "Scotland": 10, "Northern Ireland": 30}, "regions": {"European Union": 85, "Other Europe": 25, "Africa": 50, "Asia": 65, "Australasia": 5, "Middle East": 10, "North America": 15, "South America": 10}, "totalUK": 1775, "totalNonUK": 260}}, "Postgraduate (research)": {"All": {"nations": {"England": 385, "Wales": 0, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 35, "Other Europe": 0, "Africa": 30, "Asia": 30, "Australasia": 0, "Middle East": 20, "North America": 5, "South America": 5}, "totalUK": 400, "totalNonUK": 125}, "Full-time": {"nations": {"England": 180, "Wales": 0, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 25, "Asia": 20, "Australasia": 0, "Middle East": 15, "North America": 5, "South America": 5}, "totalUK": 190, "totalNonUK": 85}, "Part-time": {"nations": {"England": 205, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 20, "Other Europe": 0, "Africa": 5, "Asia": 5, "Australasia": 0, "Middle East": 10, "North America": 0, "South America": 0}, "totalUK": 210, "totalNonUK": 45}}, "All undergraduate": {"All": {"nations": {"England": 10715, "Wales": 70, "Scotland": 25, "Northern Ireland": 25}, "regions": {"European Union": 345, "Other Europe": 55, "Africa": 120, "Asia": 180, "Australasia": 0, "Middle East": 50, "North America": 70, "South America": 10}, "totalUK": 10840, "totalNonUK": 830}, "Full-time": {"nations": {"England": 9390, "Wales": 60, "Scotland": 20, "Northern Ireland": 25}, "regions": {"European Union": 305, "Other Europe": 50, "Africa": 100, "Asia": 135, "Australasia": 0, "Middle East": 45, "North America": 60, "South America": 5}, "totalUK": 9505, "totalNonUK": 700}, "Part-time": {"nations": {"England": 1320, "Wales": 10, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 45, "Other Europe": 5, "Africa": 20, "Asia": 45, "Australasia": 0, "Middle East": 5, "North America": 10, "South America": 0}, "totalUK": 1335, "totalNonUK": 130}}, "All postgraduate": {"All": {"nations": {"England": 3140, "Wales": 20, "Scotland": 15, "Northern Ireland": 35}, "regions": {"European Union": 220, "Other Europe": 50, "Africa": 195, "Asia": 340, "Australasia": 5, "Middle East": 70, "North America": 55, "South America": 15}, "totalUK": 3215, "totalNonUK": 950}, "Full-time": {"nations": {"England": 1215, "Wales": 5, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 110, "Other Europe": 25, "Africa": 140, "Asia": 265, "Australasia": 0, "Middle East": 55, "North America": 40, "South America": 5}, "totalUK": 1230, "totalNonUK": 650}, "Part-time": {"nations": {"England": 1925, "Wales": 10, "Scotland": 10, "Northern Ireland": 30}, "regions": {"European Union": 105, "Other Europe": 25, "Africa": 55, "Asia": 70, "Australasia": 5, "Middle East": 15, "North America": 20, "South America": 10}, "totalUK": 1985, "totalNonUK": 305}}}, "2015/16": {"All": {"All": {"nations": {"England": 12145, "Wales": 80, "Scotland": 35, "Northern Ireland": 50}, "regions": {"European Union": 455, "Other Europe": 65, "Africa": 230, "Asia": 305, "Australasia": 10, "Middle East": 95, "North America": 105, "South America": 25}, "totalUK": 12335, "totalNonUK": 1285}, "Full-time": {"nations": {"England": 9565, "Wales": 65, "Scotland": 25, "Northern Ireland": 25}, "regions": {"European Union": 350, "Other Europe": 45, "Africa": 130, "Asia": 230, "Australasia": 5, "Middle East": 60, "North America": 85, "South America": 15}, "totalUK": 9690, "totalNonUK": 920}, "Part-time": {"nations": {"England": 2580, "Wales": 15, "Scotland": 10, "Northern Ireland": 25}, "regions": {"European Union": 105, "Other Europe": 20, "Africa": 100, "Asia": 75, "Australasia": 5, "Middle East": 35, "North America": 20, "South America": 10}, "totalUK": 2645, "totalNonUK": 365}}, "First degree": {"All": {"nations": {"England": 9255, "Wales": 65, "Scotland": 20, "Northern Ireland": 25}, "regions": {"European Union": 295, "Other Europe": 45, "Africa": 70, "Asia": 100, "Australasia": 5, "Middle East": 30, "North America": 65, "South America": 10}, "totalUK": 9380, "totalNonUK": 615}, "Full-time": {"nations": {"England": 8295, "Wales": 60, "Scotland": 15, "Northern Ireland": 25}, "regions": {"European Union": 275, "Other Europe": 35, "Africa": 55, "Asia": 85, "Australasia": 0, "Middle East": 30, "North America": 60, "South America": 10}, "totalUK": 8400, "totalNonUK": 550}, "Part-time": {"nations": {"England": 965, "Wales": 5, "Scotland": 0, "Northern Ireland": 5}, "regions": {"European Union": 20, "Other Europe": 5, "Africa": 15, "Asia": 15, "Australasia": 0, "Middle East": 5, "North America": 5, "South America": 0}, "totalUK": 975, "totalNonUK": 65}}, "Other undergraduate": {"All": {"nations": {"England": 200, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 60, "Asia": 15, "Australasia": 0, "Middle East": 20, "North America": 5, "South America": 0}, "totalUK": 200, "totalNonUK": 105}, "Full-time": {"nations": {"England": 145, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 145, "totalNonUK": 5}, "Part-time": {"nations": {"England": 50, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 60, "Asia": 15, "Australasia": 0, "Middle East": 20, "North America": 5, "South America": 0}, "totalUK": 50, "totalNonUK": 105}}, "Postgraduate (taught)": {"All": {"nations": {"England": 2335, "Wales": 10, "Scotland": 15, "Northern Ireland": 25}, "regions": {"European Union": 125, "Other Europe": 15, "Africa": 75, "Asia": 155, "Australasia": 5, "Middle East": 25, "North America": 30, "South America": 10}, "totalUK": 2395, "totalNonUK": 440}, "Full-time": {"nations": {"England": 980, "Wales": 0, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 65, "Other Europe": 5, "Africa": 50, "Asia": 115, "Australasia": 0, "Middle East": 20, "North America": 20, "South America": 5}, "totalUK": 985, "totalNonUK": 285}, "Part-time": {"nations": {"England": 1355, "Wales": 10, "Scotland": 10, "Northern Ireland": 25}, "regions": {"European Union": 65, "Other Europe": 10, "Africa": 20, "Asia": 40, "Australasia": 5, "Middle East": 0, "North America": 10, "South America": 5}, "totalUK": 1410, "totalNonUK": 155}}, "Postgraduate (research)": {"All": {"nations": {"England": 355, "Wales": 0, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 30, "Other Europe": 0, "Africa": 30, "Asia": 35, "Australasia": 0, "Middle East": 20, "North America": 5, "South America": 5}, "totalUK": 365, "totalNonUK": 125}, "Full-time": {"nations": {"England": 145, "Wales": 0, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 25, "Asia": 25, "Australasia": 0, "Middle East": 10, "North America": 5, "South America": 5}, "totalUK": 155, "totalNonUK": 80}, "Part-time": {"nations": {"England": 210, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 20, "Other Europe": 0, "Africa": 5, "Asia": 10, "Australasia": 0, "Middle East": 10, "North America": 0, "South America": 0}, "totalUK": 210, "totalNonUK": 45}}, "All undergraduate": {"All": {"nations": {"England": 9455, "Wales": 65, "Scotland": 20, "Northern Ireland": 25}, "regions": {"European Union": 300, "Other Europe": 45, "Africa": 130, "Asia": 115, "Australasia": 5, "Middle East": 50, "North America": 70, "South America": 10}, "totalUK": 9575, "totalNonUK": 720}, "Full-time": {"nations": {"England": 8440, "Wales": 60, "Scotland": 15, "Northern Ireland": 25}, "regions": {"European Union": 275, "Other Europe": 35, "Africa": 55, "Asia": 85, "Australasia": 0, "Middle East": 30, "North America": 60, "South America": 10}, "totalUK": 8550, "totalNonUK": 555}, "Part-time": {"nations": {"England": 1015, "Wales": 5, "Scotland": 0, "Northern Ireland": 5}, "regions": {"European Union": 25, "Other Europe": 10, "Africa": 75, "Asia": 30, "Australasia": 0, "Middle East": 25, "North America": 10, "South America": 0}, "totalUK": 1025, "totalNonUK": 170}}, "All postgraduate": {"All": {"nations": {"England": 2690, "Wales": 10, "Scotland": 20, "Northern Ireland": 25}, "regions": {"European Union": 155, "Other Europe": 20, "Africa": 100, "Asia": 190, "Australasia": 5, "Middle East": 45, "North America": 35, "South America": 15}, "totalUK": 2760, "totalNonUK": 560}, "Full-time": {"nations": {"England": 1125, "Wales": 5, "Scotland": 10, "Northern Ireland": 0}, "regions": {"European Union": 75, "Other Europe": 10, "Africa": 75, "Asia": 140, "Australasia": 0, "Middle East": 35, "North America": 25, "South America": 5}, "totalUK": 1140, "totalNonUK": 365}, "Part-time": {"nations": {"England": 1565, "Wales": 10, "Scotland": 10, "Northern Ireland": 25}, "regions": {"European Union": 80, "Other Europe": 10, "Africa": 25, "Asia": 45, "Australasia": 5, "Middle East": 10, "North America": 10, "South America": 10}, "totalUK": 1620, "totalNonUK": 195}}}, "2016/17": {"All": {"All": {"nations": {"England": 11870, "Wales": 60, "Scotland": 45, "Northern Ireland": 35}, "regions": {"European Union": 445, "Other Europe": 70, "Africa": 145, "Asia": 250, "Australasia": 5, "Middle East": 105, "North America": 155, "South America": 15}, "totalUK": 12025, "totalNonUK": 1195}, "Full-time": {"nations": {"England": 9455, "Wales": 50, "Scotland": 35, "Northern Ireland": 20}, "regions": {"European Union": 350, "Other Europe": 50, "Africa": 100, "Asia": 185, "Australasia": 5, "Middle East": 50, "North America": 120, "South America": 10}, "totalUK": 9570, "totalNonUK": 870}, "Part-time": {"nations": {"England": 2415, "Wales": 5, "Scotland": 10, "Northern Ireland": 15}, "regions": {"European Union": 95, "Other Europe": 20, "Africa": 45, "Asia": 65, "Australasia": 5, "Middle East": 55, "North America": 30, "South America": 5}, "totalUK": 2455, "totalNonUK": 325}}, "First degree": {"All": {"nations": {"England": 8765, "Wales": 55, "Scotland": 25, "Northern Ireland": 25}, "regions": {"European Union": 300, "Other Europe": 35, "Africa": 45, "Asia": 80, "Australasia": 5, "Middle East": 25, "North America": 80, "South America": 5}, "totalUK": 8875, "totalNonUK": 575}, "Full-time": {"nations": {"England": 7990, "Wales": 50, "Scotland": 25, "Northern Ireland": 20}, "regions": {"European Union": 285, "Other Europe": 30, "Africa": 45, "Asia": 75, "Australasia": 0, "Middle East": 25, "North America": 75, "South America": 5}, "totalUK": 8095, "totalNonUK": 540}, "Part-time": {"nations": {"England": 775, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 20, "Other Europe": 5, "Africa": 0, "Asia": 5, "Australasia": 0, "Middle East": 0, "North America": 5, "South America": 0}, "totalUK": 780, "totalNonUK": 35}}, "Other undergraduate": {"All": {"nations": {"England": 170, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 5, "Africa": 15, "Asia": 20, "Australasia": 0, "Middle East": 40, "North America": 5, "South America": 0}, "totalUK": 170, "totalNonUK": 90}, "Full-time": {"nations": {"England": 140, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 140, "totalNonUK": 0}, "Part-time": {"nations": {"England": 30, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 5, "Africa": 15, "Asia": 20, "Australasia": 0, "Middle East": 40, "North America": 5, "South America": 0}, "totalUK": 30, "totalNonUK": 85}}, "Postgraduate (taught)": {"All": {"nations": {"England": 2640, "Wales": 0, "Scotland": 15, "Northern Ireland": 15}, "regions": {"European Union": 110, "Other Europe": 30, "Africa": 60, "Asia": 125, "Australasia": 5, "Middle East": 20, "North America": 65, "South America": 5}, "totalUK": 2675, "totalNonUK": 415}, "Full-time": {"nations": {"England": 1195, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 50, "Other Europe": 20, "Africa": 30, "Asia": 85, "Australasia": 0, "Middle East": 15, "North America": 45, "South America": 0}, "totalUK": 1195, "totalNonUK": 245}, "Part-time": {"nations": {"England": 1450, "Wales": 0, "Scotland": 10, "Northern Ireland": 15}, "regions": {"European Union": 55, "Other Europe": 10, "Africa": 30, "Asia": 40, "Australasia": 0, "Middle East": 10, "North America": 20, "South America": 5}, "totalUK": 1480, "totalNonUK": 170}}, "Postgraduate (research)": {"All": {"nations": {"England": 295, "Wales": 0, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 30, "Other Europe": 0, "Africa": 30, "Asia": 30, "Australasia": 0, "Middle East": 20, "North America": 5, "South America": 5}, "totalUK": 300, "totalNonUK": 110}, "Full-time": {"nations": {"England": 135, "Wales": 0, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 15, "Other Europe": 0, "Africa": 25, "Asia": 25, "Australasia": 0, "Middle East": 15, "North America": 0, "South America": 0}, "totalUK": 140, "totalNonUK": 80}, "Part-time": {"nations": {"England": 160, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 15, "Other Europe": 0, "Africa": 5, "Asia": 0, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 165, "totalNonUK": 30}}, "All undergraduate": {"All": {"nations": {"England": 8935, "Wales": 55, "Scotland": 25, "Northern Ireland": 25}, "regions": {"European Union": 305, "Other Europe": 40, "Africa": 60, "Asia": 100, "Australasia": 5, "Middle East": 65, "North America": 85, "South America": 5}, "totalUK": 9045, "totalNonUK": 665}, "Full-time": {"nations": {"England": 8130, "Wales": 50, "Scotland": 25, "Northern Ireland": 20}, "regions": {"European Union": 285, "Other Europe": 30, "Africa": 45, "Asia": 75, "Australasia": 0, "Middle East": 25, "North America": 75, "South America": 5}, "totalUK": 8235, "totalNonUK": 545}, "Part-time": {"nations": {"England": 805, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 20, "Other Europe": 10, "Africa": 15, "Asia": 25, "Australasia": 0, "Middle East": 40, "North America": 10, "South America": 0}, "totalUK": 810, "totalNonUK": 120}}, "All postgraduate": {"All": {"nations": {"England": 2935, "Wales": 5, "Scotland": 20, "Northern Ireland": 15}, "regions": {"European Union": 135, "Other Europe": 30, "Africa": 85, "Asia": 150, "Australasia": 5, "Middle East": 40, "North America": 70, "South America": 10}, "totalUK": 2980, "totalNonUK": 530}, "Full-time": {"nations": {"England": 1325, "Wales": 0, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 65, "Other Europe": 20, "Africa": 55, "Asia": 110, "Australasia": 0, "Middle East": 25, "North America": 45, "South America": 5}, "totalUK": 1335, "totalNonUK": 325}, "Part-time": {"nations": {"England": 1610, "Wales": 5, "Scotland": 10, "Northern Ireland": 15}, "regions": {"European Union": 70, "Other Europe": 10, "Africa": 30, "Asia": 40, "Australasia": 0, "Middle East": 15, "North America": 20, "South America": 5}, "totalUK": 1645, "totalNonUK": 200}}}, "2017/18": {"All": {"All": {"nations": {"England": 11645, "Wales": 50, "Scotland": 30, "Northern Ireland": 35}, "regions": {"European Union": 440, "Other Europe": 75, "Africa": 130, "Asia": 415, "Australasia": 5, "Middle East": 55, "North America": 185, "South America": 5}, "totalUK": 11775, "totalNonUK": 1315}, "Full-time": {"nations": {"England": 9675, "Wales": 45, "Scotland": 25, "Northern Ireland": 25}, "regions": {"European Union": 390, "Other Europe": 60, "Africa": 115, "Asia": 355, "Australasia": 5, "Middle East": 40, "North America": 165, "South America": 5}, "totalUK": 9775, "totalNonUK": 1130}, "Part-time": {"nations": {"England": 1970, "Wales": 10, "Scotland": 5, "Northern Ireland": 10}, "regions": {"European Union": 50, "Other Europe": 15, "Africa": 15, "Asia": 60, "Australasia": 0, "Middle East": 15, "North America": 20, "South America": 5}, "totalUK": 2000, "totalNonUK": 180}}, "First degree": {"All": {"nations": {"England": 8745, "Wales": 45, "Scotland": 20, "Northern Ireland": 25}, "regions": {"European Union": 335, "Other Europe": 30, "Africa": 40, "Asia": 125, "Australasia": 0, "Middle East": 20, "North America": 100, "South America": 0}, "totalUK": 8840, "totalNonUK": 655}, "Full-time": {"nations": {"England": 8115, "Wales": 45, "Scotland": 20, "Northern Ireland": 20}, "regions": {"European Union": 325, "Other Europe": 30, "Africa": 40, "Asia": 120, "Australasia": 0, "Middle East": 20, "North America": 100, "South America": 0}, "totalUK": 8205, "totalNonUK": 635}, "Part-time": {"nations": {"England": 630, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 0, "Asia": 5, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 635, "totalNonUK": 20}}, "Other undergraduate": {"All": {"nations": {"England": 150, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 5, "Africa": 0, "Asia": 35, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 150, "totalNonUK": 50}, "Full-time": {"nations": {"England": 135, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 135, "totalNonUK": 0}, "Part-time": {"nations": {"England": 20, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 5, "Africa": 0, "Asia": 35, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 20, "totalNonUK": 50}}, "Postgraduate (taught)": {"All": {"nations": {"England": 2510, "Wales": 5, "Scotland": 10, "Northern Ireland": 10}, "regions": {"European Union": 85, "Other Europe": 35, "Africa": 70, "Asia": 240, "Australasia": 5, "Middle East": 20, "North America": 80, "South America": 5}, "totalUK": 2540, "totalNonUK": 545}, "Full-time": {"nations": {"England": 1320, "Wales": 0, "Scotland": 0, "Northern Ireland": 5}, "regions": {"European Union": 55, "Other Europe": 25, "Africa": 55, "Asia": 220, "Australasia": 5, "Middle East": 15, "North America": 65, "South America": 5}, "totalUK": 1325, "totalNonUK": 445}, "Part-time": {"nations": {"England": 1190, "Wales": 5, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 30, "Other Europe": 10, "Africa": 15, "Asia": 20, "Australasia": 0, "Middle East": 5, "North America": 15, "South America": 0}, "totalUK": 1210, "totalNonUK": 100}}, "Postgraduate (research)": {"All": {"nations": {"England": 240, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 15, "Other Europe": 0, "Africa": 15, "Asia": 15, "Australasia": 0, "Middle East": 10, "North America": 5, "South America": 0}, "totalUK": 245, "totalNonUK": 65}, "Full-time": {"nations": {"England": 110, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 15, "Asia": 15, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 110, "totalNonUK": 50}, "Part-time": {"nations": {"England": 135, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 135, "totalNonUK": 15}}, "All undergraduate": {"All": {"nations": {"England": 8895, "Wales": 45, "Scotland": 20, "Northern Ireland": 25}, "regions": {"European Union": 340, "Other Europe": 35, "Africa": 45, "Asia": 160, "Australasia": 0, "Middle East": 25, "North America": 100, "South America": 0}, "totalUK": 8990, "totalNonUK": 705}, "Full-time": {"nations": {"England": 8250, "Wales": 45, "Scotland": 20, "Northern Ireland": 20}, "regions": {"European Union": 325, "Other Europe": 30, "Africa": 40, "Asia": 120, "Australasia": 0, "Middle East": 20, "North America": 100, "South America": 0}, "totalUK": 8340, "totalNonUK": 640}, "Part-time": {"nations": {"England": 650, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 5, "Africa": 0, "Asia": 40, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 655, "totalNonUK": 70}}, "All postgraduate": {"All": {"nations": {"England": 2750, "Wales": 10, "Scotland": 10, "Northern Ireland": 10}, "regions": {"European Union": 100, "Other Europe": 40, "Africa": 85, "Asia": 255, "Australasia": 5, "Middle East": 35, "North America": 85, "South America": 5}, "totalUK": 2785, "totalNonUK": 610}, "Full-time": {"nations": {"England": 1425, "Wales": 0, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 65, "Other Europe": 25, "Africa": 70, "Asia": 235, "Australasia": 5, "Middle East": 25, "North America": 70, "South America": 5}, "totalUK": 1440, "totalNonUK": 495}, "Part-time": {"nations": {"England": 1325, "Wales": 5, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 35, "Other Europe": 10, "Africa": 15, "Asia": 20, "Australasia": 0, "Middle East": 10, "North America": 20, "South America": 0}, "totalUK": 1345, "totalNonUK": 115}}}, "2018/19": {"All": {"All": {"nations": {"England": 11385, "Wales": 55, "Scotland": 35, "Northern Ireland": 40}, "regions": {"European Union": 495, "Other Europe": 75, "Africa": 170, "Asia": 805, "Australasia": 10, "Middle East": 80, "North America": 230, "South America": 5}, "totalUK": 11520, "totalNonUK": 1875}, "Full-time": {"nations": {"England": 9530, "Wales": 50, "Scotland": 30, "Northern Ireland": 35}, "regions": {"European Union": 430, "Other Europe": 65, "Africa": 155, "Asia": 750, "Australasia": 10, "Middle East": 70, "North America": 210, "South America": 5}, "totalUK": 9645, "totalNonUK": 1695}, "Part-time": {"nations": {"England": 1855, "Wales": 5, "Scotland": 10, "Northern Ireland": 5}, "regions": {"European Union": 60, "Other Europe": 10, "Africa": 20, "Asia": 55, "Australasia": 5, "Middle East": 5, "North America": 20, "South America": 5}, "totalUK": 1875, "totalNonUK": 175}}, "First degree": {"All": {"nations": {"England": 8535, "Wales": 45, "Scotland": 20, "Northern Ireland": 35}, "regions": {"European Union": 350, "Other Europe": 35, "Africa": 50, "Asia": 195, "Australasia": 5, "Middle East": 40, "North America": 135, "South America": 0}, "totalUK": 8640, "totalNonUK": 810}, "Full-time": {"nations": {"England": 7855, "Wales": 45, "Scotland": 20, "Northern Ireland": 30}, "regions": {"European Union": 340, "Other Europe": 35, "Africa": 50, "Asia": 195, "Australasia": 5, "Middle East": 40, "North America": 135, "South America": 0}, "totalUK": 7960, "totalNonUK": 795}, "Part-time": {"nations": {"England": 680, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 680, "totalNonUK": 10}}, "Other undergraduate": {"All": {"nations": {"England": 260, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 5, "Asia": 25, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 265, "totalNonUK": 35}, "Full-time": {"nations": {"England": 245, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 250, "totalNonUK": 10}, "Part-time": {"nations": {"England": 15, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 5, "Asia": 25, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 15, "totalNonUK": 30}}, "Postgraduate (taught)": {"All": {"nations": {"England": 2335, "Wales": 5, "Scotland": 10, "Northern Ireland": 5}, "regions": {"European Union": 115, "Other Europe": 40, "Africa": 105, "Asia": 575, "Australasia": 10, "Middle East": 30, "North America": 90, "South America": 5}, "totalUK": 2360, "totalNonUK": 970}, "Full-time": {"nations": {"England": 1315, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 75, "Other Europe": 30, "Africa": 90, "Asia": 545, "Australasia": 5, "Middle East": 25, "North America": 75, "South America": 0}, "totalUK": 1325, "totalNonUK": 850}, "Part-time": {"nations": {"England": 1020, "Wales": 0, "Scotland": 10, "Northern Ireland": 5}, "regions": {"European Union": 40, "Other Europe": 10, "Africa": 10, "Asia": 30, "Australasia": 5, "Middle East": 5, "North America": 15, "South America": 0}, "totalUK": 1040, "totalNonUK": 120}}, "Postgraduate (research)": {"All": {"nations": {"England": 250, "Wales": 5, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 15, "Other Europe": 0, "Africa": 15, "Asia": 15, "Australasia": 0, "Middle East": 10, "North America": 0, "South America": 0}, "totalUK": 255, "totalNonUK": 60}, "Full-time": {"nations": {"England": 110, "Wales": 0, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 15, "Asia": 15, "Australasia": 0, "Middle East": 10, "North America": 0, "South America": 0}, "totalUK": 115, "totalNonUK": 45}, "Part-time": {"nations": {"England": 140, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 145, "totalNonUK": 15}}, "All undergraduate": {"All": {"nations": {"England": 8795, "Wales": 45, "Scotland": 25, "Northern Ireland": 35}, "regions": {"European Union": 360, "Other Europe": 35, "Africa": 55, "Asia": 215, "Australasia": 5, "Middle East": 40, "North America": 135, "South America": 0}, "totalUK": 8905, "totalNonUK": 845}, "Full-time": {"nations": {"England": 8105, "Wales": 45, "Scotland": 25, "Northern Ireland": 30}, "regions": {"European Union": 350, "Other Europe": 35, "Africa": 50, "Asia": 195, "Australasia": 5, "Middle East": 40, "North America": 135, "South America": 0}, "totalUK": 8210, "totalNonUK": 805}, "Part-time": {"nations": {"England": 695, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 5, "Asia": 25, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 695, "totalNonUK": 40}}, "All postgraduate": {"All": {"nations": {"England": 2590, "Wales": 10, "Scotland": 15, "Northern Ireland": 5}, "regions": {"European Union": 135, "Other Europe": 40, "Africa": 120, "Asia": 590, "Australasia": 10, "Middle East": 40, "North America": 95, "South America": 5}, "totalUK": 2620, "totalNonUK": 1030}, "Full-time": {"nations": {"England": 1425, "Wales": 5, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 80, "Other Europe": 30, "Africa": 105, "Asia": 560, "Australasia": 5, "Middle East": 35, "North America": 75, "South America": 0}, "totalUK": 1435, "totalNonUK": 895}, "Part-time": {"nations": {"England": 1160, "Wales": 5, "Scotland": 10, "Northern Ireland": 5}, "regions": {"European Union": 50, "Other Europe": 10, "Africa": 15, "Asia": 30, "Australasia": 5, "Middle East": 5, "North America": 20, "South America": 5}, "totalUK": 1180, "totalNonUK": 135}}}, "2019/20": {"All": {"All": {"nations": {"England": 11625, "Wales": 65, "Scotland": 30, "Northern Ireland": 25}, "regions": {"European Union": 480, "Other Europe": 65, "Africa": 170, "Asia": 2535, "Australasia": 5, "Middle East": 80, "North America": 255, "South America": 15}, "totalUK": 11745, "totalNonUK": 3610}, "Full-time": {"nations": {"England": 9675, "Wales": 55, "Scotland": 25, "Northern Ireland": 20}, "regions": {"European Union": 430, "Other Europe": 55, "Africa": 160, "Asia": 2475, "Australasia": 5, "Middle East": 70, "North America": 235, "South America": 10}, "totalUK": 9780, "totalNonUK": 3440}, "Part-time": {"nations": {"England": 1950, "Wales": 10, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 50, "Other Europe": 10, "Africa": 10, "Asia": 65, "Australasia": 0, "Middle East": 10, "North America": 20, "South America": 5}, "totalUK": 1970, "totalNonUK": 165}}, "First degree": {"All": {"nations": {"England": 8645, "Wales": 50, "Scotland": 20, "Northern Ireland": 20}, "regions": {"European Union": 375, "Other Europe": 35, "Africa": 55, "Asia": 495, "Australasia": 0, "Middle East": 35, "North America": 145, "South America": 5}, "totalUK": 8735, "totalNonUK": 1150}, "Full-time": {"nations": {"England": 7990, "Wales": 45, "Scotland": 20, "Northern Ireland": 20}, "regions": {"European Union": 365, "Other Europe": 35, "Africa": 55, "Asia": 490, "Australasia": 0, "Middle East": 35, "North America": 145, "South America": 5}, "totalUK": 8075, "totalNonUK": 1135}, "Part-time": {"nations": {"England": 655, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 0, "Asia": 5, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 660, "totalNonUK": 15}}, "Other undergraduate": {"All": {"nations": {"England": 360, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 0, "Asia": 15, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 365, "totalNonUK": 15}, "Full-time": {"nations": {"England": 345, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 350, "totalNonUK": 0}, "Part-time": {"nations": {"England": 20, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 0, "Asia": 15, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 20, "totalNonUK": 15}}, "Postgraduate (taught)": {"All": {"nations": {"England": 2380, "Wales": 10, "Scotland": 10, "Northern Ireland": 5}, "regions": {"European Union": 95, "Other Europe": 25, "Africa": 105, "Asia": 2015, "Australasia": 5, "Middle East": 35, "North America": 105, "South America": 5}, "totalUK": 2400, "totalNonUK": 2395}, "Full-time": {"nations": {"England": 1280, "Wales": 5, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 60, "Other Europe": 20, "Africa": 95, "Asia": 1970, "Australasia": 5, "Middle East": 30, "North America": 85, "South America": 5}, "totalUK": 1290, "totalNonUK": 2275}, "Part-time": {"nations": {"England": 1100, "Wales": 5, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 30, "Other Europe": 5, "Africa": 10, "Asia": 45, "Australasia": 0, "Middle East": 5, "North America": 20, "South America": 0}, "totalUK": 1110, "totalNonUK": 120}}, "Postgraduate (research)": {"All": {"nations": {"England": 240, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 10, "Asia": 10, "Australasia": 0, "Middle East": 10, "North America": 5, "South America": 5}, "totalUK": 245, "totalNonUK": 50}, "Full-time": {"nations": {"England": 65, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 10, "Asia": 10, "Australasia": 0, "Middle East": 5, "North America": 5, "South America": 0}, "totalUK": 65, "totalNonUK": 30}, "Part-time": {"nations": {"England": 180, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 180, "totalNonUK": 20}}, "All undergraduate": {"All": {"nations": {"England": 9005, "Wales": 50, "Scotland": 20, "Northern Ireland": 20}, "regions": {"European Union": 380, "Other Europe": 35, "Africa": 55, "Asia": 510, "Australasia": 0, "Middle East": 35, "North America": 145, "South America": 5}, "totalUK": 9100, "totalNonUK": 1165}, "Full-time": {"nations": {"England": 8330, "Wales": 50, "Scotland": 20, "Northern Ireland": 20}, "regions": {"European Union": 365, "Other Europe": 35, "Africa": 55, "Asia": 490, "Australasia": 0, "Middle East": 35, "North America": 145, "South America": 5}, "totalUK": 8425, "totalNonUK": 1140}, "Part-time": {"nations": {"England": 670, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 0, "Asia": 15, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 675, "totalNonUK": 30}}, "All postgraduate": {"All": {"nations": {"England": 2620, "Wales": 15, "Scotland": 10, "Northern Ireland": 5}, "regions": {"European Union": 105, "Other Europe": 30, "Africa": 115, "Asia": 2030, "Australasia": 5, "Middle East": 45, "North America": 110, "South America": 10}, "totalUK": 2645, "totalNonUK": 2440}, "Full-time": {"nations": {"England": 1345, "Wales": 5, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 65, "Other Europe": 20, "Africa": 105, "Asia": 1980, "Australasia": 5, "Middle East": 35, "North America": 90, "South America": 5}, "totalUK": 1355, "totalNonUK": 2305}, "Part-time": {"nations": {"England": 1275, "Wales": 10, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 40, "Other Europe": 10, "Africa": 10, "Asia": 45, "Australasia": 0, "Middle East": 10, "North America": 20, "South America": 5}, "totalUK": 1290, "totalNonUK": 140}}}, "2020/21": {"All": {"All": {"nations": {"England": 12045, "Wales": 70, "Scotland": 25, "Northern Ireland": 25}, "regions": {"European Union": 475, "Other Europe": 60, "Africa": 300, "Asia": 4070, "Australasia": 5, "Middle East": 105, "North America": 200, "South America": 10}, "totalUK": 12175, "totalNonUK": 5220}, "Full-time": {"nations": {"England": 10255, "Wales": 65, "Scotland": 20, "Northern Ireland": 20}, "regions": {"European Union": 420, "Other Europe": 55, "Africa": 290, "Asia": 3935, "Australasia": 5, "Middle East": 95, "North America": 190, "South America": 10}, "totalUK": 10365, "totalNonUK": 5000}, "Part-time": {"nations": {"England": 1790, "Wales": 10, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 55, "Other Europe": 5, "Africa": 10, "Asia": 135, "Australasia": 0, "Middle East": 10, "North America": 10, "South America": 0}, "totalUK": 1805, "totalNonUK": 220}}, "First degree": {"All": {"nations": {"England": 8840, "Wales": 55, "Scotland": 20, "Northern Ireland": 15}, "regions": {"European Union": 385, "Other Europe": 40, "Africa": 85, "Asia": 605, "Australasia": 0, "Middle East": 45, "North America": 130, "South America": 5}, "totalUK": 8935, "totalNonUK": 1300}, "Full-time": {"nations": {"England": 8295, "Wales": 55, "Scotland": 20, "Northern Ireland": 15}, "regions": {"European Union": 370, "Other Europe": 40, "Africa": 85, "Asia": 605, "Australasia": 0, "Middle East": 45, "North America": 130, "South America": 5}, "totalUK": 8390, "totalNonUK": 1285}, "Part-time": {"nations": {"England": 545, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 545, "totalNonUK": 15}}, "Other undergraduate": {"All": {"nations": {"England": 505, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 5, "Asia": 25, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 510, "totalNonUK": 35}, "Full-time": {"nations": {"England": 485, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 5, "Asia": 25, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 490, "totalNonUK": 35}, "Part-time": {"nations": {"England": 20, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {}, "totalUK": 20, "totalNonUK": 0}}, "Postgraduate (taught)": {"All": {"nations": {"England": 2410, "Wales": 15, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 75, "Other Europe": 20, "Africa": 195, "Asia": 3425, "Australasia": 0, "Middle East": 50, "North America": 70, "South America": 5}, "totalUK": 2435, "totalNonUK": 3845}, "Full-time": {"nations": {"England": 1400, "Wales": 5, "Scotland": 0, "Northern Ireland": 5}, "regions": {"European Union": 40, "Other Europe": 15, "Africa": 190, "Asia": 3295, "Australasia": 0, "Middle East": 45, "North America": 60, "South America": 5}, "totalUK": 1410, "totalNonUK": 3655}, "Part-time": {"nations": {"England": 1010, "Wales": 5, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 35, "Other Europe": 5, "Africa": 5, "Asia": 130, "Australasia": 0, "Middle East": 5, "North America": 10, "South America": 0}, "totalUK": 1025, "totalNonUK": 190}}, "Postgraduate (research)": {"All": {"nations": {"England": 290, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 10, "Asia": 10, "Australasia": 0, "Middle East": 10, "North America": 5, "South America": 0}, "totalUK": 290, "totalNonUK": 45}, "Full-time": {"nations": {"England": 75, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 10, "Asia": 5, "Australasia": 0, "Middle East": 5, "North America": 5, "South America": 0}, "totalUK": 75, "totalNonUK": 30}, "Part-time": {"nations": {"England": 210, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 215, "totalNonUK": 15}}, "All undergraduate": {"All": {"nations": {"England": 9345, "Wales": 55, "Scotland": 20, "Northern Ireland": 15}, "regions": {"European Union": 385, "Other Europe": 40, "Africa": 90, "Asia": 635, "Australasia": 0, "Middle East": 45, "North America": 130, "South America": 5}, "totalUK": 9445, "totalNonUK": 1335}, "Full-time": {"nations": {"England": 8780, "Wales": 55, "Scotland": 20, "Northern Ireland": 15}, "regions": {"European Union": 375, "Other Europe": 40, "Africa": 90, "Asia": 635, "Australasia": 0, "Middle East": 45, "North America": 130, "South America": 5}, "totalUK": 8880, "totalNonUK": 1315}, "Part-time": {"nations": {"England": 565, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 565, "totalNonUK": 15}}, "All postgraduate": {"All": {"nations": {"England": 2695, "Wales": 15, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 85, "Other Europe": 20, "Africa": 210, "Asia": 3435, "Australasia": 0, "Middle East": 60, "North America": 70, "South America": 5}, "totalUK": 2725, "totalNonUK": 3885}, "Full-time": {"nations": {"England": 1475, "Wales": 5, "Scotland": 0, "Northern Ireland": 5}, "regions": {"European Union": 45, "Other Europe": 15, "Africa": 200, "Asia": 3305, "Australasia": 0, "Middle East": 50, "North America": 60, "South America": 5}, "totalUK": 1485, "totalNonUK": 3680}, "Part-time": {"nations": {"England": 1220, "Wales": 10, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 40, "Other Europe": 5, "Africa": 10, "Asia": 130, "Australasia": 0, "Middle East": 10, "North America": 10, "South America": 0}, "totalUK": 1240, "totalNonUK": 205}}}, "2021/22": {"All": {"All": {"nations": {"England": 12625, "Wales": 100, "Scotland": 60, "Northern Ireland": 40}, "regions": {"European Union": 345, "Other Europe": 80, "Africa": 435, "Asia": 5470, "Australasia": 5, "Middle East": 145, "North America": 220, "South America": 15}, "totalUK": 12830, "totalNonUK": 6715}, "Full-time": {"nations": {"England": 10795, "Wales": 85, "Scotland": 50, "Northern Ireland": 40}, "regions": {"European Union": 300, "Other Europe": 70, "Africa": 420, "Asia": 5330, "Australasia": 0, "Middle East": 140, "North America": 210, "South America": 15}, "totalUK": 10980, "totalNonUK": 6485}, "Part-time": {"nations": {"England": 1825, "Wales": 10, "Scotland": 10, "Northern Ireland": 5}, "regions": {"European Union": 45, "Other Europe": 15, "Africa": 15, "Asia": 140, "Australasia": 5, "Middle East": 5, "North America": 10, "South America": 0}, "totalUK": 1855, "totalNonUK": 235}}, "First degree": {"All": {"nations": {"England": 9310, "Wales": 75, "Scotland": 40, "Northern Ireland": 30}, "regions": {"European Union": 270, "Other Europe": 35, "Africa": 115, "Asia": 650, "Australasia": 0, "Middle East": 55, "North America": 125, "South America": 5}, "totalUK": 9465, "totalNonUK": 1260}, "Full-time": {"nations": {"England": 8695, "Wales": 75, "Scotland": 40, "Northern Ireland": 30}, "regions": {"European Union": 260, "Other Europe": 30, "Africa": 115, "Asia": 635, "Australasia": 0, "Middle East": 55, "North America": 125, "South America": 5}, "totalUK": 8850, "totalNonUK": 1225}, "Part-time": {"nations": {"England": 615, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 5, "Africa": 0, "Asia": 15, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 615, "totalNonUK": 30}}, "Other undergraduate": {"All": {"nations": {"England": 615, "Wales": 5, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 5, "Asia": 35, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 625, "totalNonUK": 45}, "Full-time": {"nations": {"England": 590, "Wales": 5, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 5, "Asia": 35, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 600, "totalNonUK": 40}, "Part-time": {"nations": {"England": 25, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 25, "totalNonUK": 0}}, "Postgraduate (taught)": {"All": {"nations": {"England": 2435, "Wales": 15, "Scotland": 15, "Northern Ireland": 5}, "regions": {"European Union": 65, "Other Europe": 45, "Africa": 300, "Asia": 4780, "Australasia": 5, "Middle East": 85, "North America": 95, "South America": 5}, "totalUK": 2475, "totalNonUK": 5375}, "Full-time": {"nations": {"England": 1445, "Wales": 10, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 35, "Other Europe": 35, "Africa": 285, "Asia": 4655, "Australasia": 0, "Middle East": 80, "North America": 85, "South America": 5}, "totalUK": 1465, "totalNonUK": 5185}, "Part-time": {"nations": {"England": 990, "Wales": 5, "Scotland": 10, "Northern Ireland": 5}, "regions": {"European Union": 25, "Other Europe": 5, "Africa": 15, "Asia": 125, "Australasia": 5, "Middle East": 5, "North America": 10, "South America": 0}, "totalUK": 1010, "totalNonUK": 190}}, "Postgraduate (research)": {"All": {"nations": {"England": 265, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 5, "Africa": 15, "Asia": 5, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 270, "totalNonUK": 40}, "Full-time": {"nations": {"England": 65, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 15, "Asia": 5, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 65, "totalNonUK": 30}, "Part-time": {"nations": {"England": 200, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 5, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 205, "totalNonUK": 10}}, "All undergraduate": {"All": {"nations": {"England": 9925, "Wales": 80, "Scotland": 45, "Northern Ireland": 35}, "regions": {"European Union": 270, "Other Europe": 35, "Africa": 120, "Asia": 685, "Australasia": 0, "Middle East": 55, "North America": 125, "South America": 5}, "totalUK": 10090, "totalNonUK": 1300}, "Full-time": {"nations": {"England": 9285, "Wales": 75, "Scotland": 45, "Northern Ireland": 35}, "regions": {"European Union": 260, "Other Europe": 35, "Africa": 120, "Asia": 670, "Australasia": 0, "Middle East": 55, "North America": 125, "South America": 5}, "totalUK": 9450, "totalNonUK": 1270}, "Part-time": {"nations": {"England": 640, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 10, "Other Europe": 5, "Africa": 0, "Asia": 15, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 640, "totalNonUK": 35}}, "All postgraduate": {"All": {"nations": {"England": 2700, "Wales": 20, "Scotland": 15, "Northern Ireland": 5}, "regions": {"European Union": 70, "Other Europe": 45, "Africa": 315, "Asia": 4785, "Australasia": 5, "Middle East": 90, "North America": 95, "South America": 10}, "totalUK": 2740, "totalNonUK": 5415}, "Full-time": {"nations": {"England": 1510, "Wales": 10, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 40, "Other Europe": 35, "Africa": 300, "Asia": 4660, "Australasia": 0, "Middle East": 85, "North America": 85, "South America": 10}, "totalUK": 1530, "totalNonUK": 5215}, "Part-time": {"nations": {"England": 1190, "Wales": 10, "Scotland": 10, "Northern Ireland": 5}, "regions": {"European Union": 35, "Other Europe": 10, "Africa": 15, "Asia": 125, "Australasia": 5, "Middle East": 5, "North America": 10, "South America": 0}, "totalUK": 1210, "totalNonUK": 200}}}, "2022/23": {"All": {"All": {"nations": {"England": 11835, "Wales": 110, "Scotland": 65, "Northern Ireland": 45}, "regions": {"European Union": 210, "Other Europe": 90, "Africa": 745, "Asia": 8920, "Australasia": 10, "Middle East": 185, "North America": 180, "South America": 15}, "totalUK": 12095, "totalNonUK": 10355}, "Full-time": {"nations": {"England": 10055, "Wales": 100, "Scotland": 55, "Northern Ireland": 40}, "regions": {"European Union": 185, "Other Europe": 80, "Africa": 715, "Asia": 8640, "Australasia": 5, "Middle East": 175, "North America": 165, "South America": 10}, "totalUK": 10290, "totalNonUK": 9975}, "Part-time": {"nations": {"England": 1780, "Wales": 5, "Scotland": 10, "Northern Ireland": 0}, "regions": {"European Union": 25, "Other Europe": 10, "Africa": 30, "Asia": 280, "Australasia": 5, "Middle East": 10, "North America": 15, "South America": 0}, "totalUK": 1805, "totalNonUK": 380}}, "First degree": {"All": {"nations": {"England": 8560, "Wales": 85, "Scotland": 40, "Northern Ireland": 35}, "regions": {"European Union": 145, "Other Europe": 30, "Africa": 140, "Asia": 1235, "Australasia": 5, "Middle East": 55, "North America": 90, "South America": 5}, "totalUK": 8740, "totalNonUK": 1705}, "Full-time": {"nations": {"England": 7980, "Wales": 85, "Scotland": 40, "Northern Ireland": 35}, "regions": {"European Union": 145, "Other Europe": 30, "Africa": 140, "Asia": 1225, "Australasia": 5, "Middle East": 55, "North America": 90, "South America": 5}, "totalUK": 8155, "totalNonUK": 1690}, "Part-time": {"nations": {"England": 580, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 0, "Asia": 5, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 585, "totalNonUK": 10}}, "Other undergraduate": {"All": {"nations": {"England": 695, "Wales": 5, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 5, "Other Europe": 5, "Africa": 10, "Asia": 220, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 710, "totalNonUK": 240}, "Full-time": {"nations": {"England": 620, "Wales": 5, "Scotland": 5, "Northern Ireland": 5}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 10, "Asia": 220, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 635, "totalNonUK": 240}, "Part-time": {"nations": {"England": 75, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 75, "totalNonUK": 0}}, "Postgraduate (taught)": {"All": {"nations": {"England": 2305, "Wales": 10, "Scotland": 20, "Northern Ireland": 5}, "regions": {"European Union": 50, "Other Europe": 55, "Africa": 580, "Asia": 7455, "Australasia": 5, "Middle East": 115, "North America": 90, "South America": 5}, "totalUK": 2360, "totalNonUK": 8355}, "Full-time": {"nations": {"England": 1375, "Wales": 10, "Scotland": 10, "Northern Ireland": 5}, "regions": {"European Union": 30, "Other Europe": 45, "Africa": 555, "Asia": 7175, "Australasia": 0, "Middle East": 105, "North America": 75, "South America": 5}, "totalUK": 1415, "totalNonUK": 7995}, "Part-time": {"nations": {"England": 930, "Wales": 5, "Scotland": 10, "Northern Ireland": 0}, "regions": {"European Union": 20, "Other Europe": 5, "Africa": 30, "Asia": 275, "Australasia": 5, "Middle East": 10, "North America": 15, "South America": 0}, "totalUK": 945, "totalNonUK": 360}}, "Postgraduate (research)": {"All": {"nations": {"England": 275, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 5, "Africa": 15, "Asia": 15, "Australasia": 0, "Middle East": 15, "North America": 5, "South America": 0}, "totalUK": 285, "totalNonUK": 60}, "Full-time": {"nations": {"England": 85, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 10, "Asia": 15, "Australasia": 0, "Middle East": 10, "North America": 0, "South America": 0}, "totalUK": 90, "totalNonUK": 50}, "Part-time": {"nations": {"England": 195, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 5, "Africa": 0, "Asia": 0, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 195, "totalNonUK": 10}}, "All undergraduate": {"All": {"nations": {"England": 9255, "Wales": 95, "Scotland": 45, "Northern Ireland": 40}, "regions": {"European Union": 155, "Other Europe": 30, "Africa": 150, "Asia": 1450, "Australasia": 5, "Middle East": 55, "North America": 90, "South America": 5}, "totalUK": 9450, "totalNonUK": 1945}, "Full-time": {"nations": {"England": 8600, "Wales": 95, "Scotland": 45, "Northern Ireland": 40}, "regions": {"European Union": 150, "Other Europe": 30, "Africa": 150, "Asia": 1445, "Australasia": 5, "Middle East": 55, "North America": 90, "South America": 5}, "totalUK": 8790, "totalNonUK": 1930}, "Part-time": {"nations": {"England": 660, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 0, "Asia": 5, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 660, "totalNonUK": 15}}, "All postgraduate": {"All": {"nations": {"England": 2580, "Wales": 15, "Scotland": 20, "Northern Ireland": 5}, "regions": {"European Union": 55, "Other Europe": 55, "Africa": 595, "Asia": 7470, "Australasia": 5, "Middle East": 130, "North America": 95, "South America": 5}, "totalUK": 2645, "totalNonUK": 8410}, "Full-time": {"nations": {"England": 1460, "Wales": 10, "Scotland": 10, "Northern Ireland": 5}, "regions": {"European Union": 35, "Other Europe": 50, "Africa": 565, "Asia": 7195, "Australasia": 0, "Middle East": 120, "North America": 75, "South America": 5}, "totalUK": 1500, "totalNonUK": 8045}, "Part-time": {"nations": {"England": 1120, "Wales": 5, "Scotland": 10, "Northern Ireland": 0}, "regions": {"European Union": 20, "Other Europe": 10, "Africa": 30, "Asia": 275, "Australasia": 5, "Middle East": 10, "North America": 15, "South America": 0}, "totalUK": 1145, "totalNonUK": 370}}}, "2023/24": {"All": {"All": {"nations": {"England": 11485, "Wales": 110, "Scotland": 75, "Northern Ireland": 45}, "regions": {"European Union": 135, "Other Europe": 50, "Africa": 505, "Asia": 7905, "Australasia": 10, "Middle East": 120, "North America": 120, "South America": 10}, "totalUK": 11825, "totalNonUK": 8850}, "Full-time": {"nations": {"England": 10035, "Wales": 95, "Scotland": 55, "Northern Ireland": 40}, "regions": {"European Union": 110, "Other Europe": 45, "Africa": 485, "Asia": 7715, "Australasia": 5, "Middle East": 105, "North America": 100, "South America": 5}, "totalUK": 10325, "totalNonUK": 8585}, "Part-time": {"nations": {"England": 1450, "Wales": 15, "Scotland": 20, "Northern Ireland": 5}, "regions": {"European Union": 25, "Other Europe": 5, "Africa": 20, "Asia": 190, "Australasia": 0, "Middle East": 15, "North America": 15, "South America": 0}, "totalUK": 1500, "totalNonUK": 265}}, "First degree": {"All": {"nations": {"England": 9550, "Wales": 95, "Scotland": 55, "Northern Ireland": 40}, "regions": {"European Union": 100, "Other Europe": 25, "Africa": 160, "Asia": 1655, "Australasia": 5, "Middle East": 50, "North America": 75, "South America": 5}, "totalUK": 9835, "totalNonUK": 2075}, "Full-time": {"nations": {"England": 8855, "Wales": 90, "Scotland": 50, "Northern Ireland": 40}, "regions": {"European Union": 90, "Other Europe": 25, "Africa": 160, "Asia": 1650, "Australasia": 5, "Middle East": 45, "North America": 75, "South America": 5}, "totalUK": 9120, "totalNonUK": 2055}, "Part-time": {"nations": {"England": 695, "Wales": 5, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 0, "Asia": 5, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 710, "totalNonUK": 20}}, "Other undergraduate": {"All": {"nations": {"England": 345, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 5, "Asia": 235, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 350, "totalNonUK": 240}, "Full-time": {"nations": {"England": 330, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 5, "Asia": 235, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 330, "totalNonUK": 240}, "Part-time": {"nations": {"England": 15, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {}, "totalUK": 15, "totalNonUK": 0}}, "Postgraduate (taught)": {"All": {"nations": {"England": 1395, "Wales": 10, "Scotland": 20, "Northern Ireland": 5}, "regions": {"European Union": 30, "Other Europe": 25, "Africa": 340, "Asia": 6005, "Australasia": 5, "Middle East": 60, "North America": 45, "South America": 5}, "totalUK": 1445, "totalNonUK": 6510}, "Full-time": {"nations": {"England": 810, "Wales": 5, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 15, "Other Europe": 25, "Africa": 325, "Asia": 5825, "Australasia": 0, "Middle East": 55, "North America": 25, "South America": 5}, "totalUK": 835, "totalNonUK": 6275}, "Part-time": {"nations": {"England": 580, "Wales": 5, "Scotland": 15, "Northern Ireland": 5}, "regions": {"European Union": 15, "Other Europe": 5, "Africa": 15, "Asia": 180, "Australasia": 0, "Middle East": 5, "North America": 15, "South America": 0}, "totalUK": 610, "totalNonUK": 235}}, "Postgraduate (research)": {"All": {"nations": {"England": 195, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 5, "Asia": 10, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 200, "totalNonUK": 25}, "Full-time": {"nations": {"England": 40, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 0, "Asia": 5, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 40, "totalNonUK": 15}, "Part-time": {"nations": {"England": 155, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 0, "Asia": 5, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 160, "totalNonUK": 10}}, "All undergraduate": {"All": {"nations": {"England": 9895, "Wales": 95, "Scotland": 55, "Northern Ireland": 40}, "regions": {"European Union": 100, "Other Europe": 25, "Africa": 165, "Asia": 1890, "Australasia": 5, "Middle East": 50, "North America": 75, "South America": 5}, "totalUK": 10180, "totalNonUK": 2315}, "Full-time": {"nations": {"England": 9185, "Wales": 90, "Scotland": 55, "Northern Ireland": 40}, "regions": {"European Union": 95, "Other Europe": 25, "Africa": 160, "Asia": 1885, "Australasia": 5, "Middle East": 45, "North America": 75, "South America": 5}, "totalUK": 9450, "totalNonUK": 2295}, "Part-time": {"nations": {"England": 710, "Wales": 5, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 0, "Asia": 5, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 730, "totalNonUK": 20}}, "All postgraduate": {"All": {"nations": {"England": 1590, "Wales": 15, "Scotland": 20, "Northern Ireland": 5}, "regions": {"European Union": 35, "Other Europe": 25, "Africa": 340, "Asia": 6015, "Australasia": 5, "Middle East": 70, "North America": 45, "South America": 5}, "totalUK": 1645, "totalNonUK": 6540}, "Full-time": {"nations": {"England": 850, "Wales": 5, "Scotland": 5, "Northern Ireland": 0}, "regions": {"European Union": 20, "Other Europe": 25, "Africa": 325, "Asia": 5830, "Australasia": 0, "Middle East": 60, "North America": 30, "South America": 5}, "totalUK": 875, "totalNonUK": 6290}, "Part-time": {"nations": {"England": 740, "Wales": 10, "Scotland": 15, "Northern Ireland": 5}, "regions": {"European Union": 15, "Other Europe": 5, "Africa": 15, "Asia": 185, "Australasia": 0, "Middle East": 10, "North America": 15, "South America": 0}, "totalUK": 770, "totalNonUK": 250}}}, "2024/25": {"All": {"All": {"nations": {"England": 12690, "Wales": 155, "Scotland": 65, "Northern Ireland": 40}, "regions": {"European Union": 130, "Other Europe": 80, "Africa": 585, "Asia": 12090, "Australasia": 15, "Middle East": 155, "North America": 150, "South America": 30}, "totalUK": 13005, "totalNonUK": 13230}, "Full-time": {"nations": {"England": 11150, "Wales": 135, "Scotland": 55, "Northern Ireland": 35}, "regions": {"European Union": 120, "Other Europe": 80, "Africa": 560, "Asia": 12010, "Australasia": 10, "Middle East": 145, "North America": 140, "South America": 20}, "totalUK": 11425, "totalNonUK": 13080}, "Part-time": {"nations": {"England": 1540, "Wales": 20, "Scotland": 10, "Northern Ireland": 0}, "regions": {"European Union": 15, "Other Europe": 5, "Africa": 25, "Asia": 80, "Australasia": 0, "Middle East": 10, "North America": 10, "South America": 10}, "totalUK": 1580, "totalNonUK": 150}}, "First degree": {"All": {"nations": {"England": 10130, "Wales": 105, "Scotland": 45, "Northern Ireland": 35}, "regions": {"European Union": 85, "Other Europe": 30, "Africa": 195, "Asia": 3085, "Australasia": 5, "Middle East": 60, "North America": 85, "South America": 5}, "totalUK": 10365, "totalNonUK": 3560}, "Full-time": {"nations": {"England": 9460, "Wales": 105, "Scotland": 45, "Northern Ireland": 35}, "regions": {"European Union": 80, "Other Europe": 30, "Africa": 195, "Asia": 3070, "Australasia": 5, "Middle East": 60, "North America": 85, "South America": 5}, "totalUK": 9685, "totalNonUK": 3530}, "Part-time": {"nations": {"England": 670, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 5, "Asia": 15, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 675, "totalNonUK": 25}}, "Other undergraduate": {"All": {"nations": {"England": 345, "Wales": 10, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 5, "Africa": 25, "Asia": 650, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 360, "totalNonUK": 685}, "Full-time": {"nations": {"England": 330, "Wales": 10, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 5, "Africa": 25, "Asia": 650, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 345, "totalNonUK": 685}, "Part-time": {"nations": {"England": 15, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {}, "totalUK": 15, "totalNonUK": 0}}, "Postgraduate (taught)": {"All": {"nations": {"England": 1700, "Wales": 35, "Scotland": 20, "Northern Ireland": 0}, "regions": {"European Union": 35, "Other Europe": 45, "Africa": 345, "Asia": 8330, "Australasia": 5, "Middle East": 85, "North America": 60, "South America": 20}, "totalUK": 1760, "totalNonUK": 8930}, "Full-time": {"nations": {"England": 1045, "Wales": 20, "Scotland": 10, "Northern Ireland": 0}, "regions": {"European Union": 35, "Other Europe": 45, "Africa": 330, "Asia": 8275, "Australasia": 5, "Middle East": 80, "North America": 50, "South America": 15}, "totalUK": 1075, "totalNonUK": 8830}, "Part-time": {"nations": {"England": 655, "Wales": 15, "Scotland": 10, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 15, "Asia": 55, "Australasia": 0, "Middle East": 5, "North America": 10, "South America": 10}, "totalUK": 685, "totalNonUK": 100}}, "Postgraduate (research)": {"All": {"nations": {"England": 515, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 5, "Africa": 20, "Asia": 20, "Australasia": 0, "Middle East": 10, "North America": 5, "South America": 0}, "totalUK": 520, "totalNonUK": 60}, "Full-time": {"nations": {"England": 315, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 0, "Other Europe": 0, "Africa": 15, "Asia": 15, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 315, "totalNonUK": 40}, "Part-time": {"nations": {"England": 200, "Wales": 5, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 5, "Asia": 5, "Australasia": 0, "Middle East": 5, "North America": 0, "South America": 0}, "totalUK": 205, "totalNonUK": 20}}, "All undergraduate": {"All": {"nations": {"England": 10475, "Wales": 115, "Scotland": 45, "Northern Ireland": 35}, "regions": {"European Union": 90, "Other Europe": 35, "Africa": 220, "Asia": 3735, "Australasia": 10, "Middle East": 60, "North America": 90, "South America": 5}, "totalUK": 10725, "totalNonUK": 4240}, "Full-time": {"nations": {"England": 9790, "Wales": 115, "Scotland": 45, "Northern Ireland": 35}, "regions": {"European Union": 85, "Other Europe": 35, "Africa": 215, "Asia": 3720, "Australasia": 10, "Middle East": 60, "North America": 85, "South America": 5}, "totalUK": 10030, "totalNonUK": 4215}, "Part-time": {"nations": {"England": 685, "Wales": 0, "Scotland": 0, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 0, "Africa": 5, "Asia": 15, "Australasia": 0, "Middle East": 0, "North America": 0, "South America": 0}, "totalUK": 690, "totalNonUK": 25}}, "All postgraduate": {"All": {"nations": {"England": 2215, "Wales": 35, "Scotland": 20, "Northern Ireland": 0}, "regions": {"European Union": 40, "Other Europe": 50, "Africa": 365, "Asia": 8355, "Australasia": 5, "Middle East": 95, "North America": 60, "South America": 20}, "totalUK": 2280, "totalNonUK": 8990}, "Full-time": {"nations": {"England": 1360, "Wales": 20, "Scotland": 10, "Northern Ireland": 0}, "regions": {"European Union": 35, "Other Europe": 45, "Africa": 345, "Asia": 8290, "Australasia": 5, "Middle East": 85, "North America": 50, "South America": 15}, "totalUK": 1390, "totalNonUK": 8870}, "Part-time": {"nations": {"England": 855, "Wales": 15, "Scotland": 10, "Northern Ireland": 0}, "regions": {"European Union": 5, "Other Europe": 5, "Africa": 20, "Asia": 60, "Australasia": 0, "Middle East": 10, "North America": 10, "South America": 10}, "totalUK": 890, "totalNonUK": 120}}}}, "totalEnrolment": {"2014/15": 15855, "2015/16": 13630, "2016/17": 13215, "2017/18": 13090, "2018/19": 13395, "2019/20": 15355, "2020/21": 17395, "2021/22": 19550, "2022/23": 22450, "2023/24": 20735, "2024/25": 26755}, "countrySeries": {"India": [160, 70, 60, 210, 595, 2305, 3810, 4995, 7980, 6720, 7965], "Nepal": [25, 15, 5, 5, 10, 40, 70, 185, 415, 725, 2410], "Pakistan": [50, 40, 30, 30, 25, 40, 65, 90, 190, 185, 1210], "Nigeria": [210, 115, 85, 70, 110, 115, 215, 325, 615, 390, 375], "Sri Lanka": [35, 15, 5, 0, 5, 10, 20, 45, 135, 100, 230], "United States": [60, 60, 110, 150, 190, 215, 170, 180, 145, 90, 110], "Bangladesh": [65, 40, 25, 35, 25, 10, 10, 20, 30, 30, 100], "Iran": [30, 20, 15, 10, 10, 10, 15, 25, 40, 35, 70], "Uzbekistan": [0, 0, 0, 0, 10, 10, 20, 45, 65, 50, 45], "Turkey": [15, 15, 20, 25, 25, 20, 15, 20, 25, 15, 40], "Kenya": [10, 5, 0, 5, 5, 0, 5, 5, 5, 5, 40], "Egypt": [10, 65, 15, 5, 10, 5, 10, 15, 15, 10, 35], "Ghana": [10, 10, 10, 5, 5, 5, 15, 20, 30, 25, 30], "United Arab Emirates": [5, 5, 15, 10, 15, 15, 25, 45, 60, 30, 30], "France": [35, 30, 25, 25, 25, 20, 20, 20, 20, 20, 20], "Italy": [50, 45, 55, 60, 65, 45, 50, 30, 20, 15, 20], "Hong Kong (Special Administrative Region of China)": [5, 5, 15, 15, 15, 10, 10, 10, 15, 15, 20], "Ireland": [95, 65, 50, 45, 30, 25, 35, 35, 25, 25, 15], "Spain": [25, 20, 15, 20, 30, 35, 35, 25, 15, 10, 15], "Morocco": [0, 0, 5, 5, 5, 5, 15, 25, 20, 15, 15]}, "laSeries": {"Greater London": [10375, 9160, 9025, 8890, 8645, 8865, 9135, 8670, 7590, 7025, 7690], "Essex": [510, 485, 475, 475, 485, 510, 520, 615, 650, 585, 620], "Kent": [245, 195, 200, 210, 200, 210, 265, 310, 365, 360, 380], "Hertfordshire": [220, 185, 180, 155, 140, 140, 165, 210, 225, 265, 340], "Greater Manchester": [95, 75, 55, 50, 90, 85, 85, 200, 230, 260, 275], "Thurrock": [200, 205, 210, 200, 215, 225, 220, 225, 205, 185, 220], "Surrey": [85, 75, 75, 100, 110, 105, 110, 120, 170, 165, 200], "West Midlands": [145, 110, 105, 100, 105, 90, 95, 135, 115, 140, 155], "Hampshire": [95, 80, 70, 60, 55, 55, 55, 80, 80, 95, 115], "West Yorkshire": [80, 65, 55, 50, 40, 45, 40, 100, 100, 120, 105], "Buckinghamshire": [55, 45, 40, 40, 40, 35, 40, 65, 65, 90, 100], "West Sussex": [70, 55, 50, 55, 65, 65, 65, 85, 85, 85, 95], "Lancashire": [20, 20, 15, 15, 15, 15, 20, 55, 75, 85, 90], "Norfolk": [55, 55, 55, 60, 55, 50, 55, 55, 65, 65, 90], "Southend-on-Sea": [90, 85, 85, 100, 90, 90, 80, 90, 100, 90, 90], "Northamptonshire": [45, 40, 35, 45, 50, 45, 40, 50, 60, 65, 85], "Cambridgeshire": [65, 45, 50, 40, 40, 40, 45, 65, 65, 65, 80], "Suffolk": [85, 75, 70, 70, 60, 60, 70, 85, 75, 80, 80], "Medway": [55, 50, 65, 60, 60, 50, 55, 80, 80, 75, 75], "Merseyside": [45, 30, 20, 20, 15, 20, 20, 55, 70, 70, 75]}}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('origin-data').textContent);
+const YEARS = DATA.years;
+const LATEST = YEARS[YEARS.length-1];
+const FIRST = YEARS[0];
+
+if (window.ChartDataLabels) {
+  Chart.register(ChartDataLabels);
+  Chart.defaults.set('plugins.datalabels', { display: false });
+}
+
+let state = { level: "All", mode: "All", stack: "stacked" };
+let charts = {};
+
+function fmtInt(v) { return v == null ? "–" : Math.round(v).toLocaleString(); }
+function fmtPct(v) { return v == null ? "–" : v.toFixed(1) + "%"; }
+function fmtGrowth(v) { return v == null ? "–" : (v >= 0 ? "+" : "") + v.toFixed(1) + "%"; }
+
+function h(yr) { return DATA.headline[yr][state.level][state.mode]; }
+
+function renderStatRow() {
+  const latest = h(LATEST), first = h(FIRST);
+  const total = latest.totalUK + latest.totalNonUK;
+  const pctNonUK = total ? 100*latest.totalNonUK/total : null;
+  const firstTotal = first.totalUK + first.totalNonUK;
+  const firstPct = firstTotal ? 100*first.totalNonUK/firstTotal : null;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n">${fmtInt(total)}</div><div class="l">Total, ${LATEST}</div><div class="s">${state.level} · ${state.mode}</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(latest.totalUK)}</div><div class="l">UK</div><div class="s">was ${fmtInt(first.totalUK)} in ${FIRST}</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(latest.totalNonUK)}</div><div class="l">Intl</div><div class="s">was ${fmtInt(first.totalNonUK)} in ${FIRST}</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(pctNonUK)}</div><div class="l">Intl share</div><div class="s">was ${fmtPct(firstPct)} in ${FIRST}</div></div>
+  `;
+}
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function renderUkNonukChart() {
+  destroyChart('ukNonuk');
+  const ukSeries = YEARS.map(yr => h(yr).totalUK);
+  const nonUkSeries = YEARS.map(yr => h(yr).totalNonUK);
+  charts.ukNonuk = new Chart(document.getElementById('ukNonukChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: 'UK', data: ukSeries, backgroundColor: '#D9E2F3', stack: state.stack==='stacked'?'s':undefined },
+        { label: 'Intl', data: nonUkSeries, backgroundColor: '#1F3864', stack: state.stack==='stacked'?'s':undefined }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { stacked: state.stack==='stacked', title: { display: true, text: 'Enrolments' } }, x: { stacked: state.stack==='stacked' } }
+    }
+  });
+  const first = h(FIRST), latest = h(LATEST);
+  const firstTotal = first.totalUK + first.totalNonUK, latestTotal = latest.totalUK + latest.totalNonUK;
+  const firstPct = firstTotal ? 100*first.totalNonUK/firstTotal : 0;
+  const latestPct = latestTotal ? 100*latest.totalNonUK/latestTotal : 0;
+  const ukGrowth = first.totalUK ? 100*(latest.totalUK-first.totalUK)/first.totalUK : null;
+  const nonUkGrowth = first.totalNonUK ? 100*(latest.totalNonUK-first.totalNonUK)/first.totalNonUK : null;
+  document.getElementById('headlineNote').innerHTML =
+    `For <b>${state.level}</b> / <b>${state.mode}</b>: UK ${fmtGrowth(ukGrowth)} (${fmtInt(first.totalUK)} → ${fmtInt(latest.totalUK)}), Intl ${fmtGrowth(nonUkGrowth)} (${fmtInt(first.totalNonUK)} → ${fmtInt(latest.totalNonUK)}). Intl share moved from ${fmtPct(firstPct)} to ${fmtPct(latestPct)}.`;
+}
+
+function renderNonukRegionsChart() {
+  destroyChart('nonukRegions');
+  const palette = { Asia:'#1F3864', 'European Union':'#FFC000', Africa:'#1e7e34', 'Middle East':'#b02a2a', 'North America':'#7893c2', 'Other Europe':'#e8c1a0', Australasia:'#8e5ea2', 'South America':'#3cba9f' };
+  const datasets = DATA.nonUkRegions.map(reg => ({
+    label: reg,
+    data: YEARS.map(yr => h(yr).regions[reg] || 0),
+    borderColor: palette[reg] || '#999', backgroundColor: (palette[reg]||'#999') + (state.stack==='stacked' ? '99' : ''),
+    fill: state.stack==='stacked', tension: 0.2, borderWidth: 1.8
+  }));
+  charts.nonukRegions = new Chart(document.getElementById('nonukRegionsChart'), {
+    type: 'line',
+    data: { labels: YEARS, datasets },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10.5 } } } }, scales: { y: { stacked: state.stack==='stacked', title: { display: true, text: 'Enrolments' } } } }
+  });
+}
+
+// --- UG vs PG comparison (Row 1/2/3), respects Mode filter, ignores Level filter ---
+function levelTotal(yr, level) {
+  const e = DATA.headline[yr][level][state.mode];
+  return { uk: e.totalUK, nonuk: e.totalNonUK, total: e.totalUK + e.totalNonUK };
+}
+function pctNonUk(obj) { return obj.total ? 100*obj.nonuk/obj.total : null; }
+
+// --- Total students by domicile x level (UK/non-UK undergrad, UK/non-UK postgrad) ---
+function renderDomicileLevelChart() {
+  destroyChart('domicileLevel');
+  const ug = YEARS.map(yr => levelTotal(yr, 'All undergraduate'));
+  const pg = YEARS.map(yr => levelTotal(yr, 'All postgraduate'));
+  const rows = [
+    { name: 'UK undergraduate', color: '#1F3864', series: ug.map(s => s.uk) },
+    { name: 'Intl undergraduate', color: '#7893c2', series: ug.map(s => s.nonuk) },
+    { name: 'UK postgraduate', color: '#b02a2a', series: pg.map(s => s.uk) },
+    { name: 'Intl postgraduate', color: '#e8c1a0', series: pg.map(s => s.nonuk) }
+  ];
+  charts.domicileLevel = new Chart(document.getElementById('domicileLevelChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: rows.map(r => ({ label: r.name, data: r.series, backgroundColor: r.color, stack: state.stack==='stacked'?'s':undefined }))
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { stacked: state.stack==='stacked', title: { display: true, text: 'Enrolments' } }, x: { stacked: state.stack==='stacked' } }
+    }
+  });
+  let html = `<tr><th>Category</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}<th>Growth</th></tr>`;
+  rows.forEach(r => {
+    const first = r.series[0], latest = r.series[r.series.length-1];
+    const growth = first ? 100*(latest-first)/first : null;
+    const cls = growth == null ? '' : (growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${r.name}</td>${r.series.map(v=>`<td>${fmtInt(v)}</td>`).join('')}<td class="${cls}">${fmtGrowth(growth)}</td></tr>`;
+  });
+  document.getElementById('domicileLevelTable').innerHTML = html;
+}
+
+function renderPctChart(chartId, labelHtml, labelText, series, color) {
+  document.getElementById(labelHtml).textContent = `Intl share (%) — ${labelText}`;
+  destroyChart(chartId);
+  const pctUk = series.map(s => s.total ? 100*s.uk/s.total : null);
+  const pctNonuk = series.map(s => s.total ? 100*s.nonuk/s.total : null);
+  charts[chartId] = new Chart(document.getElementById(chartId), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: 'UK %', data: pctUk, backgroundColor: color + '40', stack: 's',
+          datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 8, color: '#333', font: { size: 10, weight: 'bold' }, formatter: v => v!=null ? v.toFixed(0)+'%' : '' } },
+        { label: 'Intl %', data: pctNonuk, backgroundColor: color, stack: 's',
+          datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 8, color: '#fff', font: { size: 10, weight: 'bold' }, formatter: v => v!=null ? v.toFixed(0)+'%' : '' } }
+      ]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        x: { stacked: true },
+        y: { stacked: true, min: 0, max: 100, title: { display: true, text: '%' } }
+      }
+    }
+  });
+}
+
+function buildComparisonRow(chartIdTotals, chartIdPctA, chartIdPctB, labelAId, labelBId, tableId, levelA, labelA, levelB, labelB, colorA, colorB) {
+  const seriesA = YEARS.map(yr => levelTotal(yr, levelA));
+  const seriesB = YEARS.map(yr => levelTotal(yr, levelB));
+
+  destroyChart(chartIdTotals);
+  charts[chartIdTotals] = new Chart(document.getElementById(chartIdTotals), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: labelA, data: seriesA.map(s=>s.total), backgroundColor: colorA, stack: state.stack==='stacked'?'s':undefined },
+        { label: labelB, data: seriesB.map(s=>s.total), backgroundColor: colorB, stack: state.stack==='stacked'?'s':undefined }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Total enrolment', font: { size: 12 } } },
+      scales: { y: { stacked: state.stack==='stacked', title: { display: true, text: 'Enrolments' } }, x: { stacked: state.stack==='stacked' } }
+    }
+  });
+
+  renderPctChart(chartIdPctA, labelAId, labelA, seriesA, colorA);
+  renderPctChart(chartIdPctB, labelBId, labelB, seriesB, colorB);
+
+  let html = `<tr><th>Metric</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>${labelA} – total</td>${seriesA.map(s=>`<td>${fmtInt(s.total)}</td>`).join('')}</tr>`;
+  html += `<tr><td>${labelA} – UK</td>${seriesA.map(s=>`<td>${fmtInt(s.uk)}</td>`).join('')}</tr>`;
+  html += `<tr><td>${labelA} – Intl</td>${seriesA.map(s=>`<td>${fmtInt(s.nonuk)}</td>`).join('')}</tr>`;
+  html += `<tr><td>${labelA} – Intl %</td>${seriesA.map(s=>`<td>${fmtPct(pctNonUk(s))}</td>`).join('')}</tr>`;
+  html += `<tr><td>${labelB} – total</td>${seriesB.map(s=>`<td>${fmtInt(s.total)}</td>`).join('')}</tr>`;
+  html += `<tr><td>${labelB} – UK</td>${seriesB.map(s=>`<td>${fmtInt(s.uk)}</td>`).join('')}</tr>`;
+  html += `<tr><td>${labelB} – Intl</td>${seriesB.map(s=>`<td>${fmtInt(s.nonuk)}</td>`).join('')}</tr>`;
+  html += `<tr><td>${labelB} – Intl %</td>${seriesB.map(s=>`<td>${fmtPct(pctNonUk(s))}</td>`).join('')}</tr>`;
+  document.getElementById(tableId).innerHTML = html;
+}
+
+function renderUgPgComparison() {
+  buildComparisonRow('ugpgTotalsChart', 'ugpgPctChartA', 'ugpgPctChartB', 'ugpgPctALabel', 'ugpgPctBLabel', 'ugpgTable',
+    'All undergraduate', 'Undergraduate', 'All postgraduate', 'Postgraduate', '#2E5395', '#b02a2a');
+  buildComparisonRow('ugSplitTotalsChart', 'ugSplitPctChartA', 'ugSplitPctChartB', 'ugSplitPctALabel', 'ugSplitPctBLabel', 'ugSplitTable',
+    'First degree', 'First degree', 'Other undergraduate', 'Other undergraduate', '#1F3864', '#7893c2');
+  buildComparisonRow('pgSplitTotalsChart', 'pgSplitPctChartA', 'pgSplitPctChartB', 'pgSplitPctALabel', 'pgSplitPctBLabel', 'pgSplitTable',
+    'Postgraduate (taught)', 'Postgraduate (taught)', 'Postgraduate (research)', 'Postgraduate (research)', '#b02a2a', '#e8c1a0');
+}
+
+// Split entries into three fixed magnitude bands so each chart's line shapes stay visible: >=1000, 100-999, <100.
+function splitIntoTiers(entries) {
+  const sorted = [...entries].sort((a,b) => b[1][b[1].length-1] - a[1][a[1].length-1]);
+  return {
+    big: sorted.filter(([,s]) => s[s.length-1] >= 1000),
+    mid: sorted.filter(([,s]) => s[s.length-1] >= 100 && s[s.length-1] < 1000),
+    small: sorted.filter(([,s]) => s[s.length-1] < 100)
+  };
+}
+
+// Renders one tier's line chart plus a row of checkboxes (default checked) to let the user hide/show individual lines.
+function renderTierChart(chartId, checksId, labelId, tierLabel, entries, cPalette, paletteOffset) {
+  document.getElementById(labelId).textContent = `${tierLabel} (${entries.map(([n])=>n).join(', ') || 'none'})`;
+  destroyChart(chartId);
+  const datasets = entries.map(([c,s],i) => {
+    const idx = paletteOffset + i;
+    const cycle = Math.floor(idx / cPalette.length); // beyond one pass through the palette, add a dash pattern so colour is never the only distinguishing channel
+    return {
+      label: c, data: s.map(v=>v===0?null:v),
+      borderColor: cPalette[idx % cPalette.length], backgroundColor: cPalette[idx % cPalette.length],
+      borderDash: cycle === 0 ? [] : cycle === 1 ? [6,3] : [2,2],
+      fill: false, tension: 0.2, borderWidth: 2.5
+    };
+  });
+  charts[chartId] = new Chart(document.getElementById(chartId), {
+    type: 'line',
+    data: { labels: YEARS, datasets },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10 } } } }, scales: { y: { title: { display: true, text: 'Enrolments' } } } }
+  });
+  const checksEl = document.getElementById(checksId);
+  checksEl.innerHTML = entries.map(([c],i) =>
+    `<label class="chk-item"><input type="checkbox" checked data-idx="${i}"> ${c}</label>`).join('');
+  checksEl.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('change', (e) => {
+      const idx = +e.target.dataset.idx;
+      const ch = charts[chartId];
+      ch.data.datasets[idx].hidden = !e.target.checked;
+      ch.update();
+    });
+  });
+}
+
+function renderCountryTiers(entries, cPalette) {
+  const { big, mid, small } = splitIntoTiers(entries);
+  renderTierChart('countryLineBigChart', 'countryLineBigChecks', 'countryLineBigLabel', '1,000 and above', big, cPalette, 0);
+  renderTierChart('countryLineMidChart', 'countryLineMidChecks', 'countryLineMidLabel', '100 to 999', mid, cPalette, big.length);
+  renderTierChart('countryLineSmallChart', 'countryLineSmallChecks', 'countryLineSmallLabel', 'Under 100', small, cPalette, big.length+mid.length);
+}
+
+function renderLaTiers(entries, cPalette) {
+  const { big, mid, small } = splitIntoTiers(entries);
+  renderTierChart('laLineBigChart', 'laLineBigChecks', 'laLineBigLabel', '1,000 and above', big, cPalette, 0);
+  renderTierChart('laLineMidChart', 'laLineMidChecks', 'laLineMidLabel', '100 to 999', mid, cPalette, big.length);
+  renderTierChart('laLineSmallChart', 'laLineSmallChecks', 'laLineSmallLabel', 'Under 100', small, cPalette, big.length+mid.length);
+}
+
+function renderGrowthTable(tableId, entries) {
+  const rows = entries.map(([name, s]) => {
+    const first = s[0], latest = s[s.length-1];
+    const growth = first ? 100*(latest-first)/first : null;
+    return { name, first, latest, growth };
+  }).sort((a,b) => b.latest - a.latest);
+  let html = `<tr><th>Name</th><th>${FIRST}</th><th>${LATEST}</th><th>Growth</th></tr>`;
+  rows.forEach(r => {
+    const cls = r.growth == null ? '' : (r.growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${r.name}</td><td>${fmtInt(r.first)}</td><td>${fmtInt(r.latest)}</td><td class="${cls}">${fmtGrowth(r.growth)}</td></tr>`;
+  });
+  document.getElementById(tableId).innerHTML = html;
+}
+
+// Countries & LAs (fixed All/All, rendered once)
+// Colour-blind-safe categorical palette (Okabe-Ito). Series beyond the 8th reuse these
+// hues with a dashed/dotted line style (see renderTierChart) so colour is never the only
+// channel distinguishing a series, per the accessibility guidance in the chart-design spec.
+function renderCountriesAndLAs() {
+  const cPalette = ['#E69F00','#56B4E9','#009E73','#F0E442','#0072B2','#D55E00','#CC79A7','#000000'];
+  const countryEntries = Object.entries(DATA.countrySeries);
+  const top20c = [...countryEntries].sort((a,b) => b[1][b[1].length-1]-a[1][a[1].length-1]).slice(0,20);
+
+  renderCountryTiers(top20c, cPalette);
+
+  charts.countryBar = new Chart(document.getElementById('countryBarChart'), {
+    type: 'bar',
+    data: { labels: top20c.map(([c])=>c), datasets: [{ data: top20c.map(([c,s])=>s[s.length-1]), backgroundColor: '#2E5395' }] },
+    options: {
+      indexAxis: 'y', maintainAspectRatio: false,
+      plugins: { legend: { display: false }, title: { display: true, text: `${LATEST}, top 20 countries`, font: { size: 12 } },
+        datalabels: { display: true, anchor: 'end', align: 'end', color: '#1F3864', font: { size: 10, weight: 'bold' }, formatter: v => v.toLocaleString() } },
+      scales: { y: { ticks: { autoSkip: false, font: { size: 11 } } } }
+    }
+  });
+  renderGrowthTable('countryGrowthTable', top20c);
+
+  const laEntries = Object.entries(DATA.laSeries);
+  const top20la = [...laEntries].sort((a,b) => b[1][b[1].length-1]-a[1][a[1].length-1]).slice(0,20);
+
+  renderLaTiers(top20la, cPalette);
+
+  charts.laBar = new Chart(document.getElementById('laBarChart'), {
+    type: 'bar',
+    data: { labels: top20la.map(([c])=>c), datasets: [{ data: top20la.map(([c,s])=>s[s.length-1]), backgroundColor: '#b02a2a' }] },
+    options: {
+      indexAxis: 'y', maintainAspectRatio: false,
+      plugins: { legend: { display: false }, title: { display: true, text: `${LATEST}, top 20 UK areas`, font: { size: 12 } },
+        datalabels: { display: true, anchor: 'end', align: 'end', color: '#b02a2a', font: { size: 10, weight: 'bold' }, formatter: v => v.toLocaleString() } },
+      scales: { y: { ticks: { autoSkip: false, font: { size: 11 } } } }
+    }
+  });
+  renderGrowthTable('laGrowthTable', top20la);
+}
+
+// Full table
+let sortKey = LATEST, sortDir = 'desc';
+function renderTable() {
+  const rows = [];
+  DATA.ukNations.forEach(nat => {
+    if (nat === 'Other') return;
+    rows.push({ name: `UK: ${nat}`, series: YEARS.map(yr => h(yr).nations[nat] || 0) });
+  });
+  rows.push({ name: 'UK: Total', series: YEARS.map(yr => h(yr).totalUK) });
+  DATA.nonUkRegions.forEach(reg => {
+    rows.push({ name: `Intl: ${reg}`, series: YEARS.map(yr => h(yr).regions[reg] || 0) });
+  });
+  rows.push({ name: 'Intl: Total', series: YEARS.map(yr => h(yr).totalNonUK) });
+
+  rows.forEach(r => { r.growth = r.series[0] ? 100*(r.series[r.series.length-1]-r.series[0])/r.series[0] : null; });
+
+  rows.sort((a,b) => {
+    if (sortKey === 'name') return sortDir==='desc' ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
+    let av, bv;
+    if (sortKey === 'growth') { av = a.growth; bv = b.growth; }
+    else { const idx = YEARS.indexOf(sortKey); av = a.series[idx]; bv = b.series[idx]; }
+    if (av == null) return 1; if (bv == null) return -1;
+    return sortDir === 'desc' ? bv - av : av - bv;
+  });
+
+  let html = `<tr><th data-key="name">Origin</th>${YEARS.map(y => `<th data-key="${y}"${y===sortKey?' class="sorted"':''}>${y}</th>`).join('')}<th data-key="growth">Growth</th></tr>`;
+  rows.forEach(r => {
+    const gCls = r.growth == null ? '' : (r.growth >= 0 ? 'pos' : 'neg');
+    const bold = r.name.includes('Total') ? 'font-weight:bold' : '';
+    html += `<tr style="${bold}"><td>${r.name}</td>${r.series.map(v => `<td>${fmtInt(v)}</td>`).join('')}<td class="${gCls}">${fmtGrowth(r.growth)}</td></tr>`;
+  });
+  document.getElementById('mainTable').innerHTML = html;
+  document.querySelectorAll('#mainTable th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.key === sortKey);
+    th.classList.toggle('asc', th.dataset.key === sortKey && sortDir === 'asc');
+    th.addEventListener('click', () => {
+      if (sortKey === th.dataset.key) { sortDir = sortDir === 'desc' ? 'asc' : 'desc'; }
+      else { sortKey = th.dataset.key; sortDir = 'desc'; }
+      renderTable();
+    });
+  });
+}
+
+function renderAll() {
+  renderStatRow();
+  renderUkNonukChart();
+  renderDomicileLevelChart();
+  renderNonukRegionsChart();
+  renderTable();
+  renderUgPgComparison();
+}
+
+renderAll();
+renderCountriesAndLAs();
+
+document.getElementById('levelSelect').addEventListener('change', e => { state.level = e.target.value; renderAll(); });
+document.getElementById('modeControl').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  state.mode = e.target.dataset.val;
+  [...e.currentTarget.children].forEach(b => b.classList.toggle('active', b===e.target));
+  renderAll();
+});
+document.getElementById('stackControl').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  state.stack = e.target.dataset.val;
+  [...e.currentTarget.children].forEach(b => b.classList.toggle('active', b===e.target));
+  renderAll();
+});
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b===btn));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-'+btn.dataset.tab));
+  });
+});
+</script>
+
+</body>
+</html>

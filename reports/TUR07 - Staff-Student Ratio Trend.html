@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR07 — Staff-Student Ratio Trend</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR07</span> &mdash; Staff-Student Ratio Trend</h1>
+  <p>HESA Staff Table 11 (academic FTE by cost centre) and Student Table 37 (student FTE by cost centre), 2015/16&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR07</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout flag">
+    <span class="pill red">DATA-QUALITY FLAG</span> Student Table 37's total FTE dips unusually to 12,915 in 2023/24 (from 16,670 the year before) then jumps to 20,955 in 2024/25 &ndash; a pattern already flagged in <code>Reports/TUR02 - Staff Pay Bill vs Staff and Student Numbers.html</code> as a probable cost-centre-mapping artefact rather than a real enrolment swing. The ratio for those two years should be read with real caution; the cost-centre breakdown below deliberately uses 2022/23 (the last year before the anomaly) instead.
+  </div>
+
+  <div class="panel">
+    <h2>Academic staff FTE vs student FTE, UEL, 2015/16&ndash;2024/25</h2>
+    <div class="sub">HESA Staff Table 11 ("HE staff FTE by cost centre"), academic staff FTE including atypical, all cost centres; HESA Student Table 37 ("Total academic cost centres"), both UEL-filtered (UKPRN 10007144).</div>
+    <canvas id="fteChart" role="img" aria-label="Dual-axis chart of academic staff FTE and student FTE, 2015/16 to 2024/25." aria-describedby="fteTable"></canvas>
+    <table id="fteTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Students per academic FTE (the ratio)</h2>
+    <div class="sub">Student FTE &divide; academic staff FTE. A rising line means each academic member of staff (FTE) is, on average, teaching/supporting more students.</div>
+    <canvas id="ratioChart" role="img" aria-label="Line chart of students per academic FTE at UEL, 2015/16 to 2024/25."></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Ratio by subject area (cost centre), 2022/23</h2>
+    <div class="sub">2022/23 chosen deliberately as the last year before the Table 37 data-quality anomaly. Cost centres with zero or negligible staff/student FTE (Agriculture, Humanities &ndash; both effectively inactive at UEL) are excluded.</div>
+    <canvas id="subjectChart" role="img" aria-label="Bar chart of students per academic FTE by subject cost centre, 2022/23." aria-describedby="subjectTable"></canvas>
+    <table id="subjectTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout finding">
+      <b>The institution-wide ratio roughly doubled between 2015/16 and 2022/23</b> (16.4 &rarr; 24.9 students per academic FTE), a genuine and substantial trend that pre-dates the 2023/24&ndash;2024/25 data anomaly and is not explained by it. Academic FTE grew only modestly over this period (685 &rarr; 670), while student FTE grew by roughly half (11,245 &rarr; 16,670).
+    </div>
+    <div class="callout">
+      Subject-level ratios in 2022/23 vary enormously &ndash; from 14.4 (Biological, mathematical &amp; physical sciences) to 56.8 (Administration &amp; business studies). This spread partly reflects genuine differences in teaching model (e.g. large lecture-based business programmes vs smaller lab/practical-based science programmes) and partly reflects how HESA's cost-centre coding attributes shared/service teaching &ndash; it should prompt a conversation with local reps in the highest-ratio areas rather than be read as a precise workload measure on its own.
+    </div>
+    <div class="callout flag">
+      <span class="pill red">CAVEATS</span> This is an institution/subject-level FTE ratio, not a class-size or contact-hours measure &ndash; it says nothing about actual teaching group sizes, non-teaching duties, or research time. Table 11's cost-centre categories are staff-contract-based; Table 37's are module/registration-based, so the two aren't perfectly aligned at the subject level even before the 2023/24 anomaly. The 2023/24 and 2024/25 ratios (18.7 and 30.2) should not be quoted without the caveat above.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Staff Table 11 ("HE staff FTE by cost centre"), UEL-filtered (UKPRN 10007144), 2015/16&ndash;2024/25; HESA Student Table 37 ("Student FTE by cost centre"), UEL-filtered, 2014/15&ndash;2024/25 (2015/16&ndash;2024/25 used here to match Table 11's start year).
+<br><b>Data files:</b> Data/HESA Staff Table 11/UEL/UEL_table-11-(YYYY-YY).csv (2015/16&ndash;2024/25); Data/HESA Student Table 37/UEL/UEL_table37.csv.
+<br>Part of the trade union report series proposed in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> (report 7 of 12). See <code>Reports/TUR00 - Trade Union Report Index.html</code> for the full series.
+</footer>
+
+<script id="tur07-data" type="application/json">{"years": ["2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "academic_fte": [685, 640, 600, 585, 590, 585, 620, 670, 690, 695], "student_fte": [11245, 10750, 11050, 11200, 12555, 14695, 15825, 16670, 12915, 20955], "ratio": [16.4, 16.8, 18.4, 19.1, 21.3, 25.1, 25.5, 24.9, 18.7, 30.2], "subjects": ["Administration & business studies", "Engineering & technology", "Social studies", "Design, creative & performing arts", "Architecture & planning", "Medicine, dentistry & health", "Education", "Biological, mathematical & physical sciences"], "subject_staff": [85, 70, 110, 55, 30, 150, 90, 40], "subject_student": [4825, 2690, 2330, 1185, 590, 2835, 1625, 575], "subject_ratio": [56.8, 38.4, 21.2, 21.5, 19.7, 18.9, 18.1, 14.4]}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur07-data').textContent);
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtInt(v) { return (v == null) ? "–" : Math.round(v).toLocaleString(); }
+function fmtRatio(v) { return (v == null) ? "–" : v.toFixed(1); }
+
+function renderStatRow() {
+  const last = DATA.years.length - 1;
+  const preAnomaly = DATA.years.indexOf('2022/23');
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n">${fmtRatio(DATA.ratio[preAnomaly])}</div><div class="l">Students per academic FTE</div><div class="s">2022/23 (last year before data anomaly)</div></div>
+    <div class="stat-box"><div class="n">${fmtRatio(DATA.ratio[0])} &rarr; ${fmtRatio(DATA.ratio[preAnomaly])}</div><div class="l">Ratio change, 2015/16 → 2022/23</div><div class="s">roughly doubled</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(DATA.academic_fte[preAnomaly])}</div><div class="l">Academic staff FTE</div><div class="s">2022/23</div></div>
+    <div class="stat-box"><div class="n flag">${fmtRatio(DATA.ratio[last])}</div><div class="l">Ratio, 2024/25 (flagged)</div><div class="s">affected by Table 37 anomaly</div></div>
+  `;
+}
+
+function renderFteChart() {
+  destroyChart('fte');
+  charts.fte = new Chart(document.getElementById('fteChart'), {
+    data: { labels: DATA.years, datasets: [
+      { type: 'bar', label: 'Academic staff FTE', data: DATA.academic_fte, backgroundColor: '#1F3864', yAxisID: 'y', order: 2 },
+      { type: 'line', label: 'Student FTE', data: DATA.student_fte, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15, yAxisID: 'y1', order: 1 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } },
+      scales: {
+        y: { position: 'left', title: { display: true, text: 'Academic staff FTE' } },
+        y1: { position: 'right', title: { display: true, text: 'Student FTE' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+  let html = `<tr><th>Year</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Academic staff FTE</td>${DATA.academic_fte.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Student FTE</td>${DATA.student_fte.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Students per academic FTE</td>${DATA.ratio.map(v=>`<td class="hi">${fmtRatio(v)}</td>`).join('')}</tr>`;
+  document.getElementById('fteTable').innerHTML = html;
+}
+
+function renderRatioChart() {
+  destroyChart('ratio');
+  charts.ratio = new Chart(document.getElementById('ratioChart'), {
+    type: 'line',
+    data: { labels: DATA.years, datasets: [
+      { label: 'Students per academic FTE', data: DATA.ratio, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15,
+        segment: { borderDash: ctx => (ctx.p0DataIndex >= DATA.years.indexOf('2022/23')) ? [6,4] : undefined }
+      }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: 'Students per academic FTE' } } } }
+  });
+}
+
+function renderSubjectChart() {
+  destroyChart('subj');
+  charts.subj = new Chart(document.getElementById('subjectChart'), {
+    type: 'bar',
+    data: { labels: DATA.subjects, datasets: [
+      { label: 'Students per academic FTE, 2022/23', data: DATA.subject_ratio, backgroundColor: '#2E5395' }
+    ]},
+    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Students per academic FTE' } } } }
+  });
+  let html = `<tr><th>Subject (cost centre)</th><th>Academic FTE</th><th>Student FTE</th><th>Ratio</th></tr>`;
+  for (let i = 0; i < DATA.subjects.length; i++) {
+    html += `<tr><td>${DATA.subjects[i]}</td><td>${fmtInt(DATA.subject_staff[i])}</td><td>${fmtInt(DATA.subject_student[i])}</td><td class="hi">${fmtRatio(DATA.subject_ratio[i])}</td></tr>`;
+  }
+  document.getElementById('subjectTable').innerHTML = html;
+}
+
+renderStatRow();
+renderFteChart();
+renderRatioChart();
+renderSubjectChart();
+</script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR06 — Student Equality vs Staffing</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR06</span> &mdash; Student Equality vs Staffing</h1>
+  <p>OfS Access and Participation data (UEL provider-level) and HESA Staff Table 6, 2018/19&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR06</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout flag">
+    <span class="pill red">SCOPE NOTE</span> The OfS Access and Participation dataset is genuinely <b>UEL-specific</b> (unlike most HESA equality tables) &ndash; it is published per-provider precisely so institutions can track their own widening-participation progress. HESA Student Table 53 (undergraduates by ethnicity and subject) is UK-wide only with no institution field, so it is shown here only as sector context, never as a UEL figure.
+  </div>
+
+  <div class="panel">
+    <h2>UEL full-time undergraduate entrants by ethnicity</h2>
+    <div class="sub">OfS Access and Participation data, UK-domiciled full-time undergraduate entrants, all undergraduate levels. UEL provider-level extract (UKPRN 10007144).</div>
+    <canvas id="ethnicityChart" role="img" aria-label="Stacked bar chart of UEL undergraduate entrants by ethnicity, 2018-19 to 2023-24." aria-describedby="ethnicityTable"></canvas>
+    <table id="ethnicityTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Share of entrants with a known disability, UEL</h2>
+    <div class="sub">OfS Access and Participation data, same population as above.</div>
+    <canvas id="disabilityChart" role="img" aria-label="Line chart of the share of UEL entrants with a known disability, 2018-19 to 2023-24."></canvas>
+    <div class="callout" style="margin-top:14px">
+      For comparison, the England-wide academic <b>staff</b> disability rate (of known status) was 8.5% in 2024/25 (HESA Staff Table 5 &ndash; see <code>Reports/TUR05 - Staff Equality Profile.html</code>). These are different populations measured differently, but the near-doubling gap between UEL's student disability rate (~15%) and the national staff disability rate is a useful prompt for a conversation about support and workload for staff working with an increasingly diverse disabled student population.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Student diversity growth vs total staff growth, indexed (2018/19 = 100)</h2>
+    <div class="sub">Undergraduate entrant headcount (all ethnicities, OfS AP data) vs total UEL staff headcount (HESA Staff Table 6, "Total including academic atypical"), both indexed to 2018/19 = 100, to compare the pace of change.</div>
+    <canvas id="indexChart" role="img" aria-label="Line chart comparing indexed growth of UEL undergraduate entrants and total staff headcount, 2018/19 to 2024/25." aria-describedby="indexTable"></canvas>
+    <table id="indexTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout finding">
+      <b>The entrant population's ethnic composition has shifted year to year, not moved in one steady direction.</b> White entrants' share of the full-time UK undergraduate intake rose from 32.8% (2018/19) to a peak of 46.3% (2022/23) before easing back to 39.1% (2023/24), while Black entrants' share fell from 35.3% (2018/19) to 27&ndash;30% across the most recent three years. Total entrant numbers dipped to a pandemic-affected low in 2021/22 (2,830) before recovering to 3,380 by 2023/24, above the 2018/19 starting point.
+    </div>
+    <div class="callout finding">
+      <b>Total staff headcount has grown considerably faster than the entrant population, especially since 2021/22.</b> The staff index rose steadily across the whole period (100 &rarr; 141.8 by 2024/25), while the entrant index dipped to a low of 86.8 in 2021/22 before only partially recovering to 103.7 by 2023/24. The gap between the two lines has widened sharply since 2021/22: staff headcount grew roughly 26% from 2021/22 to 2024/25 while entrants grew about 19% from their 2021/22 low, off a smaller base. Whether this staff growth has actually kept pace with real workload (as opposed to headcount alone, and across non-entrant students too) is exactly the question TUR07 (staff-student ratio) and TUR08 (NSS as workload barometer) are built to test.
+    </div>
+    <div class="callout flag">
+      <span class="pill red">CAVEATS</span> OfS AP figures are rounded to the nearest 10 and describe UK-domiciled full-time undergraduate <b>entrants</b> only &ndash; they exclude postgraduates, part-time students, and international students, so they are not a full picture of UEL's student body (compare with the fuller enrolment series in UDR05/UDR06/TUR02). The ethnicity categories used by OfS (White/Black/Asian/Mixed/Other) are broader groupings than HESA's own more granular ethnicity categories used in Table 4. Staff Table 6 counts headcount, not FTE, and covers all staff (academic and non-academic) &ndash; it is not restricted to teaching-facing roles.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: OfS Access and Participation data (2025-2 release), provider-level extract for UEL (UKPRN 10007144); HESA Student Table 53 ("Undergraduate students of known ethnicity by CAH level 1 subject"), UK-wide only, no UEL breakdown possible; HESA Staff Table 6 ("HE staff by activity standard occupational classification"), UEL-filtered (UKPRN 10007144).
+<br><b>Data files:</b> Data/OfS Access and Participation/AP_data_resources_2025-2_provider/Data/APData_10007144.csv; Data/HESA Student Table 53/ALL/table-53.csv; Data/HESA Staff Table 6/UEL/UEL_table6.csv.
+<br>Part of the trade union report series proposed in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> (report 6 of 12). See <code>Reports/TUR00 - Trade Union Report Index.html</code> for the full series.
+</footer>
+
+<script id="tur06-data" type="application/json">{"years": ["2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24"], "white": [1070, 1060, 1070, 1040, 1500, 1320], "black": [1150, 1170, 1080, 860, 880, 1000], "asian": [630, 610, 540, 520, 480, 600], "mixed": [260, 280, 220, 240, 230, 280], "other": [150, 130, 130, 170, 140, 180], "total_entrants": [3260, 3240, 3040, 2830, 3240, 3380], "disabled_pct": [15.3, 17.0, 16.4, 21.6, 14.5, 17.2], "staff_years": ["2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "staff_total": [1245, 1360, 1350, 1400, 1555, 1715, 1765], "staff_index": [100.0, 109.2, 108.4, 112.4, 124.9, 137.8, 141.8], "entrant_index_padded": [100.0, 99.4, 93.3, 86.8, 99.4, 103.7, null]}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur06-data').textContent);
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtInt(v) { return (v == null) ? "–" : Math.round(v).toLocaleString(); }
+function fmtPct(v) { return (v == null) ? "–" : v.toFixed(1) + "%"; }
+
+function renderStatRow() {
+  const last = DATA.years.length - 1;
+  const lastStaffIdx = DATA.staff_index.length - 1;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n">${fmtInt(DATA.total_entrants[last])}</div><div class="l">Full-time UK undergraduate entrants</div><div class="s">2023/24</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(DATA.disabled_pct[last])}</div><div class="l">Entrants with a known disability</div><div class="s">2023/24</div></div>
+    <div class="stat-box"><div class="n">${DATA.staff_index[lastStaffIdx]}</div><div class="l">Total staff index (2018/19=100)</div><div class="s">2024/25</div></div>
+    <div class="stat-box"><div class="n">${DATA.entrant_index_padded.filter(v => v != null).pop()}</div><div class="l">Entrant index (2018/19=100)</div><div class="s">2023/24</div></div>
+  `;
+}
+
+function renderEthnicityChart() {
+  destroyChart('eth');
+  charts.eth = new Chart(document.getElementById('ethnicityChart'), {
+    type: 'bar',
+    data: { labels: DATA.years, datasets: [
+      { label: 'White', data: DATA.white, backgroundColor: '#2E5395', stack: 's' },
+      { label: 'Black', data: DATA.black, backgroundColor: '#1F3864', stack: 's' },
+      { label: 'Asian', data: DATA.asian, backgroundColor: '#FFC000', stack: 's' },
+      { label: 'Mixed', data: DATA.mixed, backgroundColor: '#1e7e34', stack: 's' },
+      { label: 'Other', data: DATA.other, backgroundColor: '#9aa3af', stack: 's' }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: 'Entrants (headcount)' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>White</td>${DATA.white.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Black</td>${DATA.black.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Asian</td>${DATA.asian.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Mixed</td>${DATA.mixed.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Other</td>${DATA.other.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Total entrants</td>${DATA.total_entrants.map(v=>`<td class="hi">${fmtInt(v)}</td>`).join('')}</tr>`;
+  document.getElementById('ethnicityTable').innerHTML = html;
+}
+
+function renderDisabilityChart() {
+  destroyChart('dis');
+  charts.dis = new Chart(document.getElementById('disabilityChart'), {
+    type: 'line',
+    data: { labels: DATA.years, datasets: [
+      { label: 'Entrants with a known disability (%)', data: DATA.disabled_pct, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: '% of entrants' }, min: 0, max: 25 } } }
+  });
+}
+
+function renderIndexChart() {
+  destroyChart('idx');
+  charts.idx = new Chart(document.getElementById('indexChart'), {
+    type: 'line',
+    data: { labels: DATA.staff_years, datasets: [
+      { label: 'Total staff headcount (index)', data: DATA.staff_index, borderColor: '#1F3864', backgroundColor: '#1F3864', borderWidth: 3, tension: 0.15 },
+      { label: 'Undergraduate entrants (index)', data: DATA.entrant_index_padded, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15, spanGaps: true }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: 'Index (2018/19 = 100)' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.staff_years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Total staff headcount</td>${DATA.staff_total.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Total staff (index)</td>${DATA.staff_index.map(v=>`<td class="hi">${v==null?'–':v}</td>`).join('')}</tr>`;
+  html += `<tr><td>Undergraduate entrants (index)</td>${DATA.entrant_index_padded.map(v=>`<td>${v==null?'–':v}</td>`).join('')}</tr>`;
+  document.getElementById('indexTable').innerHTML = html;
+}
+
+renderStatRow();
+renderEthnicityChart();
+renderDisabilityChart();
+renderIndexChart();
+</script>
+</body>
+</html>

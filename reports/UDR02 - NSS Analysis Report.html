@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UDR02 — UEL NSS Analysis: Overview, Highs, Lows, Trends & Anomalies</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #1F3864;
+    --midblue: #2E5395;
+    --lightblue: #D9E2F3;
+    --gold: #FFC000;
+    --green: #1e7e34;
+    --red: #b02a2a;
+    --grey: #f2f2f2;
+    --text: #2b2b2b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    margin: 0;
+    background: #f7f7f5;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 40px 8vw 30px;
+  }
+  header h1 { margin: 0 0 8px; font-family: Arial, sans-serif; font-size: 30px; }
+  header p { margin: 0; font-size: 14.5px; color: #cdd7ea; font-family: Arial, sans-serif; max-width: 780px; }
+
+  nav.toc {
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    padding: 14px 8vw;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+  }
+  nav.toc a { color: var(--midblue); text-decoration: none; font-weight: 600; }
+  nav.toc a:hover { text-decoration: underline; }
+
+  main { max-width: 900px; margin: 0 auto; padding: 10px 8vw 80px; }
+
+  section { padding: 42px 0; border-bottom: 1px solid #e4e4e0; }
+  section:last-child { border-bottom: none; }
+
+  h2 {
+    font-family: Arial, sans-serif; color: var(--navy); font-size: 23px; margin: 0 0 6px;
+    border-left: 5px solid var(--gold); padding-left: 12px;
+  }
+  h2 .tag { font-size: 12px; color: #888; font-weight: normal; display: block; margin-top: 3px; padding-left: 1px; }
+  h3 { font-family: Arial, sans-serif; color: var(--midblue); font-size: 16.5px; margin: 26px 0 8px; }
+  p { font-size: 16px; margin: 0 0 14px; }
+  .lede { font-size: 17.5px; color: #444; }
+
+  .stat-row { display: flex; flex-wrap: wrap; gap: 14px; margin: 18px 0 22px; font-family: Arial, sans-serif; }
+  .stat-box {
+    background: #fff; border: 1px solid #e2e2e2; border-radius: 8px; padding: 10px 16px; min-width: 150px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+  .stat-box .n { font-size: 21px; font-weight: bold; color: var(--navy); }
+  .stat-box .l { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #888; }
+  .stat-box .s { font-size: 12px; color: #999; }
+
+  table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 13.5px; margin: 14px 0 20px; background: #fff; }
+  th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid #eee; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: var(--midblue); color: #fff; font-size: 11px; text-transform: uppercase; font-weight: 600; }
+  td.pos { color: var(--green); font-weight: 700; }
+  td.neg { color: var(--red); font-weight: 700; }
+  tr:nth-child(even) td { background: #fafafa; }
+
+  .callout {
+    background: #fff8e6; border-left: 4px solid var(--gold); padding: 12px 18px; margin: 18px 0;
+    font-family: Arial, sans-serif; font-size: 14.5px;
+  }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.good { background: #eaf4ea; border-left-color: var(--green); }
+  .callout b { color: var(--navy); }
+
+  .chart-wrap { background: #fff; border: 1px solid #e2e2e2; border-radius: 8px; padding: 16px; margin: 18px 0; }
+  canvas { max-height: 320px; }
+
+  .subject-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+  @media (max-width: 700px) { .subject-grid { grid-template-columns: 1fr; } }
+
+  .pill { display: inline-block; background: var(--lightblue); color: var(--navy); font-family: Arial, sans-serif;
+          font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-right: 6px; }
+
+  footer { padding: 30px 8vw 60px; font-family: Arial, sans-serif; font-size: 12px; color: #888; max-width: 900px; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">UDR02</span> &mdash; UEL National Student Survey: Analysis 2023&ndash;2026</h1>
+  <p>Overview, highs, lows, trends and anomalies across UEL's Registering and Teaching NSS results, with particular focus on the 2025&rarr;2026 change. University of East London, UKPRN 10007144.</p>
+</header>
+
+<nav class="toc">
+  <a href="#overview">Overview</a>
+  <a href="#trends">Trends</a>
+  <a href="#highs">Highs</a>
+  <a href="#lows">Lows</a>
+  <a href="#anomalies">Anomalies</a>
+  <a href="#cohorts">Student types</a>
+  <a href="#turnout">Turnout</a>
+  <a href="#notes">Data notes</a>
+</nav>
+
+<main>
+
+<section id="overview">
+  <h2>Overview<span class="tag">Where things stand, 2026</span></h2>
+  <p class="lede">2026 is UEL's strongest NSS year in this four-year window on every measure that matters: average positivity, benchmark performance, and response rate all improved, for both Registering and Teaching students.</p>
+
+  <div class="stat-row">
+    <div class="stat-box"><div class="n">89.4%</div><div class="l">Teaching, avg. positivity</div><div class="s">up from 85.8% in 2025</div></div>
+    <div class="stat-box"><div class="n">88.1%</div><div class="l">Registering, avg. positivity</div><div class="s">up from 84.9% in 2025</div></div>
+    <div class="stat-box"><div class="n">86.2%</div><div class="l">Teaching, avg. benchmark</div><div class="s">UEL beats its benchmark by +3.2ppt</div></div>
+    <div class="stat-box"><div class="n">86.0%</div><div class="l">Registering, avg. benchmark</div><div class="s">UEL beats its benchmark by +2.1ppt</div></div>
+  </div>
+
+  <p>Averaged across the 7 core NSS themes, positivity for Teaching students has climbed from 82.3% (2023) to 89.4% (2026); Registering students show the same shape, 82.2% to 88.1%. Both cohorts now sit clearly above their respective benchmarks &ndash; a reversal from 2023, when Teaching and Registering positivity were both essentially level with benchmark (+0.1ppt and +0.6ppt).</p>
+
+  <div class="chart-wrap">
+    <canvas id="overviewChart"></canvas>
+  </div>
+  <p style="font-size:13px;color:#888">Average positivity across all 7 themes, "All subjects" level, All modes / All undergraduates. Dashed lines are the corresponding benchmark.</p>
+
+  <p>Reminder on scope: since the 2023 NSS redesign there is no single "overall satisfaction" score for English providers like UEL &ndash; everything below is built from the 7 theme scores (Teaching on my course, Learning opportunities, Assessment and feedback, Academic support, Organisation and management, Learning resources, Student voice). NSS covers final-year undergraduates only.</p>
+</section>
+
+<section id="trends">
+  <h2>Trends<span class="tag">2025&rarr;2026, and the four-year picture</span></h2>
+
+  <h3>Every theme improved in 2026 &ndash; but by very different amounts</h3>
+  <p>All 7 themes rose year-on-year for both Registering and Teaching students. The size of the improvement, though, varies a lot by theme &ndash; and the pattern is consistent across both cohorts, which is a good sign it reflects something real rather than sampling noise.</p>
+
+  <table>
+    <tr><th>Theme</th><th>Registering &Delta;</th><th>Teaching &Delta;</th><th>What moved most</th></tr>
+    <tr><td>T5 Organisation &amp; management</td><td class="pos">+5.9</td><td class="pos">+6.8</td><td>Largest mover, both cohorts</td></tr>
+    <tr><td>T7 Student voice</td><td class="pos">+4.7</td><td class="pos">+4.0</td><td>Second-largest</td></tr>
+    <tr><td>T3 Assessment &amp; feedback</td><td class="pos">+3.7</td><td class="pos">+4.5</td><td></td></tr>
+    <tr><td>T2 Learning opportunities</td><td class="pos">+2.4</td><td class="pos">+2.9</td><td></td></tr>
+    <tr><td>T6 Learning resources</td><td class="pos">+2.1</td><td class="pos">+2.2</td><td></td></tr>
+    <tr><td>T4 Academic support</td><td class="pos">+1.9</td><td class="pos">+3.0</td><td></td></tr>
+    <tr><td>T1 Teaching on my course</td><td class="pos">+1.7</td><td class="pos">+2.0</td><td>Smallest mover &ndash; already UEL's strongest theme</td></tr>
+  </table>
+
+  <div class="callout good">
+    <b>Read:</b> Organisation &amp; management and Student voice were UEL's two weakest themes as recently as 2023&ndash;2025 (Org&amp;Man sat in the mid-to-high 70s). Both have closed much of the gap to benchmark in 2026, which is the single biggest structural change in this data. Teaching on my course was already strong and improved only modestly &ndash; there's less headroom left there.
+  </div>
+
+  <h3>The four-year shape</h3>
+  <p>This isn't a one-year blip. Both cohorts have risen every single year since 2023, and the improvement has accelerated: the 2025&rarr;2026 rise (+3.2 to +3.5ppt on average across themes) is larger than either of the two prior year-on-year moves. Response rates have moved the same way (see <a href="#turnout">Turnout</a>), which supports treating the improvement as genuine rather than an artefact of who chose to respond.</p>
+</section>
+
+<section id="highs">
+  <h2>Highs<span class="tag">Best-performing subjects and courses, 2026</span></h2>
+
+  <p>Ranking UEL's 13 broad subject areas (CAH1) by their average positivity across all 7 themes, 2026:</p>
+
+  <div class="subject-grid">
+    <div>
+      <h3>Teaching students</h3>
+      <table>
+        <tr><th>Subject</th><th>Avg. pos.</th></tr>
+        <tr><td>Physical sciences</td><td class="pos">95.4%</td></tr>
+        <tr><td>Business and management</td><td class="pos">94.3%</td></tr>
+        <tr><td>Computing</td><td class="pos">91.9%</td></tr>
+        <tr><td>Education and teaching</td><td>90.9%</td></tr>
+        <tr><td>Law</td><td>90.5%</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Registering students</h3>
+      <table>
+        <tr><th>Subject</th><th>Avg. pos.</th></tr>
+        <tr><td>Physical sciences</td><td class="pos">95.4%</td></tr>
+        <tr><td>Computing</td><td class="pos">92.0%</td></tr>
+        <tr><td>Business and management</td><td>90.9%</td></tr>
+        <tr><td>Education and teaching</td><td>90.9%</td></tr>
+        <tr><td>Architecture, building and planning</td><td>90.4%</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="pill">CAUTION</span> Physical sciences tops both rankings, but it's UEL's smallest subject by response count &ndash; only 13 responses each year. At that size a handful of individual students can swing the average several points either way, so treat "top of the table" here as encouraging rather than statistically robust. Business and management and Computing, by contrast, both have large enough cohorts (dozens to hundreds of responses) that their strong showing is much more reliable.
+  </div>
+
+  <h3>Best individual courses (CAH3), Teaching, 2026 &ndash; where n is reasonably large</h3>
+  <table>
+    <tr><th>Course</th><th>Avg. pos.</th><th>Responses</th></tr>
+    <tr><td>Business computing</td><td class="pos">98.0%</td><td>16</td></tr>
+    <tr><td>Environmental and public health</td><td class="pos">97.7%</td><td>20</td></tr>
+    <tr><td>Business and management (non-specific)</td><td class="pos">96.8%</td><td>~287</td></tr>
+    <tr><td>Drama</td><td class="pos">95.9%</td><td>24</td></tr>
+    <tr><td>Media studies</td><td class="pos">95.9%</td><td>20</td></tr>
+  </table>
+  <p>Business and management (non-specific) is the standout here: a strong 96.8% score with by far the largest response base of any course in this list (around 287 responses on average across themes), so this one is a genuinely robust result rather than a small-sample high.</p>
+
+  <div class="callout good">
+    <b>Notable:</b> Media studies (95.9%) sits inside the same broad subject area (Media, journalism and communications) that shows up repeatedly in the Lows and Anomalies sections below for its Journalism course and its below-benchmark theme scores. The subject area's overall weakness is being driven by specific courses within it, not by every course in it &ndash; worth keeping in mind before treating "Media, journalism and communications" as uniformly weak.</p>
+  </div>
+</section>
+
+<section id="lows">
+  <h2>Lows<span class="tag">Where the numbers are weakest, 2026</span></h2>
+
+  <h3>By broad subject area</h3>
+  <p>Psychology and Media, journalism and communications are UEL's two weakest CAH1 subject areas in both cohorts, and both are flagged by the Office for Students' own statistical test as <b>materially below benchmark</b> on several individual themes (not just "a bit below" &ndash; the OfS methodology gives each result a probability of being a true underperformance, and these clear a &gt;50% threshold):</p>
+
+  <table>
+    <tr><th>Subject</th><th>Theme</th><th>Positivity</th><th>Benchmark</th><th>Prob. materially below</th></tr>
+    <tr><td>Psychology (Teaching)</td><td>T4 Academic support</td><td class="neg">74.3%</td><td>87.1%</td><td>99.6%</td></tr>
+    <tr><td>Media/journalism (Registering)</td><td>T6 Learning resources</td><td class="neg">78.1%</td><td>87.7%</td><td>99.2%</td></tr>
+    <tr><td>Psychology (Registering)</td><td>T4 Academic support</td><td class="neg">75.9%</td><td>87.1%</td><td>99.0%</td></tr>
+    <tr><td>Media/journalism (Registering)</td><td>T1 Teaching on my course</td><td class="neg">76.3%</td><td>85.8%</td><td>98.9%</td></tr>
+    <tr><td>Media/journalism (Registering)</td><td>T7 Student voice</td><td class="neg">69.9%</td><td>79.2%</td><td>97.6%</td></tr>
+  </table>
+
+  <div class="callout flag">
+    <span class="pill">FLAG</span> Psychology's Academic support score (74&ndash;76%, ~13ppt below benchmark) is the single most statistically confident "below benchmark" result anywhere in UEL's 2026 data. Media, journalism and communications has the broadest spread of weak themes &ndash; Learning resources, Teaching on my course, and Student voice are all clearly below where a subject of this mix would be expected to sit.
+  </div>
+
+  <h3>Weakest individual courses (CAH3), Teaching, 2026</h3>
+  <table>
+    <tr><th>Course</th><th>Avg. pos.</th><th>Responses</th></tr>
+    <tr><td>Computer games and animation</td><td class="neg">65.4%</td><td>18</td></tr>
+    <tr><td>Complementary and alternative medicine</td><td class="neg">67.1%</td><td>22</td></tr>
+    <tr><td>Counselling, psychotherapy and occupational therapy</td><td class="neg">68.4%</td><td>53</td></tr>
+    <tr><td>Journalism</td><td class="neg">70.4%</td><td>21</td></tr>
+    <tr><td>Production and manufacturing engineering</td><td class="neg">77.6%</td><td>25</td></tr>
+    <tr><td>Mechanical engineering</td><td class="neg">78.5%</td><td>29</td></tr>
+  </table>
+  <p>Counselling, psychotherapy and occupational therapy is the one course here with a genuinely large response base (53) behind a weak score, making it the most reliable of the low-scoring courses to act on. The others (18&ndash;29 responses) are worth investigating but should be read with the same small-sample caution as the highs above.</p>
+</section>
+
+<section id="anomalies">
+  <h2>Anomalies<span class="tag">Things that stand out and are worth asking "why"</span></h2>
+
+  <h3>Teaching vs. Registering gaps by subject, 2026</h3>
+  <p>Most subjects score almost identically whether you look at students registered at UEL or students taught at UEL &ndash; expected, since the two cohorts mostly overlap. Three subjects break that pattern noticeably:</p>
+  <table>
+    <tr><th>Subject</th><th>Teaching</th><th>Registering</th><th>Gap (Teaching &minus; Registering)</th></tr>
+    <tr><td>Media, journalism and communications</td><td>82.8%</td><td>78.4%</td><td class="pos">+4.4</td></tr>
+    <tr><td>Business and management</td><td>94.3%</td><td>90.9%</td><td class="pos">+3.4</td></tr>
+    <tr><td>Biological and sport sciences</td><td>89.1%</td><td>86.8%</td><td class="pos">+2.3</td></tr>
+  </table>
+  <div class="callout">
+    In every one of these, Teaching students are notably happier than Registering students in the same subject area. Since Teaching = students taught at UEL regardless of where they're registered, and Registering = students registered at UEL regardless of where they're taught, a gap this size usually points to a franchise/partner arrangement: students registered at UEL but taught elsewhere (or vice versa) are pulling the Registering-cohort average down relative to the students UEL itself is directly teaching. Worth checking against partner/franchise numbers for these three subjects specifically.
+  </div>
+
+  <h3>A genuine, consistent decline: Architecture</h3>
+  <p>Architecture, building and planning fell &minus;4.7ppt in <i>both</i> Teaching and Registering cohorts between 2025 and 2026 &ndash; the only subject area to move backwards at all, and it did so identically in both splits. Because both cohorts moved together and by the same amount, this looks like a real, subject-specific decline rather than noise or a cohort-mix effect, even though the underlying response count (36&ndash;41) is moderate rather than large.</p>
+
+  <h3>A swing to treat with caution: Physical sciences</h3>
+  <p>Physical sciences posted the largest year-on-year improvement of any subject (+10.4ppt in both cohorts) and is now UEL's top-ranked subject area. It's also, by a wide margin, UEL's smallest subject by response count (13 responses in both 2025 and 2026). A double-digit swing on a base of 13 people is well within the range you'd expect from ordinary variation, not necessarily a sign that something changed. Encouraging, but not something to build a headline claim on without more data.</p>
+
+  <h3>Where UEL clearly beats benchmark</h3>
+  <p>Computing and Business and management are UEL's most consistent over-performers: both are flagged <b>materially above benchmark</b> (OfS statistical test, &gt;95% probability) on nearly every one of the 7 themes, in both Registering and Teaching. This is the mirror image of the Psychology/Media pattern above, and with much larger, more reliable response bases behind it.</p>
+</section>
+
+<section id="cohorts">
+  <h2>Student types<span class="tag">Mode and level of study, 2026</span></h2>
+
+  <p>Splitting 2026 results by mode of study surfaces a clear gap that the subject-level analysis above doesn't show:</p>
+  <table>
+    <tr><th>Mode of study</th><th>Registering</th><th>Teaching</th><th>Avg. responses</th></tr>
+    <tr><td>Full-time</td><td>88.5%</td><td>89.9%</td><td>~2,100&ndash;2,600</td></tr>
+    <tr><td>Part-time</td><td>86.8%</td><td>86.6%</td><td>~50</td></tr>
+    <tr><td>Apprenticeship</td><td class="neg">80.7%</td><td class="neg">80.7%</td><td>113</td></tr>
+  </table>
+  <div class="callout flag">
+    <span class="pill">FLAG</span> Apprenticeship students score roughly 8&ndash;9 percentage points below Full-time students, identically in both Registering and Teaching splits, on a response base (113) too large to dismiss as noise. This is a clear, consistent, and moderately well-evidenced gap &ndash; arguably the most actionable finding in this whole report, since it's a defined student population UEL can look at directly (apprenticeship programme support, employer liaison, off-the-job study time) rather than a single subject or course.
+  </div>
+
+  <p>By level of study, First degree and Other undergraduate students track closely for Registering (88.1% vs 89.5%), but for Teaching students, Other undergraduate is noticeably lower than First degree (86.9% vs 89.4%) &ndash; though the Other undergraduate response base here is small (around 35&ndash;47), so this is a pattern to watch rather than a settled conclusion.</p>
+</section>
+
+<section id="turnout">
+  <h2>Turnout<span class="tag">Response rates, 2023&ndash;2026</span></h2>
+  <table>
+    <tr><th>Year</th><th>Registering response rate</th><th>Teaching response rate</th></tr>
+    <tr><td>2023</td><td>75.2%</td><td>75.5%</td></tr>
+    <tr><td>2024</td><td>77.7%</td><td>75.7%</td></tr>
+    <tr><td>2025</td><td>75.8%</td><td>77.2%</td></tr>
+    <tr><td>2026</td><td class="pos">78.3%</td><td class="pos">79.6%</td></tr>
+  </table>
+  <p>Response rates dipped slightly in 2025 before both cohorts hit their four-year high in 2026. Rising turnout alongside rising positivity is a good combination &ndash; it reduces (though doesn't eliminate) the risk that the 2026 improvement is being driven by only the happiest students choosing to respond.</p>
+</section>
+
+<section id="notes">
+  <h2>Data notes<span class="tag">Methodology and caveats</span></h2>
+  <p>Source: Office for Students NSS provider data for UEL (UKPRN 10007144), 2023&ndash;2026, Registering and Teaching tabs. All figures above use "All modes / All undergraduates" as the base unless a mode/level split is explicitly discussed.</p>
+  <p>No single "overall satisfaction" score exists for English providers since the 2023 redesign; all analysis here is built from the 7 core NSS themes. "Materially above/below benchmark" labels follow the OfS's own statistical classification (a >50% probability threshold on the difference-from-benchmark distribution), not just a raw comparison of two numbers. Small-sample subjects and courses (response counts under roughly 20&ndash;25) are flagged explicitly wherever they appear, since NSS's own publication threshold is only 10 responses and a 50% response rate &ndash; low enough that individual results can be volatile.</p>
+  <p>This report was generated from the same underlying dataset as the companion interactive dashboard ("UEL NSS Explorer.html"), which lets you explore any subject, course, mode, level, year combination, and benchmark toggle directly.</p>
+</section>
+
+</main>
+
+<footer>
+  Generated from NSS23/24/25/26_10007144.xlsx (Registering &amp; Teaching tabs). Figures rounded to 1 decimal place; percentages under 50% response-rate threshold are excluded from published NSS data at source and do not appear here.
+<br><b>Data files:</b> Data/NSS Data/UEL/NSS23_10007144.xlsx, NSS24_10007144.xlsx, NSS25_10007144.xlsx, NSS26_10007144.xlsx (Registering &amp; Teaching tabs).
+</footer>
+
+<script>
+const years = ["2023","2024","2025","2026"];
+new Chart(document.getElementById('overviewChart'), {
+  type: 'line',
+  data: {
+    labels: years,
+    datasets: [
+      { label: 'Teaching positivity', data: [82.3,85.3,85.8,89.4], borderColor: '#1F3864', backgroundColor: '#1F3864', tension: 0.25 },
+      { label: 'Teaching benchmark', data: [81.6,82.8,84.5,86.2], borderColor: '#1F3864', borderDash: [6,4], pointRadius: 0, fill: false, tension: 0.25 },
+      { label: 'Registering positivity', data: [82.2,84.0,84.9,88.1], borderColor: '#FFC000', backgroundColor: '#FFC000', tension: 0.25 },
+      { label: 'Registering benchmark', data: [81.6,82.5,84.3,86.0], borderColor: '#FFC000', borderDash: [6,4], pointRadius: 0, fill: false, tension: 0.25 },
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 14, font: { size: 11 } } } },
+    scales: { y: { min: 78, max: 92, title: { display: true, text: 'Avg. positivity across 7 themes (%)' } } }
+  }
+});
+</script>
+
+</body>
+</html>

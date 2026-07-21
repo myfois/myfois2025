@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR04 — Redundancy and Restructuring Signal</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR04</span> &mdash; Redundancy and Restructuring Signal</h1>
+  <p>HESA Finance Table 13 (severance payments) and Staff Table 22 (academic staff starters and leavers), 2014/15&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR04</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout finding">
+    <span class="pill green">HEADLINE</span> HESA's own severance data <b>independently confirms every figure</b> in this project's Annual-Report-derived restructuring trend, and adds something new: <b>how many people</b> were affected each year (156 in 2016/17, down to 10 in 2021/22, back up to 33 in 2024/25). Restructuring costs have climbed for three straight years (2021/22&rarr;2024/25: &pound;345k&rarr;&pound;886k), and academic staff turnover (starters + leavers) has grown sharply alongside the institution's overall growth in the last three years.
+  </div>
+
+  <div class="panel">
+    <h2>Severance costs and headcount affected</h2>
+    <div class="sub">HESA Finance Table 13, "Aggregate of compensation for loss of office paid across the whole provider" (includes the head of provider). Independently confirms every figure already compiled from UEL's own Annual Reports in <code>docs/VC_Pay_and_Financial_Trends_10yr.md</code>, and additionally gives the number of people this was paid to each year &ndash; not previously available in one place in this project.</div>
+    <canvas id="severanceChart" role="img" aria-label="Bar and line chart of severance cost and number of people affected, 2016/17 to 2024/25." aria-describedby="severanceTable"></canvas>
+    <table id="severanceTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Academic staff starters and leavers</h2>
+    <div class="sub">HESA Staff Table 22, all modes of employment. A spike in leavers, especially alongside a severance-cost spike the same or prior year, is a useful cross-check that a restructuring signal reflects real headcount movement rather than just accounting timing.</div>
+    <canvas id="turnoverChart" role="img" aria-label="Bar chart of academic staff starters and leavers, 2014/15 to 2024/25." aria-describedby="turnoverTable"></canvas>
+    <table id="turnoverTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout finding">
+      <b>The core bargaining fact:</b> restructuring/severance costs have risen for three consecutive years (2021/22&ndash;2024/25: &pound;345k &rarr; &pound;495k &rarr; &pound;651k &rarr; &pound;886k), and the number of people affected has grown alongside it (10 &rarr; 25 &rarr; 24 &rarr; 33). This is a genuine, independently-confirmed, cross-validated trend &ndash; not an artefact of one data source.
+    </div>
+    <div class="callout">
+      2016/17 (156 people, &pound;3,969k) and 2019/20 (147 people, &pound;3,604k) stand out as the two largest restructuring episodes in the decade by cost and headcount alike &ndash; both roughly 25&times; the cost of the lowest year (2018/19, &pound;301k/20 people). 2020/21's negative figure (&ndash;&pound;1,037k) is a genuine net credit: UEL's own narrative confirms the prior year's provision was overestimated and part of it was credited back.
+    </div>
+    <div class="callout">
+      Academic staff numbers grew substantially from 2021/22 onward (815 &rarr; 1,140 by 2023/24), driven by large starter intakes (270, 355, 330) that outpaced leavers in those years &ndash; consistent with the international-enrolment-driven growth story already documented in UDR05/UDR06. 2024/25 is the first year in this run where leavers (290) outnumbered starters (245), a net headcount fall of 45 &ndash; worth watching as a possible turning point.
+    </div>
+    <div class="callout flag">
+      <span class="pill red">CAVEATS</span> Table 22's "Starters"/"Leavers" reflect all reasons for joining/leaving (retirement, resignation, end of fixed-term contract, redundancy) &ndash; it cannot isolate redundancy specifically as a reason. Table 13's severance figures cover all staff (not just those on the specific restructuring exercises named in the Annual Reports), so small routine severance payments are included alongside larger organised restructuring rounds. Figures rounded to the nearest 5 (Table 22) or exact £'000s (Table 13) per each table's own disclosure convention.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Finance Table 13 ("Severance payments by HE provider and academic year"), Staff Table 22 ("Academic staff starters and leavers by HE provider"), both UEL-filtered (UKPRN 10007144). Finance Table 13 covers 2016/17&ndash;2024/25; Staff Table 22 covers 2014/15&ndash;2024/25.
+<br><b>Data files:</b> Data/HESA Finance Table 13/UEL/UEL_table13.csv; Data/HESA Staff Table 22/UEL/UEL_table22.csv.
+<br>Part of the trade union report series proposed in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> (report 4 of 12). See <code>Reports/TUR00 - Trade Union Report Index.html</code> for the full series.
+</footer>
+
+<script id="tur04-data" type="application/json">{"years": ["2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "starters": [205, 165, 185, 165, 175, 180, 165, 270, 355, 330, 245], "leavers": [160, 180, 165, 225, 200, 150, 205, 155, 225, 250, 290], "total_staff": [910, 895, 920, 860, 830, 860, 815, 930, 1055, 1140, 1095], "net_change": [45, -15, 20, -60, -25, 30, -40, 115, 130, 80, -45], "severance_years": ["2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "severance_cost": [3969, 1602, 301, 3604, -1037, 345, 495, 651, 886], "severance_headcount": [156, 56, 20, 147, 51, 10, 25, 24, 33]}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur04-data').textContent);
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtInt(v) { return (v == null) ? "–" : Math.round(v).toLocaleString(); }
+function fmtSigned(v) { return (v == null) ? "–" : (v >= 0 ? "+" : "") + Math.round(v).toLocaleString(); }
+
+function renderStatRow() {
+  const lastSev = DATA.severance_cost.length - 1;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n flag">£${fmtInt(DATA.severance_cost[lastSev])}k</div><div class="l">Severance cost, 2024/25</div><div class="s">${DATA.severance_headcount[lastSev]} people affected</div></div>
+    <div class="stat-box"><div class="n">3 years</div><div class="l">Consecutive rise in cost</div><div class="s">2021/22 → 2024/25</div></div>
+    <div class="stat-box"><div class="n">156</div><div class="l">Peak headcount affected</div><div class="s">2016/17, £3,969k</div></div>
+    <div class="stat-box"><div class="n neg">${fmtSigned(DATA.net_change[DATA.net_change.length-1])}</div><div class="l">Net academic staff change, 2024/25</div><div class="s">first net fall since 2020/21</div></div>
+  `;
+}
+
+function renderSeveranceChart() {
+  destroyChart('sev');
+  charts.sev = new Chart(document.getElementById('severanceChart'), {
+    data: { labels: DATA.severance_years, datasets: [
+      { type: 'bar', label: 'Severance cost (£000s)', data: DATA.severance_cost, backgroundColor: DATA.severance_cost.map(v=>v<0?'#009E73':'#b02a2a'), yAxisID: 'y', order: 2 },
+      { type: 'line', label: 'People affected', data: DATA.severance_headcount, borderColor: '#0072B2', backgroundColor: '#0072B2', borderWidth: 3, tension: 0.15, yAxisID: 'y1', order: 1 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } },
+      scales: {
+        y: { position: 'left', title: { display: true, text: 'Severance cost (£000s)' } },
+        y1: { position: 'right', title: { display: true, text: 'People affected' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+  let html = `<tr><th>Year</th>${DATA.severance_years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Severance cost (£000s)</td>${DATA.severance_cost.map(v=>`<td class="hi">${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>People affected</td>${DATA.severance_headcount.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  document.getElementById('severanceTable').innerHTML = html;
+}
+
+function renderTurnoverChart() {
+  destroyChart('turn');
+  charts.turn = new Chart(document.getElementById('turnoverChart'), {
+    type: 'bar',
+    data: { labels: DATA.years, datasets: [
+      { label: 'Starters', data: DATA.starters, backgroundColor: '#009E73' },
+      { label: 'Leavers', data: DATA.leavers, backgroundColor: '#D55E00' }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: 'Academic staff (headcount)' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Starters</td>${DATA.starters.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Leavers</td>${DATA.leavers.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Net change</td>${DATA.net_change.map(v=>`<td class="${v>=0?'pos':'neg'}">${fmtSigned(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Total academic staff (year end)</td>${DATA.total_staff.map(v=>`<td class="hi">${fmtInt(v)}</td>`).join('')}</tr>`;
+  document.getElementById('turnoverTable').innerHTML = html;
+}
+
+renderStatRow();
+renderSeveranceChart();
+renderTurnoverChart();
+</script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR03 — Senior Pay vs. Staff Pay Differential</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR03</span> &mdash; Senior Pay vs. Staff Pay Differential</h1>
+  <p>HESA Finance Table 11 (Head of provider remuneration), 2016/17&ndash;2022/23, cross-referenced against UEL's own Annual Report disclosures, 2016/17&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR03</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout finding">
+    <span class="pill green">HEADLINE</span> Two independent sources agree: HESA's own open data (Finance Table 11) and UEL's Annual Report disclosures give <b>near-identical VC pay-multiple figures</b> for every year they overlap (2019/20&ndash;2022/23). The pay multiple has run in a <b>5.6&ndash;6.9 range</b> across the last six years, peaking in 2022/23, with basic salary rising every year since 2018/19 (&pound;201k&ndash;225k &rarr; &pound;265.3k in 2024/25).
+  </div>
+
+  <div class="panel">
+    <h2>VC pay multiple over time &mdash; two independent sources</h2>
+    <div class="sub">Solid lines: HESA Finance Table 11 (2016/17&ndash;2022/23, the latest year HESA has published for this table). Dashed lines: UEL's own Annual Report disclosures (2016/17&ndash;2024/25, from <code>docs/VC_Pay_and_Financial_Trends_10yr.md</code>). 2017/18 is blank in the HESA line because three people held the post that year, each for only part of it &ndash; see the note below and the detail table.</div>
+    <canvas id="ratioChart" role="img" aria-label="Line chart of the Vice-Chancellor's pay ratio to median staff pay, basic salary and total remuneration bases, from two independent sources." aria-describedby="ratioTable"></canvas>
+    <table id="ratioTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>2017/18 in detail &mdash; three post-holders, three part-year figures</h2>
+    <div class="sub">UEL changed Vice-Chancellor mid-year in both 2017/18 and 2018/19. HESA's Finance Table 11 captures each post-holder's own part-year figures separately &ndash; there is no single "2017/18 VC pay ratio" because there wasn't one continuous post-holder that year.</div>
+    <table id="detailTable"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Basic salary and total remuneration, in cash terms</h2>
+    <div class="sub">HESA Finance Table 11 figures (solid) vs. Annual Report figures (dashed), &pound;'000s, for the sole/dominant post-holder each year.</div>
+    <canvas id="cashChart"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout finding">
+      <b>The core bargaining fact:</b> since Prof. Amanda Broderick became sole Vice-Chancellor (from September 2018), the pay multiple has moved in a narrow, fairly stable 5.6&ndash;6.9 range, basic-to-median and total-to-median respectively, with a peak in 2022/23 (6.1/6.9). Basic salary has risen every year since 2018/19 without exception, from roughly &pound;201&ndash;225k to &pound;265.3k in 2024/25 (per the Annual Report; HESA's Table 11 only currently extends to 2022/23).
+    </div>
+    <div class="callout">
+      The close agreement between HESA's independently-collected Table 11 figures and UEL's own Annual Report figures (both landing on 5.6/6.9 for 2019/20, 5.6/6.4 for 2020/21, 5.6/6.1 for 2021/22, and 6.1/6.9 for 2022/23) is itself useful: it means this isn't a case of one source's numbers being disputable against another &ndash; two independently-compiled records agree.
+    </div>
+    <div class="callout flag">
+      <span class="pill red">CAVEATS</span> HESA's Finance Table 11 currently only extends to 2022/23 in the data held for this project &ndash; 2023/24 and 2024/25 figures here come from the Annual Report only (already fully verified, see <code>docs/VC_Pay_and_Financial_Trends_10yr.md</code>). The 2018/19 "basic salary paid" figure from HESA (&pound;201k) is noticeably lower than the Annual Report's figure for the same post-holder (&pound;225k) &ndash; this is very likely because Prof. Broderick started 10 September 2018, so HESA's "paid" figure reflects roughly 10.5 months' actual pay in that financial year rather than an annualised salary; not treated as a discrepancy requiring further investigation, but worth knowing if quoting the 2018/19 figure specifically. Figures are in £'000s and rounded per each source's own convention.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Finance Table 11 ("Head of provider remuneration by HE provider, head of provider and academic year"), UEL-filtered (UKPRN 10007144), 2016/17&ndash;2022/23. UEL's own Annual Report and Financial Statements, 2016/17&ndash;2024/25 (via <code>docs/VC_Pay_and_Financial_Trends_10yr.md</code>).
+<br><b>Data files:</b> Data/HESA Finance Table 11/UEL/UEL_table-11-(2016-17).csv through UEL_table-11-(2022-23).csv (7 files); Data/UEL Annual Reports/{1617..2425}/Table_Staff_Pay_and_Governance.md; docs/VC_Pay_and_Financial_Trends_10yr.md.
+<br>Part of the trade union report series proposed in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> (report 3 of 12). See <code>Reports/TUR00 - Trade Union Report Index.html</code> for the full series.
+</footer>
+
+<script id="tur03-data" type="application/json">{"years": ["2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23"], "ratio_basic": [null, null, 6.2, 5.6, 5.6, 5.6, 6.1], "ratio_total": [null, null, 6.4, 6.9, 6.4, 6.1, 6.9], "basic_salary": [250.0, null, 201.0, 229.0, 229.0, 232.0, 242.0], "total_remuneration": [294.0, null, 252.0, 305.0, 284.0, 303.0, 333.0], "detail_by_year": {"2016/17": [{"marker": "Previous Head of provider (2)", "basic_salary_paid": null, "basic_salary": 250.0, "compensation_loss_of_office": 0.0, "total_remuneration": 294.0, "ratio_basic": null, "ratio_total": null}], "2017/18": [{"marker": "Previous Head of provider (2)", "basic_salary_paid": null, "basic_salary": 90.0, "compensation_loss_of_office": 0.0, "total_remuneration": 140.0, "ratio_basic": 5.1, "ratio_total": 5.9}, {"marker": "Previous Head of provider (3)", "basic_salary_paid": null, "basic_salary": 166.0, "compensation_loss_of_office": 183.0, "total_remuneration": 377.0, "ratio_basic": 6.4, "ratio_total": 7.5}, {"marker": "Previous Head of provider (1)", "basic_salary_paid": null, "basic_salary": 63.0, "compensation_loss_of_office": 0.0, "total_remuneration": 75.0, "ratio_basic": 5.0, "ratio_total": 5.7}], "2018/19": [{"marker": "Head of provider at financial year end", "basic_salary_paid": 201.0, "basic_salary": null, "compensation_loss_of_office": 0.0, "total_remuneration": 252.0, "ratio_basic": 6.2, "ratio_total": 6.4}, {"marker": "Previous Head of provider (1)", "basic_salary_paid": 19.0, "basic_salary": null, "compensation_loss_of_office": 0.0, "total_remuneration": 22.0, "ratio_basic": 4.2, "ratio_total": 5.2}], "2019/20": [{"marker": "Head of provider at financial year end", "basic_salary_paid": 229.0, "basic_salary": null, "compensation_loss_of_office": 0.0, "total_remuneration": 305.0, "ratio_basic": 5.6, "ratio_total": 6.9}], "2020/21": [{"marker": "Head of provider at financial year end", "basic_salary_paid": 229.0, "basic_salary": null, "compensation_loss_of_office": 0.0, "total_remuneration": 284.0, "ratio_basic": 5.6, "ratio_total": 6.4}], "2021/22": [{"marker": "Head of provider at financial year end", "basic_salary_paid": 232.0, "basic_salary": null, "compensation_loss_of_office": 0.0, "total_remuneration": 303.0, "ratio_basic": 5.6, "ratio_total": 6.1}], "2022/23": [{"marker": "Head of provider at financial year end", "basic_salary_paid": 242.0, "basic_salary": null, "compensation_loss_of_office": 0.0, "total_remuneration": 333.0, "ratio_basic": 6.1, "ratio_total": 6.9}]}}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur03-data').textContent);
+const HESA_YEARS = DATA.years;
+const AR_YEARS = ["2016/17","2017/18","2018/19","2019/20","2020/21","2021/22","2022/23","2023/24","2024/25"];
+const AR_RATIO_BASIC = [null, null, 6.2, 5.6, 5.6, 5.6, 6.1, 5.8, 5.8];
+const AR_RATIO_TOTAL = [null, null, 8.0, 6.9, 6.4, 6.1, 6.9, 6.7, 6.7];
+const AR_BASIC = [250, null, 225, 229, 229, 232.5, 241.9, 251.4, 265.3];
+const AR_TOTAL = [294, null, 289, 305, 284, 302.8, 333.3, 356.3, 388.3];
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtN(v, d) { return (v == null) ? "–" : v.toFixed(d); }
+function fmtK(v) { return (v == null) ? "–" : "£" + v.toFixed(1) + "k"; }
+
+function pad(arr, years, allYears) {
+  return allYears.map(y => { const i = years.indexOf(y); return i>=0 ? arr[i] : null; });
+}
+
+function renderStatRow() {
+  const lastHesaIdx = DATA.ratio_total.map((v,i)=>v!=null?i:-1).filter(i=>i>=0).pop();
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n">${fmtN(AR_RATIO_TOTAL[8],1)}</div><div class="l">Pay ratio (total remun.), 2024/25</div><div class="s">Annual Report figure</div></div>
+    <div class="stat-box"><div class="n flag">${fmtN(Math.max(...DATA.ratio_total.filter(v=>v!=null)),1)}</div><div class="l">Peak pay ratio (total remun.)</div><div class="s">2022/23, confirmed by both sources</div></div>
+    <div class="stat-box"><div class="n">£265.3k</div><div class="l">Basic salary, 2024/25</div><div class="s">up from £225k in 2018/19</div></div>
+    <div class="stat-box"><div class="n">2</div><div class="l">Independent sources agree</div><div class="s">HESA Table 11 &amp; UEL Annual Report</div></div>
+  `;
+}
+
+function renderRatioChart() {
+  destroyChart('ratio');
+  charts.ratio = new Chart(document.getElementById('ratioChart'), {
+    type: 'line',
+    data: { labels: AR_YEARS, datasets: [
+      { label: 'HESA — basic salary ratio', data: pad(DATA.ratio_basic, HESA_YEARS, AR_YEARS), borderColor: '#0072B2', backgroundColor: '#0072B2', borderWidth: 3, tension: 0.15, spanGaps: false },
+      { label: 'HESA — total remuneration ratio', data: pad(DATA.ratio_total, HESA_YEARS, AR_YEARS), borderColor: '#D55E00', backgroundColor: '#D55E00', borderWidth: 3, tension: 0.15, spanGaps: false },
+      { label: 'Annual Report — basic salary ratio', data: AR_RATIO_BASIC, borderColor: '#0072B2', backgroundColor: '#0072B2', borderWidth: 1.5, borderDash: [5,3], tension: 0.15, pointStyle: 'rectRot' },
+      { label: 'Annual Report — total remuneration ratio', data: AR_RATIO_TOTAL, borderColor: '#D55E00', backgroundColor: '#D55E00', borderWidth: 1.5, borderDash: [5,3], tension: 0.15, pointStyle: 'rectRot' }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: 'Pay multiple (x median staff pay)' }, suggestedMin: 3, suggestedMax: 9 } } }
+  });
+  let html = `<tr><th>Year</th>${AR_YEARS.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>HESA — basic ratio</td>${pad(DATA.ratio_basic, HESA_YEARS, AR_YEARS).map(v=>`<td>${fmtN(v,1)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Annual Report — basic ratio</td>${AR_RATIO_BASIC.map(v=>`<td class="hi">${fmtN(v,1)}</td>`).join('')}</tr>`;
+  html += `<tr><td>HESA — total remun. ratio</td>${pad(DATA.ratio_total, HESA_YEARS, AR_YEARS).map(v=>`<td>${fmtN(v,1)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Annual Report — total remun. ratio</td>${AR_RATIO_TOTAL.map(v=>`<td class="hi">${fmtN(v,1)}</td>`).join('')}</tr>`;
+  document.getElementById('ratioTable').innerHTML = html;
+}
+
+function renderDetailTable() {
+  const entries = DATA.detail_by_year["2017/18"];
+  let html = `<tr><th>Post-holder</th><th>Basic salary £'000</th><th>Total remuneration £'000</th><th>Compensation for loss of office £'000</th><th>Ratio — basic</th><th>Ratio — total remun.</th></tr>`;
+  const names = { "Previous Head of provider (1)": "Mr Dean Curtis (Acting VC, 1/4/18–9/9/18)", "Previous Head of provider (2)": "Prof. Nora Ann Colton (Acting VC, 23/8/17–31/3/18)", "Previous Head of provider (3)": "Prof. John Joughin (VC, 1/8/17–31/3/18)" };
+  entries.sort((a,b) => (b.total_remuneration||0) - (a.total_remuneration||0));
+  entries.forEach(e => {
+    html += `<tr><td>${names[e.marker] || e.marker}</td><td>${fmtN(e.basic_salary,0)}</td><td>${fmtN(e.total_remuneration,0)}</td><td>${fmtN(e.compensation_loss_of_office,0)}</td><td>${fmtN(e.ratio_basic,1)}</td><td>${fmtN(e.ratio_total,1)}</td></tr>`;
+  });
+  document.getElementById('detailTable').innerHTML = html;
+}
+
+function renderCashChart() {
+  destroyChart('cash');
+  charts.cash = new Chart(document.getElementById('cashChart'), {
+    type: 'line',
+    data: { labels: AR_YEARS, datasets: [
+      { label: 'HESA — basic salary', data: pad(DATA.basic_salary, HESA_YEARS, AR_YEARS), borderColor: '#009E73', backgroundColor: '#009E73', borderWidth: 3, tension: 0.15, spanGaps: false },
+      { label: 'Annual Report — basic salary', data: AR_BASIC, borderColor: '#009E73', backgroundColor: '#009E73', borderWidth: 1.5, borderDash: [5,3], pointStyle: 'rectRot' },
+      { label: 'HESA — total remuneration', data: pad(DATA.total_remuneration, HESA_YEARS, AR_YEARS), borderColor: '#CC79A7', backgroundColor: '#CC79A7', borderWidth: 3, tension: 0.15, spanGaps: false },
+      { label: 'Annual Report — total remuneration', data: AR_TOTAL, borderColor: '#CC79A7', backgroundColor: '#CC79A7', borderWidth: 1.5, borderDash: [5,3], pointStyle: 'rectRot' }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: "£'000" } } } }
+  });
+}
+
+renderStatRow();
+renderRatioChart();
+renderDetailTable();
+renderCashChart();
+</script>
+</body>
+</html>

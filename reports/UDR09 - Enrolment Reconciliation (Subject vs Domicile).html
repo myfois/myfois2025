@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UDR09 — UEL Enrolment Reconciliation</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .controls { position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 1px solid var(--line); padding: 10px 24px; display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .control-group label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--grey); margin-bottom: 4px; }
+  select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
+  .segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .segmented button { border: none; background: #fff; padding: 6px 12px; font-size: 13px; cursor: pointer; color: #333; }
+  .segmented button.active { background: var(--navy); color: #fff; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.good { background: #eaf6ec; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 380px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; position: sticky; top: 0; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.ok { color: var(--green); }
+  td.warn { color: var(--red); font-weight: 700; }
+  .table-wrap { max-height: 560px; overflow-y: auto; }
+  .chart-row { margin-top: 16px; }
+  .chart-row h3 { font-size: 13px; color: var(--navy); margin: 0 0 8px; }
+  .tall-wrap-subj { position: relative; height: 520px; }
+  .tall-wrap-subj canvas { max-height: none !important; height: 100% !important; width: 100% !important; }
+  .chk-row { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ddd; }
+  .chk-item { font-size: 12px; color: #333; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
+  .chk-item input { cursor: pointer; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">UDR09</span> &mdash; UEL Enrolment Reconciliation</h1>
+  <p>Comparing UEL's total enrolment as counted two independent ways &ndash; by subject of study, and by student domicile (UK/international) &ndash; across all 11 published years, 2014/15&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+</header>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Level of study</label>
+    <select id="levelSelect">
+      <option value="All">All</option>
+      <option value="All undergraduate">All undergraduate</option>
+      <option value="First degree">First degree</option>
+      <option value="Other undergraduate">Other undergraduate</option>
+      <option value="All postgraduate">All postgraduate</option>
+      <option value="Postgraduate (taught)">Postgraduate (taught)</option>
+      <option value="Postgraduate (research)">Postgraduate (research)</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label>Mode of study</label>
+    <div class="segmented" id="modeControl">
+      <button data-val="All" class="active">All modes</button>
+      <button data-val="Full-time">Full-time</button>
+      <button data-val="Part-time">Part-time</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <div class="callout">
+    <span class="pill">WHAT THIS IS</span> UEL's enrolment can be counted in two independent ways that should, in principle, agree: by <b>subject of study</b> (every student counted once against their subject) and by <b>domicile</b> (every student counted once as UK-domiciled or international). This page checks whether they actually do agree, year by year and filter by filter &ndash; and flags it clearly where they don't.
+  </div>
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="panel">
+    <h2>Total enrolment: two independent counts</h2>
+    <div class="sub" id="totalsSub"></div>
+    <canvas id="totalsChart" role="img" aria-label="Grouped bar chart comparing total enrolment counted by subject of study versus by domicile, for every year." aria-describedby="totalsTable"></canvas>
+    <table id="totalsTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>The subject-based count, broken down by subject</h2>
+    <div class="sub">This is what "by subject" actually means in the total above: every enrolled student counted once against one of 22 subject areas, fixed at All levels / All modes (subject data isn't published broken down by domicile, which is exactly why the domicile-based count on this page has to come from a separate pair of tables).</div>
+    <div class="chart-row"><h3 id="subjBigLabel"></h3><canvas id="subjBigChart"></canvas><div class="chk-row" id="subjBigChecks"></div></div>
+    <div class="chart-row"><h3 id="subjMidLabel"></h3><canvas id="subjMidChart"></canvas><div class="chk-row" id="subjMidChecks"></div></div>
+    <div class="chart-row"><h3 id="subjSmallLabel"></h3><canvas id="subjSmallChart"></canvas><div class="chk-row" id="subjSmallChecks"></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Subjects &mdash; latest year &amp; growth</h2>
+    <div class="sub">Fixed at All levels / All modes. All subjects labelled, no skipped labels.</div>
+    <div class="tall-wrap-subj"><canvas id="subjBarChart" role="img" aria-label="Horizontal bar chart ranking subjects by latest-year enrolment." aria-describedby="subjGrowthTable"></canvas></div>
+    <table id="subjGrowthTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Course-level detail (the most granular subject codes)</h2>
+    <div class="sub">The 22 subjects above are each themselves made up of more specific course-level codes (166 in total, e.g. "Business and management" breaks into Business studies, Management studies, Tourism/transport/travel, and more). Fixed at All levels / All modes.</div>
+    <div class="tall-wrap-subj"><canvas id="cah3BarChart" role="img" aria-label="Horizontal bar chart ranking the top course-level subject codes by latest-year enrolment." aria-describedby="cah3GrowthTable"></canvas></div>
+    <table id="cah3GrowthTable" style="margin-top:14px"></table>
+
+    <div class="chart-row">
+      <h3>Drill into one subject area</h3>
+      <div class="control-group" style="margin-bottom:12px">
+        <label>Subject</label>
+        <select id="cah3ParentSelect"></select>
+      </div>
+      <canvas id="cah3DetailChart" role="img" aria-label="Bar chart of course-level codes within the selected subject area, by year." aria-describedby="cah3DetailTable"></canvas>
+      <table id="cah3DetailTable" style="margin-top:14px"></table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>The gap between the two counts, over time</h2>
+    <div class="sub" id="gapSub">For the selected Level/Mode: subject-count minus domicile-count, each year. Small (&plusmn;10) gaps are expected &ndash; both counts are independently rounded to the nearest 5, so up to &plusmn;10 of difference can appear with no real inconsistency. Anything larger is flagged.</div>
+    <canvas id="gapChart" role="img" aria-label="Bar chart of the year-by-year gap between the subject-based and domicile-based enrolment counts." aria-describedby="gapTable"></canvas>
+    <table id="gapTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>UK vs. international enrolment, over time</h2>
+    <div class="sub" id="ukIntlSub">The domicile-based count, split into its two parts, for the selected Level/Mode.</div>
+    <canvas id="ukIntlChart" role="img" aria-label="Stacked bar chart of UK and international enrolment by year." aria-describedby="ukIntlTable"></canvas>
+    <table id="ukIntlTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Full reconciliation &mdash; every level &times; mode &times; year combination</h2>
+    <div class="sub">All 231 combinations (7 levels &times; 3 modes &times; 11 years), not just the one selected above. Click a column to sort.</div>
+    <div class="table-wrap"><table id="reconTable"></table></div>
+  </div>
+
+  <div class="panel">
+    <h2>Reading this</h2>
+    <div class="callout good">
+      <b>2014/15 through 2022/23: the two counts agree almost exactly.</b> Across those nine years, the subject-based and domicile-based totals never differ by more than &plusmn;10 &ndash; exactly what you'd expect from two figures that are each independently rounded to the nearest 5.
+    </div>
+    <div class="callout flag">
+      <span class="pill">FLAG</span> <b>2023/24 and 2024/25 show a real, growing gap</b> &ndash; not just rounding noise. At All levels/All modes, the subject-based count exceeds the domicile-based count by 60 in 2023/24 and by 520 in 2024/25. The most likely explanation is a small (and, in the newest year, larger) group of students whose domicile hadn't yet been fully classified at the time each table was published &ndash; they'd be counted once by subject but not yet assigned to either the UK or international domicile count. This isn't a sign the underlying data is wrong, but it does mean the 2024/25 international-growth figures elsewhere in this workspace are very slightly conservative (a small number of recent students aren't in either domicile bucket yet).
+    </div>
+    <div class="callout flag">
+      <span class="pill">CAVEAT</span> Figures are rounded to the nearest 5 by HESA's disclosure control; this reconciliation can only detect gaps larger than that rounding tolerance, not smaller ones.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA's HE student enrolments by provider and subject of study data (for the subject-based total), and HESA's non-UK domiciled and UK domiciled HE students by provider data (for the domicile-based UK/international split), both UEL-filtered (UKPRN 10007144), 2014/15&ndash;2024/25. Figures rounded to the nearest 5 by HESA's disclosure control; subtotals may not sum exactly to published totals.
+<br><b>Data files:</b> Data/HESA Student Table 49/UEL/UEL_table49_2014-15.csv through UEL_table49_2024-25.csv (11 files); Data/HESA Student Table 28/UEL/UEL_table28_2014-15.csv through UEL_table28_2024-25.csv (11 files); Data/HESA Student Table 59/UEL/UEL_table59_2014-15.csv through UEL_table59_2024-25.csv (11 files).
+</footer>
+
+<script id="recon-data" type="application/json">{"years": ["2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "levels": ["All", "All undergraduate", "First degree", "Other undergraduate", "All postgraduate", "Postgraduate (taught)", "Postgraduate (research)"], "modes": ["All", "Full-time", "Part-time"], "subjectTotals": {"2014/15": {"All": {"All": 15855.0, "Full-time": 12085.0, "Part-time": 3765.0}, "All undergraduate": {"All": 11680.0, "Full-time": 10205.0, "Part-time": 1470.0}, "First degree": {"All": 11360.0, "Full-time": 10010.0, "Part-time": 1350.0}, "Other undergraduate": {"All": 315.0, "Full-time": 195.0, "Part-time": 120.0}, "All postgraduate": {"All": 4175.0, "Full-time": 1880.0, "Part-time": 2295.0}, "Postgraduate (taught)": {"All": 3645.0, "Full-time": 1605.0, "Part-time": 2035.0}, "Postgraduate (research)": {"All": 535.0, "Full-time": 275.0, "Part-time": 260.0}}, "2015/16": {"All": {"All": 13630.0, "Full-time": 10610.0, "Part-time": 3020.0}, "All undergraduate": {"All": 10300.0, "Full-time": 9105.0, "Part-time": 1195.0}, "First degree": {"All": 9995.0, "Full-time": 8955.0, "Part-time": 1045.0}, "Other undergraduate": {"All": 305.0, "Full-time": 150.0, "Part-time": 155.0}, "All postgraduate": {"All": 3330.0, "Full-time": 1505.0, "Part-time": 1820.0}, "Postgraduate (taught)": {"All": 2835.0, "Full-time": 1270.0, "Part-time": 1565.0}, "Postgraduate (research)": {"All": 495.0, "Full-time": 235.0, "Part-time": 260.0}}, "2016/17": {"All": {"All": 13215.0, "Full-time": 10440.0, "Part-time": 2775.0}, "All undergraduate": {"All": 9710.0, "Full-time": 8780.0, "Part-time": 930.0}, "First degree": {"All": 9455.0, "Full-time": 8640.0, "Part-time": 815.0}, "Other undergraduate": {"All": 255.0, "Full-time": 140.0, "Part-time": 115.0}, "All postgraduate": {"All": 3505.0, "Full-time": 1665.0, "Part-time": 1845.0}, "Postgraduate (taught)": {"All": 3095.0, "Full-time": 1445.0, "Part-time": 1650.0}, "Postgraduate (research)": {"All": 415.0, "Full-time": 220.0, "Part-time": 195.0}}, "2017/18": {"All": {"All": 13090.0, "Full-time": 10910.0, "Part-time": 2180.0}, "All undergraduate": {"All": 9695.0, "Full-time": 8975.0, "Part-time": 720.0}, "First degree": {"All": 9495.0, "Full-time": 8840.0, "Part-time": 655.0}, "Other undergraduate": {"All": 200.0, "Full-time": 135.0, "Part-time": 65.0}, "All postgraduate": {"All": 3390.0, "Full-time": 1930.0, "Part-time": 1460.0}, "Postgraduate (taught)": {"All": 3080.0, "Full-time": 1770.0, "Part-time": 1310.0}, "Postgraduate (research)": {"All": 310.0, "Full-time": 160.0, "Part-time": 150.0}}, "2018/19": {"All": {"All": 13395.0, "Full-time": 11345.0, "Part-time": 2055.0}, "All undergraduate": {"All": 9750.0, "Full-time": 9015.0, "Part-time": 735.0}, "First degree": {"All": 9450.0, "Full-time": 8755.0, "Part-time": 695.0}, "Other undergraduate": {"All": 300.0, "Full-time": 260.0, "Part-time": 40.0}, "All postgraduate": {"All": 3645.0, "Full-time": 2330.0, "Part-time": 1315.0}, "Postgraduate (taught)": {"All": 3330.0, "Full-time": 2170.0, "Part-time": 1155.0}, "Postgraduate (research)": {"All": 320.0, "Full-time": 160.0, "Part-time": 160.0}}, "2019/20": {"All": {"All": 15355.0, "Full-time": 13220.0, "Part-time": 2135.0}, "All undergraduate": {"All": 10270.0, "Full-time": 9565.0, "Part-time": 705.0}, "First degree": {"All": 9885.0, "Full-time": 9215.0, "Part-time": 675.0}, "Other undergraduate": {"All": 380.0, "Full-time": 350.0, "Part-time": 30.0}, "All postgraduate": {"All": 5085.0, "Full-time": 3655.0, "Part-time": 1430.0}, "Postgraduate (taught)": {"All": 4795.0, "Full-time": 3565.0, "Part-time": 1230.0}, "Postgraduate (research)": {"All": 295.0, "Full-time": 95.0, "Part-time": 200.0}}, "2020/21": {"All": {"All": 17395.0, "Full-time": 15365.0, "Part-time": 2030.0}, "All undergraduate": {"All": 10780.0, "Full-time": 10195.0, "Part-time": 585.0}, "First degree": {"All": 10235.0, "Full-time": 9675.0, "Part-time": 560.0}, "Other undergraduate": {"All": 545.0, "Full-time": 525.0, "Part-time": 20.0}, "All postgraduate": {"All": 6615.0, "Full-time": 5170.0, "Part-time": 1445.0}, "Postgraduate (taught)": {"All": 6280.0, "Full-time": 5065.0, "Part-time": 1215.0}, "Postgraduate (research)": {"All": 335.0, "Full-time": 105.0, "Part-time": 230.0}}, "2021/22": {"All": {"All": 19550.0, "Full-time": 17460.0, "Part-time": 2085.0}, "All undergraduate": {"All": 11390.0, "Full-time": 10720.0, "Part-time": 675.0}, "First degree": {"All": 10725.0, "Full-time": 10075.0, "Part-time": 650.0}, "Other undergraduate": {"All": 670.0, "Full-time": 645.0, "Part-time": 25.0}, "All postgraduate": {"All": 8155.0, "Full-time": 6745.0, "Part-time": 1415.0}, "Postgraduate (taught)": {"All": 7845.0, "Full-time": 6650.0, "Part-time": 1200.0}, "Postgraduate (research)": {"All": 310.0, "Full-time": 95.0, "Part-time": 215.0}}, "2022/23": {"All": {"All": 22450.0, "Full-time": 20265.0, "Part-time": 2185.0}, "All undergraduate": {"All": 11395.0, "Full-time": 10720.0, "Part-time": 675.0}, "First degree": {"All": 10440.0, "Full-time": 9845.0, "Part-time": 595.0}, "Other undergraduate": {"All": 950.0, "Full-time": 875.0, "Part-time": 80.0}, "All postgraduate": {"All": 11060.0, "Full-time": 9545.0, "Part-time": 1510.0}, "Postgraduate (taught)": {"All": 10715.0, "Full-time": 9410.0, "Part-time": 1305.0}, "Postgraduate (research)": {"All": 345.0, "Full-time": 140.0, "Part-time": 205.0}}, "2023/24": {"All": {"All": 20735.0, "Full-time": 18965.0, "Part-time": 1775.0}, "All undergraduate": {"All": 12525.0, "Full-time": 11775.0, "Part-time": 750.0}, "First degree": {"All": 11935.0, "Full-time": 11205.0, "Part-time": 730.0}, "Other undergraduate": {"All": 590.0, "Full-time": 570.0, "Part-time": 15.0}, "All postgraduate": {"All": 8215.0, "Full-time": 7190.0, "Part-time": 1025.0}, "Postgraduate (taught)": {"All": 7985.0, "Full-time": 7135.0, "Part-time": 850.0}, "Postgraduate (research)": {"All": 230.0, "Full-time": 55.0, "Part-time": 175.0}}, "2024/25": {"All": {"All": 26755.0, "Full-time": 24730.0, "Part-time": 2025.0}, "All undergraduate": {"All": 15045.0, "Full-time": 14290.0, "Part-time": 755.0}, "First degree": {"All": 13990.0, "Full-time": 13255.0, "Part-time": 735.0}, "Other undergraduate": {"All": 1055.0, "Full-time": 1030.0, "Part-time": 25.0}, "All postgraduate": {"All": 11710.0, "Full-time": 10440.0, "Part-time": 1270.0}, "Postgraduate (taught)": {"All": 11095.0, "Full-time": 10065.0, "Part-time": 1030.0}, "Postgraduate (research)": {"All": 615.0, "Full-time": 375.0, "Part-time": 235.0}}}, "domicileTotals": {"2014/15": {"All": {"All": {"uk": 14060, "nonuk": 1785, "total": 15845}, "Full-time": {"uk": 10740, "nonuk": 1350, "total": 12090}, "Part-time": {"uk": 3320, "nonuk": 435, "total": 3755}}, "All undergraduate": {"All": {"uk": 10840, "nonuk": 830, "total": 11670}, "Full-time": {"uk": 9505, "nonuk": 700, "total": 10205}, "Part-time": {"uk": 1335, "nonuk": 130, "total": 1465}}, "First degree": {"All": {"uk": 10580, "nonuk": 780, "total": 11360}, "Full-time": {"uk": 9330, "nonuk": 680, "total": 10010}, "Part-time": {"uk": 1250, "nonuk": 95, "total": 1345}}, "Other undergraduate": {"All": {"uk": 260, "nonuk": 55, "total": 315}, "Full-time": {"uk": 180, "nonuk": 20, "total": 200}, "Part-time": {"uk": 85, "nonuk": 35, "total": 120}}, "All postgraduate": {"All": {"uk": 3215, "nonuk": 950, "total": 4165}, "Full-time": {"uk": 1230, "nonuk": 650, "total": 1880}, "Part-time": {"uk": 1985, "nonuk": 305, "total": 2290}}, "Postgraduate (taught)": {"All": {"uk": 2815, "nonuk": 825, "total": 3640}, "Full-time": {"uk": 1040, "nonuk": 565, "total": 1605}, "Part-time": {"uk": 1775, "nonuk": 260, "total": 2035}}, "Postgraduate (research)": {"All": {"uk": 400, "nonuk": 125, "total": 525}, "Full-time": {"uk": 190, "nonuk": 85, "total": 275}, "Part-time": {"uk": 210, "nonuk": 45, "total": 255}}}, "2015/16": {"All": {"All": {"uk": 12335, "nonuk": 1285, "total": 13620}, "Full-time": {"uk": 9690, "nonuk": 920, "total": 10610}, "Part-time": {"uk": 2645, "nonuk": 365, "total": 3010}}, "All undergraduate": {"All": {"uk": 9575, "nonuk": 720, "total": 10295}, "Full-time": {"uk": 8550, "nonuk": 555, "total": 9105}, "Part-time": {"uk": 1025, "nonuk": 170, "total": 1195}}, "First degree": {"All": {"uk": 9380, "nonuk": 615, "total": 9995}, "Full-time": {"uk": 8400, "nonuk": 550, "total": 8950}, "Part-time": {"uk": 975, "nonuk": 65, "total": 1040}}, "Other undergraduate": {"All": {"uk": 200, "nonuk": 105, "total": 305}, "Full-time": {"uk": 145, "nonuk": 5, "total": 150}, "Part-time": {"uk": 50, "nonuk": 105, "total": 155}}, "All postgraduate": {"All": {"uk": 2760, "nonuk": 560, "total": 3320}, "Full-time": {"uk": 1140, "nonuk": 365, "total": 1505}, "Part-time": {"uk": 1620, "nonuk": 195, "total": 1815}}, "Postgraduate (taught)": {"All": {"uk": 2395, "nonuk": 440, "total": 2835}, "Full-time": {"uk": 985, "nonuk": 285, "total": 1270}, "Part-time": {"uk": 1410, "nonuk": 155, "total": 1565}}, "Postgraduate (research)": {"All": {"uk": 365, "nonuk": 125, "total": 490}, "Full-time": {"uk": 155, "nonuk": 80, "total": 235}, "Part-time": {"uk": 210, "nonuk": 45, "total": 255}}}, "2016/17": {"All": {"All": {"uk": 12025, "nonuk": 1195, "total": 13220}, "Full-time": {"uk": 9570, "nonuk": 870, "total": 10440}, "Part-time": {"uk": 2455, "nonuk": 325, "total": 2780}}, "All undergraduate": {"All": {"uk": 9045, "nonuk": 665, "total": 9710}, "Full-time": {"uk": 8235, "nonuk": 545, "total": 8780}, "Part-time": {"uk": 810, "nonuk": 120, "total": 930}}, "First degree": {"All": {"uk": 8875, "nonuk": 575, "total": 9450}, "Full-time": {"uk": 8095, "nonuk": 540, "total": 8635}, "Part-time": {"uk": 780, "nonuk": 35, "total": 815}}, "Other undergraduate": {"All": {"uk": 170, "nonuk": 90, "total": 260}, "Full-time": {"uk": 140, "nonuk": 0, "total": 140}, "Part-time": {"uk": 30, "nonuk": 85, "total": 115}}, "All postgraduate": {"All": {"uk": 2980, "nonuk": 530, "total": 3510}, "Full-time": {"uk": 1335, "nonuk": 325, "total": 1660}, "Part-time": {"uk": 1645, "nonuk": 200, "total": 1845}}, "Postgraduate (taught)": {"All": {"uk": 2675, "nonuk": 415, "total": 3090}, "Full-time": {"uk": 1195, "nonuk": 245, "total": 1440}, "Part-time": {"uk": 1480, "nonuk": 170, "total": 1650}}, "Postgraduate (research)": {"All": {"uk": 300, "nonuk": 110, "total": 410}, "Full-time": {"uk": 140, "nonuk": 80, "total": 220}, "Part-time": {"uk": 165, "nonuk": 30, "total": 195}}}, "2017/18": {"All": {"All": {"uk": 11775, "nonuk": 1315, "total": 13090}, "Full-time": {"uk": 9775, "nonuk": 1130, "total": 10905}, "Part-time": {"uk": 2000, "nonuk": 180, "total": 2180}}, "All undergraduate": {"All": {"uk": 8990, "nonuk": 705, "total": 9695}, "Full-time": {"uk": 8340, "nonuk": 640, "total": 8980}, "Part-time": {"uk": 655, "nonuk": 70, "total": 725}}, "First degree": {"All": {"uk": 8840, "nonuk": 655, "total": 9495}, "Full-time": {"uk": 8205, "nonuk": 635, "total": 8840}, "Part-time": {"uk": 635, "nonuk": 20, "total": 655}}, "Other undergraduate": {"All": {"uk": 150, "nonuk": 50, "total": 200}, "Full-time": {"uk": 135, "nonuk": 0, "total": 135}, "Part-time": {"uk": 20, "nonuk": 50, "total": 70}}, "All postgraduate": {"All": {"uk": 2785, "nonuk": 610, "total": 3395}, "Full-time": {"uk": 1440, "nonuk": 495, "total": 1935}, "Part-time": {"uk": 1345, "nonuk": 115, "total": 1460}}, "Postgraduate (taught)": {"All": {"uk": 2540, "nonuk": 545, "total": 3085}, "Full-time": {"uk": 1325, "nonuk": 445, "total": 1770}, "Part-time": {"uk": 1210, "nonuk": 100, "total": 1310}}, "Postgraduate (research)": {"All": {"uk": 245, "nonuk": 65, "total": 310}, "Full-time": {"uk": 110, "nonuk": 50, "total": 160}, "Part-time": {"uk": 135, "nonuk": 15, "total": 150}}}, "2018/19": {"All": {"All": {"uk": 11520, "nonuk": 1875, "total": 13395}, "Full-time": {"uk": 9645, "nonuk": 1695, "total": 11340}, "Part-time": {"uk": 1875, "nonuk": 175, "total": 2050}}, "All undergraduate": {"All": {"uk": 8905, "nonuk": 845, "total": 9750}, "Full-time": {"uk": 8210, "nonuk": 805, "total": 9015}, "Part-time": {"uk": 695, "nonuk": 40, "total": 735}}, "First degree": {"All": {"uk": 8640, "nonuk": 810, "total": 9450}, "Full-time": {"uk": 7960, "nonuk": 795, "total": 8755}, "Part-time": {"uk": 680, "nonuk": 10, "total": 690}}, "Other undergraduate": {"All": {"uk": 265, "nonuk": 35, "total": 300}, "Full-time": {"uk": 250, "nonuk": 10, "total": 260}, "Part-time": {"uk": 15, "nonuk": 30, "total": 45}}, "All postgraduate": {"All": {"uk": 2620, "nonuk": 1030, "total": 3650}, "Full-time": {"uk": 1435, "nonuk": 895, "total": 2330}, "Part-time": {"uk": 1180, "nonuk": 135, "total": 1315}}, "Postgraduate (taught)": {"All": {"uk": 2360, "nonuk": 970, "total": 3330}, "Full-time": {"uk": 1325, "nonuk": 850, "total": 2175}, "Part-time": {"uk": 1040, "nonuk": 120, "total": 1160}}, "Postgraduate (research)": {"All": {"uk": 255, "nonuk": 60, "total": 315}, "Full-time": {"uk": 115, "nonuk": 45, "total": 160}, "Part-time": {"uk": 145, "nonuk": 15, "total": 160}}}, "2019/20": {"All": {"All": {"uk": 11745, "nonuk": 3610, "total": 15355}, "Full-time": {"uk": 9780, "nonuk": 3440, "total": 13220}, "Part-time": {"uk": 1970, "nonuk": 165, "total": 2135}}, "All undergraduate": {"All": {"uk": 9100, "nonuk": 1165, "total": 10265}, "Full-time": {"uk": 8425, "nonuk": 1140, "total": 9565}, "Part-time": {"uk": 675, "nonuk": 30, "total": 705}}, "First degree": {"All": {"uk": 8735, "nonuk": 1150, "total": 9885}, "Full-time": {"uk": 8075, "nonuk": 1135, "total": 9210}, "Part-time": {"uk": 660, "nonuk": 15, "total": 675}}, "Other undergraduate": {"All": {"uk": 365, "nonuk": 15, "total": 380}, "Full-time": {"uk": 350, "nonuk": 0, "total": 350}, "Part-time": {"uk": 20, "nonuk": 15, "total": 35}}, "All postgraduate": {"All": {"uk": 2645, "nonuk": 2440, "total": 5085}, "Full-time": {"uk": 1355, "nonuk": 2305, "total": 3660}, "Part-time": {"uk": 1290, "nonuk": 140, "total": 1430}}, "Postgraduate (taught)": {"All": {"uk": 2400, "nonuk": 2395, "total": 4795}, "Full-time": {"uk": 1290, "nonuk": 2275, "total": 3565}, "Part-time": {"uk": 1110, "nonuk": 120, "total": 1230}}, "Postgraduate (research)": {"All": {"uk": 245, "nonuk": 50, "total": 295}, "Full-time": {"uk": 65, "nonuk": 30, "total": 95}, "Part-time": {"uk": 180, "nonuk": 20, "total": 200}}}, "2020/21": {"All": {"All": {"uk": 12175, "nonuk": 5220, "total": 17395}, "Full-time": {"uk": 10365, "nonuk": 5000, "total": 15365}, "Part-time": {"uk": 1805, "nonuk": 220, "total": 2025}}, "All undergraduate": {"All": {"uk": 9445, "nonuk": 1335, "total": 10780}, "Full-time": {"uk": 8880, "nonuk": 1315, "total": 10195}, "Part-time": {"uk": 565, "nonuk": 15, "total": 580}}, "First degree": {"All": {"uk": 8935, "nonuk": 1300, "total": 10235}, "Full-time": {"uk": 8390, "nonuk": 1285, "total": 9675}, "Part-time": {"uk": 545, "nonuk": 15, "total": 560}}, "Other undergraduate": {"All": {"uk": 510, "nonuk": 35, "total": 545}, "Full-time": {"uk": 490, "nonuk": 35, "total": 525}, "Part-time": {"uk": 20, "nonuk": 0, "total": 20}}, "All postgraduate": {"All": {"uk": 2725, "nonuk": 3885, "total": 6610}, "Full-time": {"uk": 1485, "nonuk": 3680, "total": 5165}, "Part-time": {"uk": 1240, "nonuk": 205, "total": 1445}}, "Postgraduate (taught)": {"All": {"uk": 2435, "nonuk": 3845, "total": 6280}, "Full-time": {"uk": 1410, "nonuk": 3655, "total": 5065}, "Part-time": {"uk": 1025, "nonuk": 190, "total": 1215}}, "Postgraduate (research)": {"All": {"uk": 290, "nonuk": 45, "total": 335}, "Full-time": {"uk": 75, "nonuk": 30, "total": 105}, "Part-time": {"uk": 215, "nonuk": 15, "total": 230}}}, "2021/22": {"All": {"All": {"uk": 12830, "nonuk": 6715, "total": 19545}, "Full-time": {"uk": 10980, "nonuk": 6485, "total": 17465}, "Part-time": {"uk": 1855, "nonuk": 235, "total": 2090}}, "All undergraduate": {"All": {"uk": 10090, "nonuk": 1300, "total": 11390}, "Full-time": {"uk": 9450, "nonuk": 1270, "total": 10720}, "Part-time": {"uk": 640, "nonuk": 35, "total": 675}}, "First degree": {"All": {"uk": 9465, "nonuk": 1260, "total": 10725}, "Full-time": {"uk": 8850, "nonuk": 1225, "total": 10075}, "Part-time": {"uk": 615, "nonuk": 30, "total": 645}}, "Other undergraduate": {"All": {"uk": 625, "nonuk": 45, "total": 670}, "Full-time": {"uk": 600, "nonuk": 40, "total": 640}, "Part-time": {"uk": 25, "nonuk": 0, "total": 25}}, "All postgraduate": {"All": {"uk": 2740, "nonuk": 5415, "total": 8155}, "Full-time": {"uk": 1530, "nonuk": 5215, "total": 6745}, "Part-time": {"uk": 1210, "nonuk": 200, "total": 1410}}, "Postgraduate (taught)": {"All": {"uk": 2475, "nonuk": 5375, "total": 7850}, "Full-time": {"uk": 1465, "nonuk": 5185, "total": 6650}, "Part-time": {"uk": 1010, "nonuk": 190, "total": 1200}}, "Postgraduate (research)": {"All": {"uk": 270, "nonuk": 40, "total": 310}, "Full-time": {"uk": 65, "nonuk": 30, "total": 95}, "Part-time": {"uk": 205, "nonuk": 10, "total": 215}}}, "2022/23": {"All": {"All": {"uk": 12095, "nonuk": 10355, "total": 22450}, "Full-time": {"uk": 10290, "nonuk": 9975, "total": 20265}, "Part-time": {"uk": 1805, "nonuk": 380, "total": 2185}}, "All undergraduate": {"All": {"uk": 9450, "nonuk": 1945, "total": 11395}, "Full-time": {"uk": 8790, "nonuk": 1930, "total": 10720}, "Part-time": {"uk": 660, "nonuk": 15, "total": 675}}, "First degree": {"All": {"uk": 8740, "nonuk": 1705, "total": 10445}, "Full-time": {"uk": 8155, "nonuk": 1690, "total": 9845}, "Part-time": {"uk": 585, "nonuk": 10, "total": 595}}, "Other undergraduate": {"All": {"uk": 710, "nonuk": 240, "total": 950}, "Full-time": {"uk": 635, "nonuk": 240, "total": 875}, "Part-time": {"uk": 75, "nonuk": 0, "total": 75}}, "All postgraduate": {"All": {"uk": 2645, "nonuk": 8410, "total": 11055}, "Full-time": {"uk": 1500, "nonuk": 8045, "total": 9545}, "Part-time": {"uk": 1145, "nonuk": 370, "total": 1515}}, "Postgraduate (taught)": {"All": {"uk": 2360, "nonuk": 8355, "total": 10715}, "Full-time": {"uk": 1415, "nonuk": 7995, "total": 9410}, "Part-time": {"uk": 945, "nonuk": 360, "total": 1305}}, "Postgraduate (research)": {"All": {"uk": 285, "nonuk": 60, "total": 345}, "Full-time": {"uk": 90, "nonuk": 50, "total": 140}, "Part-time": {"uk": 195, "nonuk": 10, "total": 205}}}, "2023/24": {"All": {"All": {"uk": 11825, "nonuk": 8850, "total": 20675}, "Full-time": {"uk": 10325, "nonuk": 8585, "total": 18910}, "Part-time": {"uk": 1500, "nonuk": 265, "total": 1765}}, "All undergraduate": {"All": {"uk": 10180, "nonuk": 2315, "total": 12495}, "Full-time": {"uk": 9450, "nonuk": 2295, "total": 11745}, "Part-time": {"uk": 730, "nonuk": 20, "total": 750}}, "First degree": {"All": {"uk": 9835, "nonuk": 2075, "total": 11910}, "Full-time": {"uk": 9120, "nonuk": 2055, "total": 11175}, "Part-time": {"uk": 710, "nonuk": 20, "total": 730}}, "Other undergraduate": {"All": {"uk": 350, "nonuk": 240, "total": 590}, "Full-time": {"uk": 330, "nonuk": 240, "total": 570}, "Part-time": {"uk": 15, "nonuk": 0, "total": 15}}, "All postgraduate": {"All": {"uk": 1645, "nonuk": 6540, "total": 8185}, "Full-time": {"uk": 875, "nonuk": 6290, "total": 7165}, "Part-time": {"uk": 770, "nonuk": 250, "total": 1020}}, "Postgraduate (taught)": {"All": {"uk": 1445, "nonuk": 6510, "total": 7955}, "Full-time": {"uk": 835, "nonuk": 6275, "total": 7110}, "Part-time": {"uk": 610, "nonuk": 235, "total": 845}}, "Postgraduate (research)": {"All": {"uk": 200, "nonuk": 25, "total": 225}, "Full-time": {"uk": 40, "nonuk": 15, "total": 55}, "Part-time": {"uk": 160, "nonuk": 10, "total": 170}}}, "2024/25": {"All": {"All": {"uk": 13005, "nonuk": 13230, "total": 26235}, "Full-time": {"uk": 11425, "nonuk": 13080, "total": 24505}, "Part-time": {"uk": 1580, "nonuk": 150, "total": 1730}}, "All undergraduate": {"All": {"uk": 10725, "nonuk": 4240, "total": 14965}, "Full-time": {"uk": 10030, "nonuk": 4215, "total": 14245}, "Part-time": {"uk": 690, "nonuk": 25, "total": 715}}, "First degree": {"All": {"uk": 10365, "nonuk": 3560, "total": 13925}, "Full-time": {"uk": 9685, "nonuk": 3530, "total": 13215}, "Part-time": {"uk": 675, "nonuk": 25, "total": 700}}, "Other undergraduate": {"All": {"uk": 360, "nonuk": 685, "total": 1045}, "Full-time": {"uk": 345, "nonuk": 685, "total": 1030}, "Part-time": {"uk": 15, "nonuk": 0, "total": 15}}, "All postgraduate": {"All": {"uk": 2280, "nonuk": 8990, "total": 11270}, "Full-time": {"uk": 1390, "nonuk": 8870, "total": 10260}, "Part-time": {"uk": 890, "nonuk": 120, "total": 1010}}, "Postgraduate (taught)": {"All": {"uk": 1760, "nonuk": 8930, "total": 10690}, "Full-time": {"uk": 1075, "nonuk": 8830, "total": 9905}, "Part-time": {"uk": 685, "nonuk": 100, "total": 785}}, "Postgraduate (research)": {"All": {"uk": 520, "nonuk": 60, "total": 580}, "Full-time": {"uk": 315, "nonuk": 40, "total": 355}, "Part-time": {"uk": 205, "nonuk": 20, "total": 225}}}}, "subjects": {"01 Medicine and dentistry": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02 Subjects allied to medicine": [1760.0, 1570.0, 1570.0, 1560.0, 1710.0, 1825.0, 2235.0, 2475.0, 2735.0, 2245.0, 2595.0], "03 Biological and sport sciences": [890.0, 850.0, 810.0, 795.0, 775.0, 720.0, 720.0, 1010.0, 1240.0, 1200.0, 1320.0], "04 Psychology": [2015.0, 1825.0, 1790.0, 1770.0, 1695.0, 1660.0, 1800.0, 1685.0, 1345.0, 1105.0, 1265.0], "05 Veterinary sciences": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "06 Agriculture, food and related studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "07 Physical sciences": [50.0, 25.0, 5.0, 0.0, 15.0, 115.0, 145.0, 165.0, 300.0, 200.0, 305.0], "09 Mathematical sciences": [5.0, 5.0, 0.0, 5.0, 25.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0], "10 Engineering and technology": [670.0, 540.0, 545.0, 525.0, 545.0, 685.0, 750.0, 855.0, 1155.0, 1185.0, 1685.0], "11 Computing": [990.0, 555.0, 530.0, 640.0, 935.0, 1605.0, 2030.0, 1965.0, 2625.0, 2580.0, 4645.0], "13 Architecture, building and planning": [485.0, 520.0, 495.0, 610.0, 605.0, 785.0, 765.0, 735.0, 790.0, 615.0, 815.0], "26 Geography, earth and environmental studies (natural sciences)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "15 Social sciences": [1840.0, 1415.0, 1205.0, 1155.0, 1080.0, 1765.0, 1610.0, 1380.0, 1040.0, 910.0, 905.0], "16 Law": [740.0, 680.0, 685.0, 670.0, 730.0, 555.0, 505.0, 530.0, 510.0, 505.0, 650.0], "17 Business and management": [1700.0, 1430.0, 1430.0, 1460.0, 1635.0, 2590.0, 3710.0, 5305.0, 7300.0, 7305.0, 9075.0], "19 Language and area studies": [195.0, 135.0, 125.0, 100.0, 85.0, 65.0, 55.0, 60.0, 55.0, 35.0, 30.0], "20 Historical, philosophical and religious studies": [100.0, 65.0, 60.0, 40.0, 20.0, 15.0, 0.0, 0.0, 0.0, 0.0, 0.0], "22 Education and teaching": [2225.0, 2025.0, 1970.0, 1830.0, 1690.0, 1160.0, 1275.0, 1305.0, 1255.0, 750.0, 980.0], "23 Combined and general studies": [55.0, 35.0, 40.0, 20.0, 5.0, 0.0, 0.0, 5.0, 55.0, 5.0, 15.0], "24 Media, journalism and communications": [425.0, 495.0, 505.0, 515.0, 375.0, 360.0, 345.0, 630.0, 585.0, 765.0, 770.0], "25 Design, and creative and performing arts": [1715.0, 1465.0, 1455.0, 1395.0, 1470.0, 1455.0, 1445.0, 1455.0, 1465.0, 1330.0, 1690.0], "26 Geography, earth and environmental studies (social sciences)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 10.0]}, "cah3": {"01-01-01 Medical sciences (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "01-01-02 Medicine (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "01-01-03 Medicine by specialism": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "01-01-04 Dentistry": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-02-01 Pharmacology": [100.0, 155.0, 180.0, 170.0, 150.0, 40.0, 45.0, 45.0, 60.0, 80.0, 80.0], "02-02-02 Toxicology": [5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-02-03 Pharmacy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-04-01 Nursing (non-specific)": [20.0, 20.0, 15.0, 5.0, 90.0, 165.0, 355.0, 435.0, 420.0, 300.0, 200.0], "02-04-02 Adult nursing": [0.0, 0.0, 0.0, 60.0, 205.0, 355.0, 510.0, 540.0, 635.0, 550.0, 610.0], "02-04-03 Community nursing": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-04-04 Midwifery": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 25.0, 50.0], "02-04-05 Children's nursing": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-04-06 Dental nursing": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-04-07 Mental health nursing": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-04-08 Learning disabilities nursing": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-04-09 Others in nursing": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.0, 15.0, 25.0], "02-05-01 Medical technology": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-05-02 Healthcare science (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-05-03 Biomedical sciences (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 340.0, 345.0, 345.0, 225.0, 205.0, 270.0], "02-05-04 Anatomy, physiology and pathology": [95.0, 70.0, 95.0, 120.0, 100.0, 100.0, 100.0, 85.0, 65.0, 55.0, 55.0], "02-06-01 Health sciences (non-specific)": [375.0, 335.0, 355.0, 345.0, 325.0, 0.0, 0.0, 30.0, 45.0, 65.0, 30.0], "02-06-02 Nutrition and dietetics": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-06-03 Ophthalmics": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "02-06-04 Environmental and public health": [375.0, 365.0, 360.0, 315.0, 300.0, 325.0, 330.0, 375.0, 490.0, 225.0, 420.0], "02-06-05 Physiotherapy": [110.0, 115.0, 120.0, 135.0, 135.0, 120.0, 140.0, 190.0, 250.0, 290.0, 295.0], "02-06-06 Complementary and alternative medicine": [125.0, 155.0, 130.0, 85.0, 60.0, 55.0, 50.0, 70.0, 80.0, 90.0, 95.0], "02-06-07 Counselling, psychotherapy and occupational therapy": [545.0, 355.0, 315.0, 320.0, 340.0, 325.0, 355.0, 350.0, 450.0, 350.0, 470.0], "03-01-01 Biosciences (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 15.0, 15.0, 15.0, 10.0, 25.0], "03-01-02 Biology (non-specific)": [90.0, 110.0, 20.0, 5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "03-01-03 Ecology and environmental biology": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "03-01-04 Microbiology and cell science": [20.0, 10.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "03-01-05 Plant sciences": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "03-01-06 Zoology": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "03-01-07 Genetics": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "03-01-08 Molecular biology, biophysics and biochemistry": [40.0, 25.0, 25.0, 30.0, 35.0, 30.0, 25.0, 15.0, 20.0, 25.0, 30.0], "03-01-09 Hair and beauty sciences": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "03-01-10 Others in biosciences": [180.0, 145.0, 115.0, 75.0, 60.0, 15.0, 5.0, 5.0, 235.0, 85.0, 185.0], "03-02-01 Sport and exercise sciences": [560.0, 555.0, 650.0, 685.0, 675.0, 650.0, 670.0, 975.0, 965.0, 1080.0, 1085.0], "04-01-01 Psychology (non-specific)": [925.0, 865.0, 955.0, 920.0, 880.0, 870.0, 965.0, 880.0, 600.0, 465.0, 635.0], "04-01-02 Applied psychology": [650.0, 565.0, 480.0, 490.0, 455.0, 530.0, 550.0, 545.0, 435.0, 295.0, 285.0], "04-01-03 Developmental psychology": [220.0, 165.0, 140.0, 150.0, 165.0, 155.0, 170.0, 150.0, 135.0, 145.0, 140.0], "04-01-04 Psychology and health": [190.0, 125.0, 100.0, 100.0, 100.0, 105.0, 110.0, 105.0, 180.0, 205.0, 205.0], "04-01-05 Others in psychology": [30.0, 105.0, 115.0, 110.0, 95.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "05-01-01 Veterinary medicine and dentistry": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "05-01-02 Others in veterinary sciences": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "06-01-01 Animal science": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "06-01-02 Agricultural sciences": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "06-01-03 Agriculture": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "06-01-04 Rural estate management": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "06-01-05 Forestry and arboriculture": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "06-01-06 Food and beverage studies (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "06-01-07 Food sciences": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "06-01-08 Food and beverage production": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "07-01-01 Physics": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "07-01-02 Astronomy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "07-02-01 Chemistry": [0.0, 0.0, 0.0, 0.0, 15.0, 115.0, 145.0, 165.0, 300.0, 200.0, 305.0], "07-04-01 Physical sciences (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "07-04-02 Forensic and archaeological sciences": [45.0, 25.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "07-04-03 Sciences (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "07-04-04 Natural sciences (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "09-01-01 Mathematics": [5.0, 5.0, 0.0, 5.0, 5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0], "09-01-02 Operational research": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "09-01-03 Statistics": [0.0, 0.0, 0.0, 0.0, 20.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "10-01-01 Engineering (non-specific)": [70.0, 80.0, 5.0, 5.0, 15.0, 25.0, 25.0, 125.0, 330.0, 265.0, 390.0], "10-01-02 Mechanical engineering": [0.0, 20.0, 65.0, 90.0, 120.0, 125.0, 155.0, 175.0, 235.0, 265.0, 315.0], "10-01-03 Production and manufacturing engineering": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 40.0, 110.0, 135.0, 225.0], "10-01-04 Aeronautical and aerospace engineering": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "10-01-05 Naval architecture": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "10-01-06 Bioengineering, medical and biomedical engineering": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 30.0, 40.0, 60.0, 85.0], "10-01-07 Civil engineering": [440.0, 335.0, 395.0, 390.0, 405.0, 500.0, 520.0, 440.0, 405.0, 410.0, 570.0], "10-01-08 Electrical and electronic engineering": [115.0, 80.0, 50.0, 25.0, 0.0, 0.0, 0.0, 5.0, 25.0, 35.0, 60.0], "10-01-09 Chemical, process and energy engineering": [0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 10.0, 15.0, 0.0, 0.0, 15.0], "10-01-10 Others in engineering": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "10-03-01 Minerals technology": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0, 0.0], "10-03-02 Materials technology": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "10-03-03 Polymers and textiles": [0.0, 0.0, 0.0, 0.0, 0.0, 15.0, 10.0, 0.0, 0.0, 0.0, 0.0], "10-03-04 Maritime technology": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "10-03-05 Biotechnology": [45.0, 25.0, 25.0, 15.0, 5.0, 10.0, 15.0, 15.0, 15.0, 20.0, 20.0], "10-03-06 Others in technology": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "10-03-07 Materials science": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "11-01-01 Computer science": [375.0, 305.0, 330.0, 395.0, 550.0, 1045.0, 1425.0, 1265.0, 1610.0, 1520.0, 2840.0], "11-01-02 Information technology": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "11-01-03 Information systems": [310.0, 155.0, 170.0, 225.0, 230.0, 145.0, 135.0, 160.0, 340.0, 295.0, 510.0], "11-01-04 Software engineering": [160.0, 40.0, 10.0, 10.0, 5.0, 145.0, 185.0, 180.0, 160.0, 210.0, 300.0], "11-01-05 Artificial intelligence": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 15.0, 35.0, 65.0, 100.0], "11-01-06 Computer games and animation": [130.0, 35.0, 20.0, 15.0, 150.0, 120.0, 115.0, 105.0, 90.0, 100.0, 80.0], "11-01-07 Business computing": [0.0, 0.0, 0.0, 0.0, 0.0, 140.0, 115.0, 100.0, 85.0, 70.0, 95.0], "11-01-08 Others in computing": [10.0, 20.0, 0.0, 0.0, 0.0, 15.0, 45.0, 135.0, 305.0, 320.0, 720.0], "13-01-01 Architecture": [400.0, 455.0, 430.0, 475.0, 415.0, 400.0, 310.0, 315.0, 260.0, 245.0, 285.0], "13-01-02 Building": [75.0, 60.0, 60.0, 115.0, 165.0, 375.0, 430.0, 405.0, 520.0, 350.0, 510.0], "13-01-03 Landscape design": [10.0, 5.0, 10.0, 15.0, 25.0, 15.0, 20.0, 15.0, 10.0, 20.0, 25.0], "13-01-04 Planning (urban, rural and regional)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "26-01-01 Geography (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "26-01-02 Physical geographical sciences": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "26-01-04 Environmental sciences": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "26-01-05 Others in geographical studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "26-01-06 Earth sciences": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "15-01-01 Social sciences (non-specific)": [15.0, 5.0, 0.0, 0.0, 0.0, 30.0, 30.0, 65.0, 20.0, 10.0, 15.0], "15-01-02 Sociology": [710.0, 510.0, 405.0, 390.0, 290.0, 360.0, 390.0, 330.0, 280.0, 240.0, 240.0], "15-01-03 Social policy": [15.0, 5.0, 5.0, 0.0, 0.0, 75.0, 70.0, 75.0, 0.0, 25.0, 25.0], "15-01-04 Anthropology": [70.0, 65.0, 50.0, 25.0, 15.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "15-01-05 Development studies": [145.0, 30.0, 15.0, 10.0, 0.0, 105.0, 75.0, 60.0, 65.0, 40.0, 30.0], "15-01-06 Cultural studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "15-02-01 Economics": [60.0, 50.0, 45.0, 75.0, 75.0, 65.0, 60.0, 45.0, 35.0, 45.0, 55.0], "15-03-01 Politics": [80.0, 175.0, 200.0, 190.0, 220.0, 100.0, 85.0, 70.0, 55.0, 60.0, 50.0], "15-04-01 Social work": [410.0, 410.0, 395.0, 425.0, 445.0, 510.0, 430.0, 370.0, 305.0, 240.0, 240.0], "15-04-02 Childhood and youth studies": [205.0, 120.0, 75.0, 45.0, 40.0, 515.0, 470.0, 365.0, 260.0, 240.0, 215.0], "15-04-03 Health studies": [135.0, 50.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.0, 10.0, 30.0], "16-01-01 Law": [740.0, 680.0, 685.0, 670.0, 730.0, 555.0, 505.0, 530.0, 510.0, 505.0, 650.0], "17-01-01 Business and management (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 615.0, 855.0, 1320.0, 1355.0, 1855.0, 2685.0], "17-01-02 Business studies": [290.0, 0.0, 0.0, 0.0, 0.0, 65.0, 180.0, 1510.0, 1975.0, 2060.0, 2410.0], "17-01-03 Marketing": [135.0, 60.0, 35.0, 35.0, 70.0, 100.0, 135.0, 215.0, 225.0, 250.0, 290.0], "17-01-04 Management studies": [490.0, 710.0, 785.0, 805.0, 910.0, 940.0, 1570.0, 1275.0, 2480.0, 1845.0, 1910.0], "17-01-05 Human resource management": [185.0, 65.0, 50.0, 65.0, 110.0, 180.0, 150.0, 130.0, 200.0, 205.0, 230.0], "17-01-06 Tourism, transport and travel": [190.0, 265.0, 220.0, 190.0, 210.0, 330.0, 400.0, 380.0, 430.0, 515.0, 840.0], "17-01-07 Finance": [105.0, 60.0, 75.0, 50.0, 25.0, 180.0, 190.0, 150.0, 170.0, 205.0, 255.0], "17-01-08 Accounting": [310.0, 265.0, 265.0, 315.0, 310.0, 175.0, 235.0, 325.0, 470.0, 370.0, 460.0], "17-01-09 Others in business and management": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-01-01 English studies (non-specific)": [5.0, 5.0, 5.0, 5.0, 10.0, 5.0, 5.0, 5.0, 25.0, 5.0, 10.0], "19-01-02 English language": [5.0, 0.0, 0.0, 0.0, 0.0, 15.0, 10.0, 15.0, 0.0, 0.0, 0.0], "19-01-03 Literature in English": [95.0, 55.0, 45.0, 35.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-01-04 Studies of specific authors": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-01-05 Creative writing": [85.0, 65.0, 60.0, 45.0, 50.0, 45.0, 40.0, 45.0, 30.0, 30.0, 15.0], "19-01-06 Others in English studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-01-07 Linguistics": [5.0, 5.0, 10.0, 15.0, 20.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-02-01 Celtic studies (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-02-02 Gaelic studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-02-03 Welsh studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-02-04 Others in Celtic studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-04-01 French studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-04-02 German and Scandinavian studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-04-03 Italian studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-04-04 Iberian studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-04-05 Slavic studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-04-06 Asian studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-04-07 African and modern Middle Eastern studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-04-08 American and Australasian studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "19-04-09 Others in language and area studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "20-01-01 History": [80.0, 60.0, 50.0, 40.0, 20.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0], "20-01-02 History of art, architecture and design": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "20-01-03 Archaeology": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "20-01-04 Heritage studies": [20.0, 5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "20-01-05 Classics": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "20-02-01 Philosophy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "20-02-02 Theology and religious studies": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "22-01-01 Education": [1605.0, 1490.0, 1485.0, 1340.0, 1185.0, 360.0, 380.0, 385.0, 285.0, 305.0, 360.0], "22-01-02 Teacher training": [620.0, 535.0, 480.0, 490.0, 505.0, 800.0, 900.0, 920.0, 970.0, 445.0, 615.0], "23-01-01 Combined, general or negotiated studies": [10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0], "23-01-02 Personal development": [45.0, 30.0, 40.0, 20.0, 5.0, 0.0, 0.0, 0.0, 10.0, 5.0, 5.0], "23-01-03 Humanities (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 35.0, 0.0, 10.0], "23-01-04 Liberal arts (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "24-01-01 Information services": [60.0, 60.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "24-01-02 Publicity studies": [5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "24-01-03 Publishing": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "24-01-04 Journalism": [170.0, 130.0, 120.0, 110.0, 105.0, 95.0, 90.0, 265.0, 350.0, 500.0, 485.0], "24-01-05 Media studies": [190.0, 310.0, 385.0, 400.0, 270.0, 265.0, 255.0, 365.0, 235.0, 265.0, 285.0], "25-01-01 Creative arts and design (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 15.0, 20.0, 20.0, 30.0, 0.0, 30.0], "25-01-02 Art": [190.0, 175.0, 175.0, 175.0, 145.0, 145.0, 140.0, 130.0, 115.0, 90.0, 115.0], "25-01-03 Design studies": [600.0, 520.0, 550.0, 540.0, 575.0, 500.0, 490.0, 445.0, 400.0, 415.0, 510.0], "25-01-04 Cinematics and photography": [175.0, 155.0, 135.0, 130.0, 110.0, 125.0, 110.0, 100.0, 95.0, 80.0, 85.0], "25-01-05 Others in creative arts and design": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "25-02-01 Performing arts (non-specific)": [0.0, 0.0, 0.0, 0.0, 0.0, 130.0, 100.0, 70.0, 100.0, 90.0, 70.0], "25-02-02 Music": [275.0, 140.0, 145.0, 135.0, 195.0, 235.0, 295.0, 340.0, 380.0, 310.0, 465.0], "25-02-03 Drama": [185.0, 170.0, 180.0, 205.0, 300.0, 165.0, 170.0, 230.0, 240.0, 185.0, 245.0], "25-02-04 Dance": [295.0, 305.0, 270.0, 215.0, 145.0, 135.0, 125.0, 130.0, 110.0, 165.0, 170.0], "26-01-03 Human geography": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 10.0]}, "cah3Parents": {"01-01-01 Medical sciences (non-specific)": "01 Medicine and dentistry", "01-01-02 Medicine (non-specific)": "01 Medicine and dentistry", "01-01-03 Medicine by specialism": "01 Medicine and dentistry", "01-01-04 Dentistry": "01 Medicine and dentistry", "02-02-01 Pharmacology": "02 Subjects allied to medicine", "02-02-02 Toxicology": "02 Subjects allied to medicine", "02-02-03 Pharmacy": "02 Subjects allied to medicine", "02-04-01 Nursing (non-specific)": "02 Subjects allied to medicine", "02-04-02 Adult nursing": "02 Subjects allied to medicine", "02-04-03 Community nursing": "02 Subjects allied to medicine", "02-04-04 Midwifery": "02 Subjects allied to medicine", "02-04-05 Children's nursing": "02 Subjects allied to medicine", "02-04-06 Dental nursing": "02 Subjects allied to medicine", "02-04-07 Mental health nursing": "02 Subjects allied to medicine", "02-04-08 Learning disabilities nursing": "02 Subjects allied to medicine", "02-04-09 Others in nursing": "02 Subjects allied to medicine", "02-05-01 Medical technology": "02 Subjects allied to medicine", "02-05-02 Healthcare science (non-specific)": "02 Subjects allied to medicine", "02-05-03 Biomedical sciences (non-specific)": "02 Subjects allied to medicine", "02-05-04 Anatomy, physiology and pathology": "02 Subjects allied to medicine", "02-06-01 Health sciences (non-specific)": "02 Subjects allied to medicine", "02-06-02 Nutrition and dietetics": "02 Subjects allied to medicine", "02-06-03 Ophthalmics": "02 Subjects allied to medicine", "02-06-04 Environmental and public health": "02 Subjects allied to medicine", "02-06-05 Physiotherapy": "02 Subjects allied to medicine", "02-06-06 Complementary and alternative medicine": "02 Subjects allied to medicine", "02-06-07 Counselling, psychotherapy and occupational therapy": "02 Subjects allied to medicine", "03-01-01 Biosciences (non-specific)": "03 Biological and sport sciences", "03-01-02 Biology (non-specific)": "03 Biological and sport sciences", "03-01-03 Ecology and environmental biology": "03 Biological and sport sciences", "03-01-04 Microbiology and cell science": "03 Biological and sport sciences", "03-01-05 Plant sciences": "03 Biological and sport sciences", "03-01-06 Zoology": "03 Biological and sport sciences", "03-01-07 Genetics": "03 Biological and sport sciences", "03-01-08 Molecular biology, biophysics and biochemistry": "03 Biological and sport sciences", "03-01-09 Hair and beauty sciences": "03 Biological and sport sciences", "03-01-10 Others in biosciences": "03 Biological and sport sciences", "03-02-01 Sport and exercise sciences": "03 Biological and sport sciences", "04-01-01 Psychology (non-specific)": "04 Psychology", "04-01-02 Applied psychology": "04 Psychology", "04-01-03 Developmental psychology": "04 Psychology", "04-01-04 Psychology and health": "04 Psychology", "04-01-05 Others in psychology": "04 Psychology", "05-01-01 Veterinary medicine and dentistry": "05 Veterinary sciences", "05-01-02 Others in veterinary sciences": "05 Veterinary sciences", "06-01-01 Animal science": "06 Agriculture, food and related studies", "06-01-02 Agricultural sciences": "06 Agriculture, food and related studies", "06-01-03 Agriculture": "06 Agriculture, food and related studies", "06-01-04 Rural estate management": "06 Agriculture, food and related studies", "06-01-05 Forestry and arboriculture": "06 Agriculture, food and related studies", "06-01-06 Food and beverage studies (non-specific)": "06 Agriculture, food and related studies", "06-01-07 Food sciences": "06 Agriculture, food and related studies", "06-01-08 Food and beverage production": "06 Agriculture, food and related studies", "07-01-01 Physics": "07 Physical sciences", "07-01-02 Astronomy": "07 Physical sciences", "07-02-01 Chemistry": "07 Physical sciences", "07-04-01 Physical sciences (non-specific)": "07 Physical sciences", "07-04-02 Forensic and archaeological sciences": "07 Physical sciences", "07-04-03 Sciences (non-specific)": "07 Physical sciences", "07-04-04 Natural sciences (non-specific)": "07 Physical sciences", "09-01-01 Mathematics": "09 Mathematical sciences", "09-01-02 Operational research": "09 Mathematical sciences", "09-01-03 Statistics": "09 Mathematical sciences", "10-01-01 Engineering (non-specific)": "10 Engineering and technology", "10-01-02 Mechanical engineering": "10 Engineering and technology", "10-01-03 Production and manufacturing engineering": "10 Engineering and technology", "10-01-04 Aeronautical and aerospace engineering": "10 Engineering and technology", "10-01-05 Naval architecture": "10 Engineering and technology", "10-01-06 Bioengineering, medical and biomedical engineering": "10 Engineering and technology", "10-01-07 Civil engineering": "10 Engineering and technology", "10-01-08 Electrical and electronic engineering": "10 Engineering and technology", "10-01-09 Chemical, process and energy engineering": "10 Engineering and technology", "10-01-10 Others in engineering": "10 Engineering and technology", "10-03-01 Minerals technology": "10 Engineering and technology", "10-03-02 Materials technology": "10 Engineering and technology", "10-03-03 Polymers and textiles": "10 Engineering and technology", "10-03-04 Maritime technology": "10 Engineering and technology", "10-03-05 Biotechnology": "10 Engineering and technology", "10-03-06 Others in technology": "10 Engineering and technology", "10-03-07 Materials science": "10 Engineering and technology", "11-01-01 Computer science": "11 Computing", "11-01-02 Information technology": "11 Computing", "11-01-03 Information systems": "11 Computing", "11-01-04 Software engineering": "11 Computing", "11-01-05 Artificial intelligence": "11 Computing", "11-01-06 Computer games and animation": "11 Computing", "11-01-07 Business computing": "11 Computing", "11-01-08 Others in computing": "11 Computing", "13-01-01 Architecture": "13 Architecture, building and planning", "13-01-02 Building": "13 Architecture, building and planning", "13-01-03 Landscape design": "13 Architecture, building and planning", "13-01-04 Planning (urban, rural and regional)": "13 Architecture, building and planning", "26-01-01 Geography (non-specific)": "26 Geography, earth and environmental studies (social sciences)", "26-01-02 Physical geographical sciences": "26 Geography, earth and environmental studies (social sciences)", "26-01-04 Environmental sciences": "26 Geography, earth and environmental studies (social sciences)", "26-01-05 Others in geographical studies": "26 Geography, earth and environmental studies (social sciences)", "26-01-06 Earth sciences": "26 Geography, earth and environmental studies (social sciences)", "15-01-01 Social sciences (non-specific)": "15 Social sciences", "15-01-02 Sociology": "15 Social sciences", "15-01-03 Social policy": "15 Social sciences", "15-01-04 Anthropology": "15 Social sciences", "15-01-05 Development studies": "15 Social sciences", "15-01-06 Cultural studies": "15 Social sciences", "15-02-01 Economics": "15 Social sciences", "15-03-01 Politics": "15 Social sciences", "15-04-01 Social work": "15 Social sciences", "15-04-02 Childhood and youth studies": "15 Social sciences", "15-04-03 Health studies": "15 Social sciences", "16-01-01 Law": "16 Law", "17-01-01 Business and management (non-specific)": "17 Business and management", "17-01-02 Business studies": "17 Business and management", "17-01-03 Marketing": "17 Business and management", "17-01-04 Management studies": "17 Business and management", "17-01-05 Human resource management": "17 Business and management", "17-01-06 Tourism, transport and travel": "17 Business and management", "17-01-07 Finance": "17 Business and management", "17-01-08 Accounting": "17 Business and management", "17-01-09 Others in business and management": "17 Business and management", "19-01-01 English studies (non-specific)": "19 Language and area studies", "19-01-02 English language": "19 Language and area studies", "19-01-03 Literature in English": "19 Language and area studies", "19-01-04 Studies of specific authors": "19 Language and area studies", "19-01-05 Creative writing": "19 Language and area studies", "19-01-06 Others in English studies": "19 Language and area studies", "19-01-07 Linguistics": "19 Language and area studies", "19-02-01 Celtic studies (non-specific)": "19 Language and area studies", "19-02-02 Gaelic studies": "19 Language and area studies", "19-02-03 Welsh studies": "19 Language and area studies", "19-02-04 Others in Celtic studies": "19 Language and area studies", "19-04-01 French studies": "19 Language and area studies", "19-04-02 German and Scandinavian studies": "19 Language and area studies", "19-04-03 Italian studies": "19 Language and area studies", "19-04-04 Iberian studies": "19 Language and area studies", "19-04-05 Slavic studies": "19 Language and area studies", "19-04-06 Asian studies": "19 Language and area studies", "19-04-07 African and modern Middle Eastern studies": "19 Language and area studies", "19-04-08 American and Australasian studies": "19 Language and area studies", "19-04-09 Others in language and area studies": "19 Language and area studies", "20-01-01 History": "20 Historical, philosophical and religious studies", "20-01-02 History of art, architecture and design": "20 Historical, philosophical and religious studies", "20-01-03 Archaeology": "20 Historical, philosophical and religious studies", "20-01-04 Heritage studies": "20 Historical, philosophical and religious studies", "20-01-05 Classics": "20 Historical, philosophical and religious studies", "20-02-01 Philosophy": "20 Historical, philosophical and religious studies", "20-02-02 Theology and religious studies": "20 Historical, philosophical and religious studies", "22-01-01 Education": "22 Education and teaching", "22-01-02 Teacher training": "22 Education and teaching", "23-01-01 Combined, general or negotiated studies": "23 Combined and general studies", "23-01-02 Personal development": "23 Combined and general studies", "23-01-03 Humanities (non-specific)": "23 Combined and general studies", "23-01-04 Liberal arts (non-specific)": "23 Combined and general studies", "24-01-01 Information services": "24 Media, journalism and communications", "24-01-02 Publicity studies": "24 Media, journalism and communications", "24-01-03 Publishing": "24 Media, journalism and communications", "24-01-04 Journalism": "24 Media, journalism and communications", "24-01-05 Media studies": "24 Media, journalism and communications", "25-01-01 Creative arts and design (non-specific)": "25 Design, and creative and performing arts", "25-01-02 Art": "25 Design, and creative and performing arts", "25-01-03 Design studies": "25 Design, and creative and performing arts", "25-01-04 Cinematics and photography": "25 Design, and creative and performing arts", "25-01-05 Others in creative arts and design": "25 Design, and creative and performing arts", "25-02-01 Performing arts (non-specific)": "25 Design, and creative and performing arts", "25-02-02 Music": "25 Design, and creative and performing arts", "25-02-03 Drama": "25 Design, and creative and performing arts", "25-02-04 Dance": "25 Design, and creative and performing arts", "26-01-03 Human geography": "26 Geography, earth and environmental studies (social sciences)"}}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script>
+if (window.ChartDataLabels) {
+  Chart.register(ChartDataLabels);
+  Chart.defaults.set('plugins.datalabels', { display: false });
+}
+const DATA = JSON.parse(document.getElementById('recon-data').textContent);
+const YEARS = DATA.years;
+const LEVELS = DATA.levels;
+const MODES = DATA.modes;
+const FIRST = YEARS[0];
+const LATEST = YEARS[YEARS.length - 1];
+
+const state = { level: 'All', mode: 'All' };
+const charts = {};
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtInt(v) { return v == null ? "–" : Math.round(v).toLocaleString(); }
+function fmtDiff(v) { return v == null ? "–" : (v > 0 ? "+" : "") + Math.round(v); }
+
+function subjTotal(yr) { return DATA.subjectTotals[yr][state.level][state.mode]; }
+function domTotal(yr) { return DATA.domicileTotals[yr][state.level][state.mode]; }
+
+function renderStatRow() {
+  const subjLatest = subjTotal(LATEST), domLatest = domTotal(LATEST);
+  const gapLatest = (subjLatest||0) - (domLatest ? domLatest.total : 0);
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n">${fmtInt(subjLatest)}</div><div class="l">Total enrolment (by subject), ${LATEST}</div><div class="s">${state.level} · ${state.mode}</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(domLatest ? domLatest.total : null)}</div><div class="l">Total enrolment (by domicile), ${LATEST}</div><div class="s">UK ${fmtInt(domLatest ? domLatest.uk : null)} + Intl ${fmtInt(domLatest ? domLatest.nonuk : null)}</div></div>
+    <div class="stat-box"><div class="n">${fmtDiff(gapLatest)}</div><div class="l">Gap, ${LATEST}</div><div class="s">${Math.abs(gapLatest) > 10 ? 'larger than rounding alone explains' : 'within normal rounding tolerance'}</div></div>
+    <div class="stat-box"><div class="n">${YEARS.length}</div><div class="l">Years compared</div><div class="s">${FIRST} to ${LATEST}</div></div>
+  `;
+}
+
+function renderTotalsChart() {
+  destroyChart('totals');
+  const subj = YEARS.map(yr => subjTotal(yr));
+  const dom = YEARS.map(yr => domTotal(yr).total);
+  document.getElementById('totalsSub').textContent =
+    `For ${state.level} / ${state.mode}: grouped, not stacked, since these are two measurements of the same population, not additive parts.`;
+  charts.totals = new Chart(document.getElementById('totalsChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: 'Total enrolment (by subject)', data: subj, backgroundColor: '#1F3864' },
+        { label: 'Total enrolment (by domicile)', data: dom, backgroundColor: '#7893c2' }
+      ]
+    },
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: 'Enrolments' } } } }
+  });
+  let html = `<tr><th>Count</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>By subject</td>${subj.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>By domicile</td>${dom.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  document.getElementById('totalsTable').innerHTML = html;
+}
+
+// --- Subject breakdown: tiered magnitude bands + checkboxes + colour-blind-safe palette ---
+// Same pattern used throughout this workspace's explorers (countries/UK-areas trend charts).
+const cPalette = ['#E69F00','#56B4E9','#009E73','#F0E442','#0072B2','#D55E00','#CC79A7','#000000'];
+
+function splitIntoTiers(entries) {
+  const sorted = [...entries].sort((a,b) => b[1][b[1].length-1] - a[1][a[1].length-1]);
+  return {
+    big: sorted.filter(([,s]) => s[s.length-1] >= 1000),
+    mid: sorted.filter(([,s]) => s[s.length-1] >= 100 && s[s.length-1] < 1000),
+    small: sorted.filter(([,s]) => s[s.length-1] < 100)
+  };
+}
+
+function renderTierChart(chartId, checksId, labelId, tierLabel, entries, paletteOffset) {
+  document.getElementById(labelId).textContent = `${tierLabel} (${entries.map(([n])=>n).join(', ') || 'none'})`;
+  destroyChart(chartId);
+  const datasets = entries.map(([c,s],i) => {
+    const idx = paletteOffset + i;
+    const cycle = Math.floor(idx / cPalette.length);
+    return {
+      label: c, data: s.map(v=>v===0?null:v),
+      borderColor: cPalette[idx % cPalette.length], backgroundColor: cPalette[idx % cPalette.length],
+      borderDash: cycle === 0 ? [] : cycle === 1 ? [6,3] : [2,2],
+      fill: false, tension: 0.2, borderWidth: 2.5
+    };
+  });
+  charts[chartId] = new Chart(document.getElementById(chartId), {
+    type: 'line',
+    data: { labels: YEARS, datasets },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10 } } } }, scales: { y: { title: { display: true, text: 'Enrolments' } } } }
+  });
+  const checksEl = document.getElementById(checksId);
+  checksEl.innerHTML = entries.map(([c],i) =>
+    `<label class="chk-item"><input type="checkbox" checked data-idx="${i}"> ${c}</label>`).join('');
+  checksEl.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('change', (e) => {
+      const idx = +e.target.dataset.idx;
+      const ch = charts[chartId];
+      ch.data.datasets[idx].hidden = !e.target.checked;
+      ch.update();
+    });
+  });
+}
+
+function renderSubjects() {
+  const allEntries = Object.entries(DATA.subjects).filter(([,s]) => s.some(v => v !== 0));
+  const { big, mid, small } = splitIntoTiers(allEntries);
+  renderTierChart('subjBigChart', 'subjBigChecks', 'subjBigLabel', '1,000 and above', big, 0);
+  renderTierChart('subjMidChart', 'subjMidChecks', 'subjMidLabel', '100 to 999', mid, big.length);
+  renderTierChart('subjSmallChart', 'subjSmallChecks', 'subjSmallLabel', 'Under 100', small, big.length+mid.length);
+
+  const sorted = [...allEntries].sort((a,b) => b[1][b[1].length-1]-a[1][a[1].length-1]);
+  destroyChart('subjBar');
+  charts.subjBar = new Chart(document.getElementById('subjBarChart'), {
+    type: 'bar',
+    data: { labels: sorted.map(([c])=>c), datasets: [{ data: sorted.map(([c,s])=>s[s.length-1]), backgroundColor: '#2E5395' }] },
+    options: {
+      indexAxis: 'y', maintainAspectRatio: false,
+      plugins: { legend: { display: false }, title: { display: true, text: `${LATEST}, by subject`, font: { size: 12 } },
+        datalabels: { display: true, anchor: 'end', align: 'end', color: '#1F3864', font: { size: 10, weight: 'bold' }, formatter: v => v.toLocaleString() } },
+      scales: { y: { ticks: { autoSkip: false, font: { size: 10.5 } } } }
+    }
+  });
+  let html = `<tr><th>Subject</th><th>${FIRST}</th><th>${LATEST}</th><th>Growth</th></tr>`;
+  sorted.forEach(([name, s]) => {
+    const first = s[0], latest = s[s.length-1];
+    const growth = first ? 100*(latest-first)/first : null;
+    const cls = growth == null ? '' : (growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${name}</td><td>${fmtInt(first)}</td><td>${fmtInt(latest)}</td><td class="${cls}">${growth==null?'–':(growth>=0?'+':'')+growth.toFixed(1)+'%'}</td></tr>`;
+  });
+  document.getElementById('subjGrowthTable').innerHTML = html;
+}
+
+// --- Course-level (CAH3) detail: the granular codes underneath each of the 22 subjects above ---
+function fmtGrowthPlain(growth) { return growth==null?'–':(growth>=0?'+':'')+growth.toFixed(1)+'%'; }
+
+function renderCah3Overview() {
+  const entries = Object.entries(DATA.cah3).filter(([,s]) => s.some(v => v !== 0));
+  const sorted = [...entries].sort((a,b) => b[1][b[1].length-1]-a[1][a[1].length-1]).slice(0, 25);
+  destroyChart('cah3Bar');
+  charts.cah3Bar = new Chart(document.getElementById('cah3BarChart'), {
+    type: 'bar',
+    data: { labels: sorted.map(([c])=>c), datasets: [{ data: sorted.map(([c,s])=>s[s.length-1]), backgroundColor: '#2E5395' }] },
+    options: {
+      indexAxis: 'y', maintainAspectRatio: false,
+      plugins: { legend: { display: false }, title: { display: true, text: `${LATEST}, top 25 course-level codes`, font: { size: 12 } },
+        datalabels: { display: true, anchor: 'end', align: 'end', color: '#1F3864', font: { size: 10, weight: 'bold' }, formatter: v => v.toLocaleString() } },
+      scales: { y: { ticks: { autoSkip: false, font: { size: 10 } } } }
+    }
+  });
+  let html = `<tr><th>Course-level code</th><th>Subject</th><th>${FIRST}</th><th>${LATEST}</th><th>Growth</th></tr>`;
+  sorted.forEach(([name, s]) => {
+    const first = s[0], latest = s[s.length-1];
+    const growth = first ? 100*(latest-first)/first : null;
+    const cls = growth == null ? '' : (growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${name}</td><td>${DATA.cah3Parents[name]||''}</td><td>${fmtInt(first)}</td><td>${fmtInt(latest)}</td><td class="${cls}">${fmtGrowthPlain(growth)}</td></tr>`;
+  });
+  document.getElementById('cah3GrowthTable').innerHTML = html;
+}
+
+function renderCah3Detail(parentName) {
+  const codes = Object.entries(DATA.cah3Parents).filter(([,p]) => p === parentName).map(([code]) => code);
+  const entries = codes.map(code => [code, DATA.cah3[code]]).filter(([,s]) => s.some(v => v !== 0));
+  const sorted = entries.sort((a,b) => b[1][b[1].length-1]-a[1][a[1].length-1]);
+  destroyChart('cah3Detail');
+  const palette = ['#E69F00','#56B4E9','#009E73','#F0E442','#0072B2','#D55E00','#CC79A7','#000000'];
+  charts.cah3Detail = new Chart(document.getElementById('cah3DetailChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: sorted.map(([name,s],i) => ({ label: name, data: s, backgroundColor: palette[i % palette.length], stack: 's' }))
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10 } } } },
+      scales: { y: { stacked: true, title: { display: true, text: 'Enrolments' } }, x: { stacked: true } }
+    }
+  });
+  let html = `<tr><th>Course-level code</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}<th>Growth</th></tr>`;
+  if (sorted.length === 0) {
+    html += `<tr><td colspan="${YEARS.length+2}"><i>No non-zero course-level codes recorded for this subject at UEL in any year.</i></td></tr>`;
+  }
+  sorted.forEach(([name, s]) => {
+    const first = s[0], latest = s[s.length-1];
+    const growth = first ? 100*(latest-first)/first : null;
+    const cls = growth == null ? '' : (growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${name}</td>${s.map(v=>`<td>${fmtInt(v)}</td>`).join('')}<td class="${cls}">${fmtGrowthPlain(growth)}</td></tr>`;
+  });
+  document.getElementById('cah3DetailTable').innerHTML = html;
+}
+
+function initCah3ParentSelect() {
+  const parents = [...new Set(Object.values(DATA.cah3Parents))].sort();
+  const sel = document.getElementById('cah3ParentSelect');
+  sel.innerHTML = parents.map(p => `<option value="${p}">${p}</option>`).join('');
+  const defaultParent = parents.find(p => p.includes('Business')) || parents[0];
+  sel.value = defaultParent;
+  renderCah3Detail(defaultParent);
+  sel.addEventListener('change', e => renderCah3Detail(e.target.value));
+}
+
+function renderGapChart() {
+  destroyChart('gap');
+  const subj = YEARS.map(yr => subjTotal(yr));
+  const dom = YEARS.map(yr => domTotal(yr).total);
+  const gaps = YEARS.map((yr,i) => (subj[i]||0) - (dom[i]||0));
+  charts.gap = new Chart(document.getElementById('gapChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [{ label: 'By-subject minus by-domicile', data: gaps, backgroundColor: gaps.map(g => Math.abs(g) > 10 ? '#b02a2a' : '#56B4E9') }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { title: { display: true, text: 'Gap (enrolments)' } } } }
+  });
+  let html = `<tr><th>Metric</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Gap</td>${gaps.map(v=>`<td class="${Math.abs(v)>10?'warn':'ok'}">${fmtDiff(v)}</td>`).join('')}</tr>`;
+  document.getElementById('gapTable').innerHTML = html;
+}
+
+function renderUkIntlChart() {
+  destroyChart('ukIntl');
+  const uk = YEARS.map(yr => domTotal(yr).uk);
+  const intl = YEARS.map(yr => domTotal(yr).nonuk);
+  charts.ukIntl = new Chart(document.getElementById('ukIntlChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: 'UK', data: uk, backgroundColor: '#1F3864', stack: 's' },
+        { label: 'Intl', data: intl, backgroundColor: '#b02a2a', stack: 's' }
+      ]
+    },
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { stacked: true, title: { display: true, text: 'Enrolments' } }, x: { stacked: true } } }
+  });
+  let html = `<tr><th>Domicile</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>UK</td>${uk.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Intl</td>${intl.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  document.getElementById('ukIntlTable').innerHTML = html;
+}
+
+let sortKey = 'diffAbs', sortDir = 'desc';
+function renderReconTable() {
+  const rows = [];
+  YEARS.forEach(yr => {
+    LEVELS.forEach(level => {
+      MODES.forEach(mode => {
+        const s = DATA.subjectTotals[yr][level][mode];
+        const d = DATA.domicileTotals[yr][level][mode];
+        if (s == null || d == null || d.total == null) return;
+        const diff = s - d.total;
+        rows.push({ yr, level, mode, subj: s, dom: d.total, diff, diffAbs: Math.abs(diff) });
+      });
+    });
+  });
+  rows.sort((a,b) => {
+    if (sortKey === 'yr' || sortKey === 'level' || sortKey === 'mode') {
+      const av = a[sortKey], bv = b[sortKey];
+      return sortDir==='desc' ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
+    }
+    return sortDir === 'desc' ? (b[sortKey]-a[sortKey]) : (a[sortKey]-b[sortKey]);
+  });
+  let html = '<tr>' +
+    ['yr:Year','level:Level','mode:Mode','subj:By subject','dom:By domicile','diff:Gap'].map(kv => {
+      const [key,label] = kv.split(':');
+      return `<th data-key="${key}">${label}</th>`;
+    }).join('') + '</tr>';
+  rows.forEach(r => {
+    const cls = Math.abs(r.diff) > 10 ? 'warn' : 'ok';
+    html += `<tr><td>${r.yr}</td><td>${r.level}</td><td>${r.mode}</td><td>${fmtInt(r.subj)}</td><td>${fmtInt(r.dom)}</td><td class="${cls}">${fmtDiff(r.diff)}</td></tr>`;
+  });
+  document.getElementById('reconTable').innerHTML = html;
+  document.querySelectorAll('#reconTable th').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      sortDir = (sortKey === key && sortDir === 'desc') ? 'asc' : 'desc';
+      sortKey = key === 'diff' ? 'diffAbs' : key;
+      renderReconTable();
+    });
+  });
+}
+
+function renderAll() {
+  renderStatRow();
+  renderTotalsChart();
+  renderGapChart();
+  renderUkIntlChart();
+}
+
+renderAll();
+renderSubjects();
+renderCah3Overview();
+initCah3ParentSelect();
+renderReconTable();
+
+document.getElementById('levelSelect').addEventListener('change', e => { state.level = e.target.value; renderAll(); });
+document.getElementById('modeControl').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  state.mode = e.target.dataset.val;
+  document.querySelectorAll('#modeControl button').forEach(b => b.classList.toggle('active', b === e.target));
+  renderAll();
+});
+</script>
+</body>
+</html>

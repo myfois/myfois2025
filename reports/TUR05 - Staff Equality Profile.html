@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR05 — Staff Equality Profile</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR05</span> &mdash; Staff Equality Profile</h1>
+  <p>HESA Staff Table 24 (nationality) and UEL's own Gender Pay Gap disclosures, 2014/15&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR05</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout flag">
+    <span class="pill red">SCOPE LIMIT</span> HESA's open data only lets us build a genuine <b>UEL-specific</b> equality picture for <b>nationality</b> (Staff Table 24). The equivalent tables for <b>ethnicity</b> (Table 4) and <b>disability</b> (Table 5) are published by HESA only at <b>England/sector level</b> &ndash; they contain no institution field, so no UEL breakdown can be extracted from them at all. Those two are shown below as national context only, not as UEL figures. Gender is covered separately via UEL's own statutory Gender Pay Gap disclosures, which <i>are</i> UEL-specific.
+  </div>
+
+  <div class="panel">
+    <h2>Academic staff by nationality, UEL, 2014/15&ndash;2024/25</h2>
+    <div class="sub">HESA Staff Table 24, non-atypical academic staff, all modes of employment. UEL-filtered (UKPRN 10007144).</div>
+    <canvas id="nationalityChart" role="img" aria-label="Stacked bar chart of UEL academic staff by nationality, 2014/15 to 2024/25." aria-describedby="nationalityTable"></canvas>
+    <table id="nationalityTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Non-UK share of academic staff, UEL</h2>
+    <div class="sub">Non-UK = European Union + Non-European Union + Not known, as a share of total academic staff headcount.</div>
+    <canvas id="nonukChart" role="img" aria-label="Line chart of non-UK share of UEL academic staff, 2014/15 to 2024/25."></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>What HESA's open data cannot show at UEL level: ethnicity and disability</h2>
+    <div class="sub">Table 4 (ethnicity) and Table 5 (disability) are England/sector-wide only &ndash; shown here as national benchmarks for context, not as UEL figures. Both are 2024/25, academic staff, England.</div>
+    <div class="two-col">
+      <div>
+        <canvas id="ethnicityChart" role="img" aria-label="Pie chart of England academic staff by ethnicity group, 2024/25."></canvas>
+      </div>
+      <div>
+        <canvas id="disabilityChart" role="img" aria-label="Bar chart of England academic staff disability status, 2024/25."></canvas>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:14px">
+      England-wide, academic staff of known ethnicity in 2024/25 were <b>26.4% Black, Asian or another minority ethnic background</b> (73.6% White). <b>8.5%</b> of academic staff with known disability status reported a disability. These are sector-wide figures &ndash; without UEL's own HR/EDI monitoring data, there is no way to know whether UEL's own staff profile on these two dimensions sits above, below, or in line with this national picture.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Gender pay gap, UEL, 2018&ndash;2025</h2>
+    <div class="sub">UEL's own statutory Gender Pay Gap disclosures (snapshot date 31 March each year; gender-pay-gap.service.gov.uk). Positive values = women paid/awarded less than men. 2020/21 has no report &ndash; reporting was suspended sector-wide for the pandemic. See <code>Data/UEL Gender Pay Gap/UEL_Gender_Pay_Gap_Summary.md</code> for full detail.</div>
+    <canvas id="gpgChart" role="img" aria-label="Line chart of UEL median and mean gender pay gap, 2018 to 2025." aria-describedby="gpgTable"></canvas>
+    <table id="gpgTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Women's share of each pay quarter, UEL</h2>
+    <div class="sub">Headcount share by pay quarter, highest-paid (upper) to lowest-paid (lower). A rising upper-quarter share and a converging spread across quarters both indicate narrowing gender segregation by pay.</div>
+    <canvas id="quarterChart" role="img" aria-label="Line chart of women's share of each pay quarter at UEL, 2018 to 2025."></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout finding">
+      <b>Nationality:</b> the non-UK share of UEL's academic staff has been on a U-shaped path &ndash; 37.4% (2014/15) down to a low of 28.5% (2021/22), then back up to 35.2% (2024/25), driven almost entirely by growth in non-EU staff (110 in 2019/20 &rarr; 220 in 2024/25, roughly doubling) while EU staff numbers have stayed broadly flat (115&ndash;145 throughout) &ndash; consistent with the post-Brexit shift from EU to international recruitment already seen in UEL's student numbers (UDR05/UDR06).
+    </div>
+    <div class="callout finding">
+      <b>Gender pay gap:</b> the median hourly gap has narrowed from 9.3% (2018) to a low of 4.7% (2023), but has since ticked back up slightly to 5.1% (2025) &ndash; it has not closed, and has been essentially flat in the 4.7&ndash;5.1% range for three consecutive snapshots. Women's share of the highest-paid quarter has risen from 44.0% to 50.0% over the same period, reaching parity with the lower-paid quarters only in the last two years.
+    </div>
+    <div class="callout flag">
+      <span class="pill red">CAVEATS</span> Table 24's nationality categories (UK/EU/non-EU/not known) are not the same as ethnicity, and "not known" can be a non-trivial share in some years (up to 65 staff, 2014/15). The Gender Pay Gap disclosure is an organisation-wide snapshot at one date per year &ndash; it cannot be broken down by grade, contract type, faculty, or intersected with nationality or ethnicity, so it cannot on its own support a full equal-pay audit. The 31 March 2021 bonus-gap figures are excluded from the chart below as statistically meaningless (only 0.2%/0.1% of staff received any bonus that year); see the summary markdown for detail.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Staff Table 24 ("HE academic staff by nationality"), UEL-filtered (UKPRN 10007144), 2014/15&ndash;2024/25; HESA Staff Tables 4 and 5 (England/sector-wide only, no UEL breakdown possible), 2024/25; UEL Gender Pay Gap statutory disclosures, gender-pay-gap.service.gov.uk, snapshot years 2018&ndash;2025 (2020/21 not published, sector-wide pandemic suspension).
+<br><b>Data files:</b> Data/HESA Staff Table 24/UEL/UEL_table24.csv; Data/HESA Staff Table 4/ALL/table-4.csv; Data/HESA Staff Table 5/ALL/table-5.csv; Data/UEL Gender Pay Gap/UEL_Gender_Pay_Gap_Summary.md; Data/UEL Gender Pay Gap/Source/*.html.
+<br>Part of the trade union report series proposed in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> (report 5 of 12). See <code>Reports/TUR00 - Trade Union Report Index.html</code> for the full series.
+</footer>
+
+<script id="tur05-data" type="application/json">{"years": ["2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "uk": [570, 595, 600, 580, 570, 590, 575, 665, 730, 745, 710], "eu": [135, 130, 145, 135, 130, 130, 115, 130, 145, 145, 135], "noneu": [135, 125, 130, 125, 115, 110, 110, 120, 155, 210, 220], "notknown": [65, 45, 45, 15, 20, 30, 15, 15, 25, 40, 30], "total": [910, 895, 920, 860, 830, 860, 815, 930, 1055, 1140, 1095], "nonuk_pct": [37.4, 33.5, 34.8, 32.6, 31.3, 31.4, 29.4, 28.5, 30.8, 34.6, 35.2], "eth_white": 135305, "eth_bme": 48510, "eth_notknown": 18240, "dis_with": 15490, "dis_without": 166580, "dis_notknown": 19985, "gpg_years": ["2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"], "gpg_median": [9.3, 5.2, null, 8.0, 9.0, 4.7, 4.9, 5.1], "gpg_mean": [7.2, 2.5, null, 1.0, 3.0, 2.4, 3.2, 4.1], "gpg_women_bonus": [0, 0, null, 0.2, 64.0, 82.7, 83.0, 83.0], "gpg_men_bonus": [0, 0, null, 0.1, 69.0, 82.9, 83.9, 87.0], "gpg_years_q": ["2018", "2019", "2021", "2022", "2023", "2024", "2025"], "women_upper_q": [44.0, 45.0, 45.0, 49.0, 48.0, 50.0, 50.0], "women_uppermid_q": [54.0, 52.0, 52.0, 54.0, 57.0, 55.0, 54.0], "women_lowermid_q": [58.0, 59.0, 63.0, 62.0, 58.0, 60.0, 58.0], "women_lower_q": [64.0, 52.0, 54.0, 58.0, 56.0, 58.0, 60.0]}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur05-data').textContent);
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtInt(v) { return (v == null) ? "–" : Math.round(v).toLocaleString(); }
+function fmtPct(v) { return (v == null) ? "–" : v.toFixed(1) + "%"; }
+
+function renderStatRow() {
+  const lastNat = DATA.years.length - 1;
+  const lastGpg = DATA.gpg_years.length - 1;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n">${fmtPct(DATA.nonuk_pct[lastNat])}</div><div class="l">Non-UK share of academic staff</div><div class="s">2024/25</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(DATA.total[lastNat])}</div><div class="l">Total academic staff (headcount)</div><div class="s">2024/25</div></div>
+    <div class="stat-box"><div class="n flag">${fmtPct(DATA.gpg_median[lastGpg])}</div><div class="l">Median gender pay gap</div><div class="s">31 Mar 2025, women lower</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(DATA.women_upper_q[lastGpg])}</div><div class="l">Women's share, highest-paid quarter</div><div class="s">up from 44.0% in 2018</div></div>
+  `;
+}
+
+function renderNationalityChart() {
+  destroyChart('nat');
+  charts.nat = new Chart(document.getElementById('nationalityChart'), {
+    type: 'bar',
+    data: { labels: DATA.years, datasets: [
+      { label: 'UK', data: DATA.uk, backgroundColor: '#1F3864', stack: 's' },
+      { label: 'European Union', data: DATA.eu, backgroundColor: '#2E5395', stack: 's' },
+      { label: 'Non-European Union', data: DATA.noneu, backgroundColor: '#FFC000', stack: 's' },
+      { label: 'Not known', data: DATA.notknown, backgroundColor: '#9aa3af', stack: 's' }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: 'Academic staff (headcount)' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>UK</td>${DATA.uk.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>European Union</td>${DATA.eu.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Non-European Union</td>${DATA.noneu.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Not known</td>${DATA.notknown.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Total</td>${DATA.total.map(v=>`<td class="hi">${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Non-UK share</td>${DATA.nonuk_pct.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  document.getElementById('nationalityTable').innerHTML = html;
+}
+
+function renderNonukChart() {
+  destroyChart('nonuk');
+  charts.nonuk = new Chart(document.getElementById('nonukChart'), {
+    type: 'line',
+    data: { labels: DATA.years, datasets: [
+      { label: 'Non-UK share of academic staff', data: DATA.nonuk_pct, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: '% of academic staff' } } } }
+  });
+}
+
+function renderEthnicityChart() {
+  destroyChart('eth');
+  charts.eth = new Chart(document.getElementById('ethnicityChart'), {
+    type: 'pie',
+    data: { labels: ['White', 'Black, Asian or other minority ethnic', 'Not known'], datasets: [
+      { data: [DATA.eth_white, DATA.eth_bme, DATA.eth_notknown], backgroundColor: ['#2E5395', '#FFC000', '#9aa3af'] }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } } }
+  });
+}
+
+function renderDisabilityChart() {
+  destroyChart('dis');
+  charts.dis = new Chart(document.getElementById('disabilityChart'), {
+    type: 'bar',
+    data: { labels: ['With a known disability', 'No known disability', 'Not known'], datasets: [
+      { label: 'Academic staff, England, 2024/25', data: [DATA.dis_with, DATA.dis_without, DATA.dis_notknown], backgroundColor: ['#b02a2a', '#1e7e34', '#9aa3af'] }
+    ]},
+    options: { plugins: { legend: { display: false } }, scales: { y: { title: { display: true, text: 'Headcount' } } } }
+  });
+}
+
+function renderGpgChart() {
+  destroyChart('gpg');
+  charts.gpg = new Chart(document.getElementById('gpgChart'), {
+    type: 'line',
+    data: { labels: DATA.gpg_years, datasets: [
+      { label: 'Median hourly pay gap', data: DATA.gpg_median, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15, spanGaps: true },
+      { label: 'Mean hourly pay gap', data: DATA.gpg_mean, borderColor: '#2E5395', backgroundColor: '#2E5395', borderWidth: 2, borderDash: [5,3], tension: 0.15, spanGaps: true }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: '% (women lower than men)' } } } }
+  });
+  let html = `<tr><th>Snapshot date</th>${DATA.gpg_years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Median hourly pay gap</td>${DATA.gpg_median.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Mean hourly pay gap</td>${DATA.gpg_mean.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>% women receiving a bonus</td>${DATA.gpg_women_bonus.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>% men receiving a bonus</td>${DATA.gpg_men_bonus.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  document.getElementById('gpgTable').innerHTML = html;
+}
+
+function renderQuarterChart() {
+  destroyChart('quart');
+  charts.quart = new Chart(document.getElementById('quarterChart'), {
+    type: 'line',
+    data: { labels: DATA.gpg_years_q, datasets: [
+      { label: 'Upper (highest paid)', data: DATA.women_upper_q, borderColor: '#1F3864', backgroundColor: '#1F3864', borderWidth: 2, tension: 0.15 },
+      { label: 'Upper-middle', data: DATA.women_uppermid_q, borderColor: '#2E5395', backgroundColor: '#2E5395', borderWidth: 2, tension: 0.15 },
+      { label: 'Lower-middle', data: DATA.women_lowermid_q, borderColor: '#FFC000', backgroundColor: '#FFC000', borderWidth: 2, tension: 0.15 },
+      { label: 'Lower (lowest paid)', data: DATA.women_lower_q, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 2, tension: 0.15 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: "Women's share of headcount (%)" }, min: 30, max: 70 } } }
+  });
+}
+
+renderStatRow();
+renderNationalityChart();
+renderNonukChart();
+renderEthnicityChart();
+renderDisabilityChart();
+renderGpgChart();
+renderQuarterChart();
+</script>
+</body>
+</html>

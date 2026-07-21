@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UDR10 — UEL Qualifiers &amp; Degree Classification Explorer</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .controls { position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 1px solid var(--line); padding: 10px 24px; display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .control-group label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--grey); margin-bottom: 4px; }
+  .segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .segmented button { border: none; background: #fff; padding: 6px 12px; font-size: 13px; cursor: pointer; color: #333; }
+  .segmented button.active { background: var(--navy); color: #fff; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 380px; }
+  .chart-row { margin-top: 16px; }
+  .chart-row h3 { font-size: 13px; color: var(--navy); margin: 0 0 8px; }
+  .pct-wrap { position: relative; height: 300px; }
+  .pct-wrap canvas { max-height: none !important; height: 100% !important; width: 100% !important; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">UDR10</span> &mdash; UEL Qualifiers &amp; Degree Classification Explorer</h1>
+  <p>HESA Table 16 &mdash; qualifiers by level of qualification, and degree classification for first-degree qualifiers, 2014/15&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+</header>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Chart style</label>
+    <div class="segmented" id="stackControl">
+      <button data-val="stacked" class="active">Stacked</button>
+      <button data-val="grouped">Grouped</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <div class="callout flag">
+    <span class="pill">SCOPE</span> Degree classification is only published for <b>First degree</b> qualifiers (bachelor's), which is also the population NSS surveys (final-year undergraduates). Other qualification levels (Master's, PGCE, Doctorate, Foundation degree) are not classified &ndash; they're pass/fail or graded differently, so they only appear in the "qualifiers by level" section, not the classification section.
+  </div>
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="panel">
+    <h2>Row 1 &mdash; Qualifiers: Undergraduate vs. Postgraduate</h2>
+    <div class="sub">Total awards made each year, by broad level &ndash; numbers, then share</div>
+    <canvas id="ugpgChart" role="img" aria-label="Bar chart of undergraduate and postgraduate qualifiers by year." aria-describedby="ugpgTable"></canvas>
+    <div class="chart-row"><h3>Share of qualifiers (%)</h3><div class="pct-wrap"><canvas id="ugpgPctChart" role="img" aria-label="100 percent stacked bar chart of undergraduate vs postgraduate share by year." aria-describedby="ugpgTable"></canvas></div></div>
+    <table id="ugpgTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Row 2 &mdash; Within Undergraduate</h2>
+    <div class="sub">First degree / Foundation degree / Other undergraduate &ndash; numbers, then share. (HNC/HND omitted &ndash; zero UEL qualifiers in every year.) "Other undergraduate" is a HESA catch-all, not a single course type &ndash; see the note below the table.</div>
+    <canvas id="ugSplitChart" role="img" aria-label="Bar chart of undergraduate qualifiers split by first degree, foundation degree, and other undergraduate, by year." aria-describedby="ugSplitTable"></canvas>
+    <div class="chart-row"><h3>Share of undergraduate qualifiers (%)</h3><div class="pct-wrap"><canvas id="ugSplitPctChart" role="img" aria-label="100 percent stacked bar chart of undergraduate qualifier type share by year." aria-describedby="ugSplitTable"></canvas></div></div>
+    <table id="ugSplitTable" style="margin-top:14px"></table>
+    <div class="callout" style="margin-top:14px">
+      <b>What "Other undergraduate" actually is:</b> a HESA catch-all covering every sub-bachelor's undergraduate award <i>except</i> whatever a provider already reports separately (here, Foundation degree and HNC/HND). For UEL that leaves things like Certificate of Higher Education (CertHE), Diploma of Higher Education (DipHE), other undergraduate diplomas/certificates, professional qualifications at undergraduate level, and post-registration health/social care courses. HESA's public data doesn't split this bucket further by course type, so which of those UEL is actually awarding, and in what mix, can't be determined from this table.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Row 3 &mdash; Within Postgraduate</h2>
+    <div class="sub">Master's taught / Other PG taught / PGCE / Professional GCE / Other PG research / Doctorate research &ndash; numbers, then share. Two categories (Professional GCE, Other PG research) fall to zero in recent years &ndash; discontinued at UEL rather than a data gap.</div>
+    <canvas id="pgSplitChart" role="img" aria-label="Bar chart of postgraduate qualifiers split by sub-category, by year." aria-describedby="pgSplitTable"></canvas>
+    <div class="chart-row"><h3>Share of postgraduate qualifiers (%)</h3><div class="pct-wrap"><canvas id="pgSplitPctChart" role="img" aria-label="100 percent stacked bar chart of postgraduate qualifier type share by year." aria-describedby="pgSplitTable"></canvas></div></div>
+    <table id="pgSplitTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>All undergraduate qualifiers &mdash; classified vs. not classified</h2>
+    <div class="sub">HESA only publishes a First/2:1/2:2/Third breakdown for <b>First degree</b> (bachelor's) qualifiers &ndash; numbers, then share. Foundation degree and Other undergraduate awards don't carry an honours classification in this data at all (see caveat below); they're shown here as their own segments so it's clear they're a real, separate part of undergraduate output, not missing data.</div>
+    <canvas id="allUgClassChart" role="img" aria-label="Stacked bar chart of all undergraduate qualifiers by year, split into first-degree classification bands plus foundation degree and other undergraduate as separate, unclassified segments." aria-describedby="allUgClassTable"></canvas>
+    <div class="chart-row"><h3>Share of all undergraduate qualifiers (%)</h3><div class="pct-wrap"><canvas id="allUgClassPctChart" role="img" aria-label="100 percent stacked bar chart of undergraduate qualifier classification share by year." aria-describedby="allUgClassTable"></canvas></div></div>
+    <table id="allUgClassTable" style="margin-top:14px"></table>
+    <div class="callout" style="margin-top:14px">
+      <b>"Other undergraduate (not classified)" is a HESA catch-all, not one course.</b> It covers sub-bachelor's undergraduate awards other than Foundation degree/HNC/HND (which UEL reports separately) &ndash; things like CertHE, DipHE, other undergraduate diplomas/certificates, and undergraduate-level professional qualifications. It's genuinely not honours-classified because these aren't bachelor's degrees, not because the data is missing.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>First degree classification &mdash; counts and share</h2>
+    <div class="sub">First class / Upper second (2:1) / Lower second (2:2) / Third or Pass / Unclassified. Covers <b>First degree qualifiers only</b> &ndash; see the panel above for how that fits alongside Foundation degree and Other undergraduate qualifiers, which aren't classified.</div>
+    <canvas id="classCountsChart" role="img" aria-label="Bar chart of first degree classification counts by year." aria-describedby="classTable"></canvas>
+    <div class="chart-row"><h3>Share of first-degree qualifiers (%)</h3><div class="pct-wrap"><canvas id="classPctChart" role="img" aria-label="100 percent stacked bar chart of degree classification share by year." aria-describedby="classTable"></canvas></div></div>
+    <table id="classTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Does this show up in retention data? &mdash; UEL vs. sector, HESA Tables T3d &amp; T5</h2>
+    <div class="sub">A different HESA collection (UK Performance Indicators: non-continuation) tracks what happens to entrants, rather than what award qualifiers eventually receive. These two tables test whether "Other undergraduate" qualifiers are linked to weaker retention.</div>
+    <div class="callout">
+      <b>Table T3d &mdash; non-continuation of "Other undergraduate" entrants (UK, full-time, UEL vs. sector benchmark).</b> Tracks whether entrants are still in HE the following year. UEL's "no longer in HE" rate for this group has been consistently at or above the sector benchmark, and reached 25.2% in the 2019/20 entry cohort &ndash; the last year this series covers.
+    </div>
+    <canvas id="t3dChart" role="img" aria-label="Line chart comparing UEL and sector benchmark non-continuation rate for Other undergraduate entrants, 2014/15 to 2019/20." aria-describedby="t3dTable"></canvas>
+    <table id="t3dTable" style="margin-top:14px"></table>
+    <div class="callout" style="margin-top:14px">
+      <b>Table T5 &mdash; projected outcomes for First-degree starters (2019/20 entry cohort, the only year in this file).</b> Of UEL's 3,265 UK full-time first-degree starters, HESA projects <b>9.4%</b> will end up qualifying with a lower ("Other") award instead of the degree they started &ndash; almost double the sector benchmark of <b>4.8%</b>. This is the closest direct evidence in the available data that UEL's elevated "Other undergraduate" qualifier numbers reflect first-degree entrants falling short of the honours degree, rather than students who chose a sub-degree course from the outset.
+    </div>
+    <canvas id="t5Chart" role="img" aria-label="Bar chart comparing UEL and sector benchmark projected outcomes for first degree starters: degree, other award, transfer, neither." aria-describedby="t5Table"></canvas>
+    <table id="t5Table" style="margin-top:14px"></table>
+    <div class="callout flag" style="margin-top:14px">
+      <span class="pill">CAVEAT</span> T3d and T5 are a genuinely different HESA collection from Table 16 (UK Performance Indicators: non-continuation, not the qualifiers table), covering UK-domiciled full-time entrants only, and they were <b>discontinued after the 2020/21 edition</b> &ndash; 2019/20 is the final entry-cohort year HESA published under this methodology. There is no more recent official version to update this with; successor measures (continuation/completion rates) are now published by the Office for Students under Condition B3 and the TEF, not by HESA. T3d and Table 16 also can't be reconciled numerically &ndash; T3d counts <i>entrants</i> in a cohort year, Table 16 counts <i>qualifiers</i> in an award year, so a rate in one table is not a share of a count in the other.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>The current picture &mdash; OfS Student Outcomes Data Dashboard (Condition B3)</h2>
+    <div class="sub">HESA's T3/T5 series stopped at the 2019/20 entry cohort; the Office for Students now publishes the successor continuation/completion measures used to regulate condition B3. Unlike T3/T5, the OfS data is a live series &ndash; but it only publishes one current 3-year rolling window per indicator, not a year-by-year history, so this is a snapshot comparison rather than a trend.</div>
+    <canvas id="ofsChart" role="img" aria-label="Bar chart comparing UEL continuation and completion rates to sector benchmark, for Other Undergraduate and First Degree, full-time taught students." aria-describedby="ofsTable"></canvas>
+    <table id="ofsTable" style="margin-top:14px"></table>
+    <div class="callout" style="margin-top:14px">
+      <b>Other Undergraduate's completion rate is close to First Degree's &ndash; it's continuation where the gap shows up.</b> UEL's Other Undergraduate continuation rate (79.6%, entrants 2019/20&ndash;2021/22) sits just below its own sector benchmark (80.7%) and clearly below UEL's First Degree continuation rate (84.8%). Completion is closer between the two levels (72.3% vs 85.2%) but Other Undergraduate's much smaller cohort (denominator 160 vs 13,360) makes that figure less precise.
+    </div>
+    <div class="callout flag" style="margin-top:14px">
+      <span class="pill">CAVEAT</span> This is a different population definition again &ndash; OfS "Other Undergraduate" (Taught population, full-time) is a course-classification concept, not the same as HESA Table 16's "Other undergraduate" qualifiers or Table T3d's entrants; the three are related but not numerically identical. OfS windows are also non-overlapping and don't line up year-for-year with the HESA T3d series above (continuation: entrants 2019/20&ndash;2021/22; completion: entrants 2016/17&ndash;2018/19). Figures shown use the "Taught" population, Full-time mode, "Overall" (no demographic split).
+    </div>
+
+    <h3 style="margin-top:20px;font-size:13px;color:var(--navy)">Does this break down by subject? &mdash; Other Undergraduate continuation &amp; completion by CAH2 subject</h3>
+    <div class="sub">The OfS CSV carries a subject-of-study split (CAH2 level). Most cells are too small to publish (HESA/OfS suppress cohorts below their disclosure threshold), but the ones that do survive line up with the named courses in the Awards Catalogue &ndash; "Subjects allied to medicine" is almost certainly the Nursing Associate FdSc population.</div>
+    <table id="ofsSubjectTable" style="margin-top:10px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout">
+      <b>What is "Other undergraduate," specifically?</b> Per HESA's own published definition, it's a catch-all for sub-bachelor's undergraduate qualifications that a provider doesn't report as a separate named category &ndash; things like Certificate of Higher Education (CertHE), Diploma of Higher Education (DipHE), other undergraduate diplomas and certificates, professional qualifications at undergraduate level, and post-registration health/social care awards. Foundation degree and HNC/HND are excluded from it here because UEL reports those two separately elsewhere in this same table. At UEL it's substantial &ndash; 1,390 qualifiers in 2024/25, more than Foundation degree &ndash; but HESA's open data doesn't break this bucket down further by course type, so which specific awards make it up (and in what proportions) isn't answerable from this table alone; it would need UEL's own course catalogue or HESA's restricted-access record-level data (Heidi Plus) to pin down further.
+    </div>
+    <div class="callout">
+      <b>The First-class share has more than doubled.</b> First class honours went from around 17&ndash;18% of UEL's first-degree qualifiers in 2014/15 to around 44% in 2024/25 (exact denominator varies slightly depending on whether it's measured against the "First degree" qualifier count or the sum of classifications, due to HESA's independent rounding of each), while Upper second (2:1) stayed roughly flat and Lower second/Third class both fell sharply &ndash; the same "grade inflation" pattern documented across the UK sector over this period, not something specific to UEL.
+    </div>
+    <div class="callout">
+      <b>Postgraduate-taught qualifiers grew roughly 7.5x.</b> Master's taught awards rose from 850 in 2014/15 to 6,385 in 2024/25 &ndash; consistent with the postgraduate-taught international enrolment growth documented in the Student Origin Explorer, though this table can't confirm the link directly (no domicile dimension here).
+    </div>
+    <div class="callout flag">
+      <span class="pill">CAVEAT</span> Master's, PGCE, and other non-first-degree awards genuinely are graded in practice (typically Distinction/Merit/Pass, or Pass/Fail) &ndash; but HESA's published qualifiers table only breaks classification out for <b>First degree</b> qualifiers. The Distinction/Merit/Pass split for other awards isn't in this open dataset, so it can't be shown here; that's a publication gap, not a claim that those awards are ungraded.
+    </div>
+    <div class="callout flag">
+      <span class="pill">CAVEAT</span> This table has no domicile or subject dimension, so classification trends can't be split by UK/Intl or by department. Figures are rounded to the nearest 5 by HESA's disclosure control; category sums may not exactly match published totals.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Table 16 ("HE qualifiers by HE provider, level of qualification, classification"), 2014/15&ndash;2024/25, University of East London (UKPRN 10007144). "Other undergraduate" definition per HESA's published Definitions and Data Standards (hesa.ac.uk/support/definitions). HESA UK Performance Indicators, Non-continuation Table T3d (2014/15&ndash;2019/20 entry) and Projected Learning Outcomes Table T5 (2019/20 entry cohort), UEL vs. sector benchmark &ndash; final editions published under this methodology; discontinued after 2020/21. Office for Students Student Outcomes Data Dashboard (Condition B3), UEL provider file (UKPRN 10007144), Taught population, Full-time mode, latest published rolling-window continuation/completion figures, including subject-of-study (CAH2) split. Figures rounded to the nearest 5 by HESA's disclosure control.
+<br><b>Data files:</b> Data/HESA Student Table 16/UEL/UEL_table16.csv; Data/Hesa T3 and T5/table-t3.csv, ukpis-table-t5.csv; Data/OfS/student_outcomes__10007144.csv.
+</footer>
+
+<script id="q16-data" type="application/json">{"years": ["2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "levels": {"Total": [6985.0, 5710.0, 5100.0, 4510.0, 5010.0, 4785.0, 5730.0, 7560.0, 8860.0, 9370.0, 11630.0], "Total undergraduate": [5070.0, 3890.0, 3790.0, 2975.0, 3265.0, 2700.0, 3275.0, 3600.0, 4005.0, 3780.0, 4480.0], "Total postgraduate": [1915.0, 1820.0, 1310.0, 1535.0, 1745.0, 2085.0, 2455.0, 3960.0, 4855.0, 5590.0, 7150.0], "First degree": [3305.0, 2640.0, 2635.0, 2290.0, 2235.0, 2180.0, 2415.0, 2100.0, 2270.0, 2710.0, 3010.0], "Foundation degree": [30.0, 5.0, 5.0, 20.0, 15.0, 25.0, 65.0, 25.0, 210.0, 145.0, 75.0], "HNC/HND": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "Other undergraduate": [1680.0, 1205.0, 1135.0, 660.0, 1015.0, 480.0, 790.0, 1475.0, 1520.0, 925.0, 1390.0], "Master's taught": [850.0, 865.0, 565.0, 825.0, 975.0, 1230.0, 1435.0, 2995.0, 3805.0, 5225.0, 6385.0], "Other postgraduate taught": [615.0, 525.0, 445.0, 350.0, 385.0, 515.0, 530.0, 565.0, 685.0, 260.0, 425.0], "Postgraduate Certificate in Education": [385.0, 345.0, 240.0, 285.0, 315.0, 285.0, 430.0, 365.0, 315.0, 80.0, 260.0], "Professional Graduate Certificate in Education": [55.0, 35.0, 15.0, 5.0, 5.0, 15.0, 5.0, 5.0, 0, 0, 0], "Other postgraduate research": [25.0, 25.0, 20.0, 20.0, 25.0, 10.0, 15.0, 5.0, 0, 0, 0], "Doctorate research": [35.0, 65.0, 40.0, 55.0, 50.0, 45.0, 40.0, 35.0, 55.0, 25.0, 80.0]}, "classifications": {"First class honours": [580.0, 505.0, 605.0, 620.0, 610.0, 770.0, 830.0, 705.0, 820.0, 1050.0, 1315.0], "Upper second class honours": [1375.0, 1115.0, 1080.0, 940.0, 960.0, 885.0, 990.0, 850.0, 950.0, 1100.0, 1155.0], "Lower second class honours": [950.0, 785.0, 700.0, 590.0, 540.0, 420.0, 470.0, 405.0, 360.0, 455.0, 435.0], "Third class honours/Pass": [400.0, 225.0, 250.0, 140.0, 125.0, 105.0, 125.0, 140.0, 55.0, 70.0, 50.0], "Unclassified": [0, 10.0, 0, 0, 0, 0, 0, 0, 85.0, 35.0, 50.0], "Not applicable or not known": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}}</script>
+<script id="t3t5-data" type="application/json">{"t3d_other_ug": {"2014/15": {"entrants": 145.0, "continue_pct": 85.4, "noHE_n": 20.0, "noHE_pct": 13.2, "benchmark_pct": 9.7}, "2015/16": {"entrants": 135.0, "continue_pct": 86.9, "noHE_n": 15.0, "noHE_pct": 10.9, "benchmark_pct": 11.0}, "2016/17": {"entrants": 110.0, "continue_pct": 78.6, "noHE_n": 25.0, "noHE_pct": 20.5, "benchmark_pct": 14.2}, "2017/18": {"entrants": 95.0, "continue_pct": 82.8, "noHE_n": 15.0, "noHE_pct": 15.1, "benchmark_pct": 15.3}, "2018/19": {"entrants": 195.0, "continue_pct": 89.3, "noHE_n": 20.0, "noHE_pct": 9.7, "benchmark_pct": 11.7}, "2019/20": {"entrants": 275.0, "continue_pct": 69.0, "noHE_n": 70.0, "noHE_pct": 25.2, "benchmark_pct": 13.5}}, "t3a_first_degree_young": {"2014/15": {"entrants": 1875.0, "continue_pct": 84.5, "noHE_n": 220.0, "noHE_pct": 11.6, "benchmark_pct": 10.2}, "2015/16": {"entrants": 1685.0, "continue_pct": 83.2, "noHE_n": 200.0, "noHE_pct": 11.9, "benchmark_pct": 10.3}, "2016/17": {"entrants": 1735.0, "continue_pct": 83.2, "noHE_n": 210.0, "noHE_pct": 12.2, "benchmark_pct": 10.3}, "2017/18": {"entrants": 1830.0, "continue_pct": 80.6, "noHE_n": 265.0, "noHE_pct": 14.6, "benchmark_pct": 10.8}, "2018/19": {"entrants": 1645.0, "continue_pct": 81.9, "noHE_n": 210.0, "noHE_pct": 12.7, "benchmark_pct": 10.4}, "2019/20": {"entrants": 1480.0, "continue_pct": 88.4, "noHE_n": 120.0, "noHE_pct": 8.3, "benchmark_pct": 8.4}}, "t5": {"starters": 3265.0, "pct_mature": 55.4, "degree_pct": 69.8, "degree_bench": 76.3, "neither_pct": 11.8, "neither_bench": 13.8, "other_award_pct": 9.4, "other_award_bench": 4.8, "transfer_pct": 8.9, "transfer_bench": 5.1, "not_known_pct": 0.2}}</script>
+<script id="ofs-data" type="application/json">{"OtherUndergraduate_Continuation": {"2019-2022": {"value": 79.6, "denominator": 450.0, "benchmark": 80.7, "difference": -1.0}}, "OtherUndergraduate_Completion": {"2016-2019": {"value": 72.3, "denominator": 160.0, "benchmark": 71.8, "difference": 0.5}}, "FirstDegree_Continuation": {"2019-2022": {"value": 84.8, "denominator": 14130.0, "benchmark": 84.2, "difference": 0.7}}, "FirstDegree_Completion": {"2016-2019": {"value": 85.2, "denominator": 13360.0, "benchmark": 80.4, "difference": 4.8}}}</script>
+<script id="ofs-subject-data" type="application/json">{"Continuation": [{"name": "Subjects allied to medicine", "code": "CAH02-04", "value": 80.8, "denom": 260.0, "bench": 78.7, "year": "2019-2022"}, {"name": "Business and management", "code": "CAH17-01", "value": 69.8, "denom": 90.0, "bench": 78.3, "year": "2019-2022"}, {"name": "Design, and creative and performing arts", "code": "CAH25-02", "value": null, "denom": 30.0, "bench": 90.4, "year": "2019-2022"}, {"name": "Education and teaching", "code": "CAH22-01", "value": null, "denom": "[low]", "bench": "[low]", "year": "2019-2022"}, {"name": "Computing", "code": "CAH11-01", "value": null, "denom": "[low]", "bench": "[low]", "year": "2019-2022"}, {"name": "Engineering and technology", "code": "CAH10-01", "value": null, "denom": "[low]", "bench": "[low]", "year": "2019-2022"}, {"name": "Combined and general studies", "code": "CAH23-01", "value": null, "denom": "[low]", "bench": "[low]", "year": "2019-2022"}, {"name": "Social sciences", "code": "CAH15-04", "value": null, "denom": "[low]", "bench": "[low]", "year": "2019-2022"}, {"name": "Social sciences", "code": "CAH15-01", "value": null, "denom": "[low]", "bench": "[low]", "year": "2019-2022"}], "Completion": [{"name": "Biological and sport sciences", "code": "CAH03-02", "value": 62.8, "denom": 80.0, "bench": 66.4, "year": "2016-2019"}, {"name": "Engineering and technology", "code": "CAH10-01", "value": 75.0, "denom": 40.0, "bench": 75.2, "year": "2016-2019"}, {"name": "Business and management", "code": "CAH17-01", "value": 88.0, "denom": 30.0, "bench": 71.1, "year": "2016-2019"}, {"name": "Social sciences", "code": "CAH15-01", "value": null, "denom": "[low]", "bench": "[low]", "year": "2016-2019"}, {"name": "Subjects allied to medicine", "code": "CAH02-04", "value": null, "denom": "[low]", "bench": "[low]", "year": "2016-2019"}]}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('q16-data').textContent);
+const T3T5 = JSON.parse(document.getElementById('t3t5-data').textContent);
+const OFS = JSON.parse(document.getElementById('ofs-data').textContent);
+const OFS_SUBJ = JSON.parse(document.getElementById('ofs-subject-data').textContent);
+const YEARS = DATA.years;
+const FIRST = YEARS[0];
+const LATEST = YEARS[YEARS.length - 1];
+const state = { stack: 'stacked' };
+const charts = {};
+
+if (window.ChartDataLabels) {
+  Chart.register(ChartDataLabels);
+  Chart.defaults.set('plugins.datalabels', { display: false });
+}
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtInt(v) { return v == null ? "–" : Math.round(v).toLocaleString(); }
+function fmtGrowth(v) { return v == null ? "–" : (v >= 0 ? "+" : "") + v.toFixed(1) + "%"; }
+function fmtPct(v) { return v == null ? "–" : v.toFixed(1) + "%"; }
+function lvl(name) { return DATA.levels[name]; }
+function cls(name) { return DATA.classifications[name]; }
+
+function renderStatRow() {
+  const totalFirst = lvl('Total')[0], totalLatest = lvl('Total')[lvl('Total').length-1];
+  const fdFirst = lvl('First degree')[0], fdLatest = lvl('First degree')[lvl('First degree').length-1];
+  const firstClassFirst = cls('First class honours')[0], firstClassLatest = cls('First class honours')[cls('First class honours').length-1];
+  const pctFirstClassFirst = fdFirst ? 100*firstClassFirst/fdFirst : null;
+  const pctFirstClassLatest = fdLatest ? 100*firstClassLatest/fdLatest : null;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n">${fmtInt(totalLatest)}</div><div class="l">Total qualifiers, ${LATEST}</div><div class="s">was ${fmtInt(totalFirst)} in ${FIRST}</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(fdLatest)}</div><div class="l">First degree qualifiers</div><div class="s">was ${fmtInt(fdFirst)} in ${FIRST}</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(pctFirstClassLatest)}</div><div class="l">First class share</div><div class="s">was ${fmtPct(pctFirstClassFirst)} in ${FIRST}</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(lvl("Master's taught")[lvl("Master's taught").length-1])}</div><div class="l">Master's taught qualifiers</div><div class="s">was ${fmtInt(lvl("Master's taught")[0])} in ${FIRST}</div></div>
+  `;
+}
+
+// Builds a counts chart, a paired 100%-stacked share chart, and a table with both
+// counts and per-category % rows ("numbers then percentages" throughout, matching the
+// First degree classification panel's format).
+function buildBarRow(chartId, pctChartId, tableId, rowDefs, colors) {
+  destroyChart(chartId);
+  charts[chartId] = new Chart(document.getElementById(chartId), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: rowDefs.map((name, i) => ({
+        label: name, data: lvl(name), backgroundColor: colors[i % colors.length],
+        stack: state.stack==='stacked' ? 's' : undefined
+      }))
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { stacked: state.stack==='stacked', title: { display: true, text: 'Qualifiers' } }, x: { stacked: state.stack==='stacked' } }
+    }
+  });
+
+  const totals = YEARS.map((y,i) => rowDefs.reduce((sum,name) => sum + lvl(name)[i], 0));
+  destroyChart(pctChartId);
+  charts[pctChartId] = new Chart(document.getElementById(pctChartId), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: rowDefs.map((name, i) => ({
+        label: name, data: lvl(name).map((v,idx) => totals[idx] ? 100*v/totals[idx] : null),
+        backgroundColor: colors[i % colors.length], stack: 's',
+        datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 8, color: '#fff', font: { size: 10, weight: 'bold' }, formatter: v => v!=null ? v.toFixed(0)+'%' : '' }
+      }))
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+      scales: { x: { stacked: true }, y: { stacked: true, min: 0, max: 100, title: { display: true, text: '%' } } }
+    }
+  });
+
+  let html = `<tr><th>Category</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}<th>Growth</th></tr>`;
+  rowDefs.forEach(name => {
+    const series = lvl(name);
+    const first = series[0], latest = series[series.length-1];
+    const growth = first ? 100*(latest-first)/first : null;
+    const gCls = growth == null ? '' : (growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${name}</td>${series.map(v=>`<td>${fmtInt(v)}</td>`).join('')}<td class="${gCls}">${fmtGrowth(growth)}</td></tr>`;
+    html += `<tr><td><i>${name} %</i></td>${series.map((v,idx)=>`<td>${fmtPct(totals[idx] ? 100*v/totals[idx] : null)}</td>`).join('')}<td></td></tr>`;
+  });
+  document.getElementById(tableId).innerHTML = html;
+}
+
+function renderUgPg() {
+  buildBarRow('ugpgChart', 'ugpgPctChart', 'ugpgTable', ['Total undergraduate', 'Total postgraduate'], ['#1F3864', '#b02a2a']);
+}
+function renderUgSplit() {
+  buildBarRow('ugSplitChart', 'ugSplitPctChart', 'ugSplitTable', ['First degree', 'Foundation degree', 'Other undergraduate'], ['#1F3864', '#7893c2', '#2E5395']);
+}
+function renderPgSplit() {
+  buildBarRow('pgSplitChart', 'pgSplitPctChart', 'pgSplitTable',
+    ["Master's taught", 'Other postgraduate taught', 'Postgraduate Certificate in Education', 'Professional Graduate Certificate in Education', 'Other postgraduate research', 'Doctorate research'],
+    ['#b02a2a', '#e8c1a0', '#D55E00', '#CC79A7', '#009E73', '#56B4E9']);
+}
+
+const classNames = ['First class honours', 'Upper second class honours', 'Lower second class honours', 'Third class honours/Pass', 'Unclassified'];
+const classColors = ['#1e7e34', '#56B4E9', '#E69F00', '#b02a2a', '#999999'];
+
+// All undergraduate qualifiers, in one bar: First-degree classification bands (which DO carry a
+// classification) stacked alongside Foundation degree and Other undergraduate (which don't).
+// This exists specifically so the classification chart below isn't mistaken for covering all degrees.
+function renderAllUgClass() {
+  destroyChart('allUgClass');
+  const segments = [
+    { label: 'First class (First degree)', data: cls('First class honours'), color: '#1e7e34' },
+    { label: 'Upper second / 2:1 (First degree)', data: cls('Upper second class honours'), color: '#56B4E9' },
+    { label: 'Lower second / 2:2 (First degree)', data: cls('Lower second class honours'), color: '#E69F00' },
+    { label: 'Third / Pass (First degree)', data: cls('Third class honours/Pass'), color: '#b02a2a' },
+    { label: 'Unclassified (First degree)', data: cls('Unclassified'), color: '#999999' },
+    { label: 'Foundation degree (not classified)', data: lvl('Foundation degree'), color: '#CC79A7' },
+    { label: 'Other undergraduate (not classified)', data: lvl('Other undergraduate'), color: '#7893c2' }
+  ];
+  charts.allUgClass = new Chart(document.getElementById('allUgClassChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: segments.map(s => ({ label: s.label, data: s.data, backgroundColor: s.color, stack: 's' }))
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10 } } } },
+      scales: { y: { stacked: true, title: { display: true, text: 'Qualifiers' } }, x: { stacked: true } }
+    }
+  });
+
+  const allUgTotals = YEARS.map((y,i) => segments.reduce((sum,s) => sum + s.data[i], 0));
+  destroyChart('allUgClassPct');
+  charts.allUgClassPct = new Chart(document.getElementById('allUgClassPctChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: segments.map(s => ({
+        label: s.label, data: s.data.map((v,idx) => allUgTotals[idx] ? 100*v/allUgTotals[idx] : null),
+        backgroundColor: s.color, stack: 's',
+        datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 8, color: '#fff', font: { size: 10, weight: 'bold' }, formatter: v => v!=null ? v.toFixed(0)+'%' : '' }
+      }))
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10 } } } },
+      scales: { x: { stacked: true }, y: { stacked: true, min: 0, max: 100, title: { display: true, text: '%' } } }
+    }
+  });
+
+  let html = `<tr><th>Category</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}<th>Growth</th></tr>`;
+  segments.forEach((s,i) => {
+    const first = s.data[0], latest = s.data[s.data.length-1];
+    const growth = first ? 100*(latest-first)/first : null;
+    const gCls = growth == null ? '' : (growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${s.label}</td>${s.data.map(v=>`<td>${fmtInt(v)}</td>`).join('')}<td class="${gCls}">${fmtGrowth(growth)}</td></tr>`;
+    html += `<tr><td><i>${s.label} %</i></td>${s.data.map((v,idx)=>`<td>${fmtPct(allUgTotals[idx] ? 100*v/allUgTotals[idx] : null)}</td>`).join('')}<td></td></tr>`;
+  });
+  document.getElementById('allUgClassTable').innerHTML = html;
+}
+
+function renderClassification() {
+  destroyChart('classCounts');
+  charts.classCounts = new Chart(document.getElementById('classCountsChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: classNames.map((name, i) => ({
+        label: name.replace(' class honours','').replace(' honours',''), data: cls(name), backgroundColor: classColors[i],
+        stack: state.stack==='stacked' ? 's' : undefined
+      }))
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { stacked: state.stack==='stacked', title: { display: true, text: 'First-degree qualifiers' } }, x: { stacked: state.stack==='stacked' } }
+    }
+  });
+
+  destroyChart('classPct');
+  const fdTotals = YEARS.map((yr,i) => classNames.reduce((sum,name) => sum + cls(name)[i], 0));
+  charts.classPct = new Chart(document.getElementById('classPctChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: classNames.map((name, i) => ({
+        label: name.replace(' class honours','').replace(' honours',''),
+        data: cls(name).map((v,idx) => fdTotals[idx] ? 100*v/fdTotals[idx] : null),
+        backgroundColor: classColors[i], stack: 's',
+        datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 8, color: i===2||i===4?'#333':'#fff', font: { size: 10, weight: 'bold' }, formatter: v => v!=null ? v.toFixed(0)+'%' : '' }
+      }))
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+      scales: { x: { stacked: true }, y: { stacked: true, min: 0, max: 100, title: { display: true, text: '%' } } }
+    }
+  });
+
+  let html = `<tr><th>Classification</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}<th>Growth</th></tr>`;
+  classNames.forEach(name => {
+    const series = cls(name);
+    const first = series[0], latest = series[series.length-1];
+    const growth = first ? 100*(latest-first)/first : null;
+    const gCls = growth == null ? '' : (growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${name}</td>${series.map(v=>`<td>${fmtInt(v)}</td>`).join('')}<td class="${gCls}">${fmtGrowth(growth)}</td></tr>`;
+  });
+  html += `<tr><td><i>% First class</i></td>${YEARS.map((y,i) => `<td>${fmtPct(fdTotals[i] ? 100*cls('First class honours')[i]/fdTotals[i] : null)}</td>`).join('')}<td></td></tr>`;
+  document.getElementById('classTable').innerHTML = html;
+}
+
+function renderT3d() {
+  destroyChart('t3d');
+  const t3years = Object.keys(T3T5.t3d_other_ug);
+  const uelSeries = t3years.map(y => T3T5.t3d_other_ug[y].noHE_pct);
+  const benchSeries = t3years.map(y => T3T5.t3d_other_ug[y].benchmark_pct);
+  charts.t3d = new Chart(document.getElementById('t3dChart'), {
+    type: 'line',
+    data: {
+      labels: t3years,
+      datasets: [
+        { label: 'UEL — % no longer in HE', data: uelSeries, borderColor: '#b02a2a', backgroundColor: '#b02a2a', tension: 0.15, pointRadius: 4 },
+        { label: 'Sector benchmark (%)', data: benchSeries, borderColor: '#6b7280', backgroundColor: '#6b7280', borderDash: [6,3], tension: 0.15, pointRadius: 3 }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { title: { display: true, text: '% of entrants no longer in HE' }, min: 0 } }
+    }
+  });
+  let html = `<tr><th>Entry year</th>${t3years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Entrants (Other undergraduate, UEL)</td>${t3years.map(y=>`<td>${fmtInt(T3T5.t3d_other_ug[y].entrants)}</td>`).join('')}</tr>`;
+  html += `<tr><td>% continued at UEL</td>${t3years.map(y=>`<td>${fmtPct(T3T5.t3d_other_ug[y].continue_pct)}</td>`).join('')}</tr>`;
+  html += `<tr><td>% no longer in HE</td>${t3years.map(y=>`<td>${fmtPct(T3T5.t3d_other_ug[y].noHE_pct)}</td>`).join('')}</tr>`;
+  html += `<tr><td><i>Sector benchmark, % no longer in HE</i></td>${t3years.map(y=>`<td>${fmtPct(T3T5.t3d_other_ug[y].benchmark_pct)}</td>`).join('')}</tr>`;
+  document.getElementById('t3dTable').innerHTML = html;
+}
+
+function renderT5() {
+  destroyChart('t5');
+  const t5 = T3T5.t5;
+  const cats = ['Degree', 'Other award', 'Transfer', 'Neither award nor transfer'];
+  const uelVals = [t5.degree_pct, t5.other_award_pct, t5.transfer_pct, t5.neither_pct];
+  const benchVals = [t5.degree_bench, t5.other_award_bench, t5.transfer_bench, t5.neither_bench];
+  charts.t5 = new Chart(document.getElementById('t5Chart'), {
+    type: 'bar',
+    data: {
+      labels: cats,
+      datasets: [
+        { label: 'UEL — projected (%)', data: uelVals, backgroundColor: '#1F3864' },
+        { label: 'Sector benchmark (%)', data: benchVals, backgroundColor: '#B7C3DC' }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { title: { display: true, text: '% of first-degree starters (projected)' }, min: 0 } }
+    }
+  });
+  let html = `<tr><th>Outcome</th><th>UEL (projected %)</th><th>Sector benchmark (%)</th></tr>`;
+  cats.forEach((c,i) => { html += `<tr><td>${c}</td><td>${fmtPct(uelVals[i])}</td><td>${fmtPct(benchVals[i])}</td></tr>`; });
+  html += `<tr><td>Number of starters (2019/20 cohort)</td><td colspan="2">${fmtInt(t5.starters)}</td></tr>`;
+  document.getElementById('t5Table').innerHTML = html;
+}
+
+function renderOfs() {
+  destroyChart('ofs');
+  const rows = [
+    { label: 'Other UG — Continuation', d: OFS.OtherUndergraduate_Continuation, window: Object.keys(OFS.OtherUndergraduate_Continuation)[0] },
+    { label: 'First Degree — Continuation', d: OFS.FirstDegree_Continuation, window: Object.keys(OFS.FirstDegree_Continuation)[0] },
+    { label: 'Other UG — Completion', d: OFS.OtherUndergraduate_Completion, window: Object.keys(OFS.OtherUndergraduate_Completion)[0] },
+    { label: 'First Degree — Completion', d: OFS.FirstDegree_Completion, window: Object.keys(OFS.FirstDegree_Completion)[0] },
+  ];
+  const uelVals = rows.map(r => r.d[r.window].value);
+  const benchVals = rows.map(r => r.d[r.window].benchmark);
+  charts.ofs = new Chart(document.getElementById('ofsChart'), {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => `${r.label}\n(${r.window})`),
+      datasets: [
+        { label: 'UEL (%)', data: uelVals, backgroundColor: '#1F3864' },
+        { label: 'Sector benchmark (%)', data: benchVals, backgroundColor: '#B7C3DC' }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { title: { display: true, text: '%' }, min: 0, max: 100 } }
+    }
+  });
+  let html = `<tr><th>Measure</th><th>Entry cohort window</th><th>UEL (%)</th><th>Benchmark (%)</th><th>Difference (pp)</th><th>Denominator</th></tr>`;
+  rows.forEach(r => {
+    const rec = r.d[r.window];
+    html += `<tr><td>${r.label}</td><td>${r.window}</td><td>${fmtPct(rec.value)}</td><td>${fmtPct(rec.benchmark)}</td><td class="${rec.difference>=0?'pos':'neg'}">${fmtGrowth(rec.difference)}</td><td>${fmtInt(rec.denominator)}</td></tr>`;
+  });
+  document.getElementById('ofsTable').innerHTML = html;
+}
+
+function suppFmt(v, isPct) {
+  if (v == null) return '<span style="color:#aaa">suppressed</span>';
+  if (typeof v === 'string') return `<span style="color:#aaa">${v}</span>`; // e.g. "[low]"
+  return isPct ? fmtPct(v) : fmtInt(v);
+}
+
+function renderOfsSubject() {
+  let html = `<tr><th>Subject (CAH2)</th><th>Continuation &ndash; UEL</th><th>Continuation &ndash; benchmark</th><th>Continuation n</th><th>Completion &ndash; UEL</th><th>Completion &ndash; benchmark</th><th>Completion n</th></tr>`;
+  const cont = OFS_SUBJ.Continuation, comp = OFS_SUBJ.Completion;
+  const names = [...new Set([...cont.map(o=>o.name), ...comp.map(o=>o.name)])];
+  names.forEach(name => {
+    const c = cont.find(o => o.name === name);
+    const p = comp.find(o => o.name === name);
+    html += `<tr><td>${name}</td>` +
+      `<td>${c ? suppFmt(c.value, true) : '&ndash;'}</td><td>${c ? suppFmt(c.bench, true) : '&ndash;'}</td><td>${c ? suppFmt(c.denom, false) : '&ndash;'}</td>` +
+      `<td>${p ? suppFmt(p.value, true) : '&ndash;'}</td><td>${p ? suppFmt(p.bench, true) : '&ndash;'}</td><td>${p ? suppFmt(p.denom, false) : '&ndash;'}</td></tr>`;
+  });
+  document.getElementById('ofsSubjectTable').innerHTML = html;
+}
+
+function renderAll() {
+  renderStatRow();
+  renderUgPg();
+  renderUgSplit();
+  renderPgSplit();
+  renderAllUgClass();
+  renderClassification();
+  renderT3d();
+  renderT5();
+  renderOfs();
+  renderOfsSubject();
+}
+
+renderAll();
+
+document.getElementById('stackControl').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  state.stack = e.target.dataset.val;
+  document.querySelectorAll('#stackControl button').forEach(b => b.classList.toggle('active', b === e.target));
+  renderUgPg();
+  renderUgSplit();
+  renderPgSplit();
+  renderClassification();
+});
+</script>
+</body>
+</html>

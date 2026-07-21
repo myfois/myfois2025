@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR00 — Trade Union Report Index</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .layout { max-width: 980px; margin: 0 auto; padding: 20px 24px 60px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 14px 0; display: flex; gap: 16px; align-items: flex-start; transition: box-shadow .15s, transform .15s; }
+  .card:hover { box-shadow: 0 4px 14px rgba(31,56,100,.12); transform: translateY(-1px); }
+  .card .id { flex: 0 0 60px; font-size: 20px; font-weight: 700; color: var(--navy); }
+  .card .body { flex: 1; }
+  .card h2 { margin: 0 0 4px; font-size: 16px; }
+  .card h2 a { color: var(--navy2); text-decoration: none; }
+  .card h2 a:hover { text-decoration: underline; }
+  .card p { margin: 0; font-size: 13.5px; color: #444; }
+  .card .tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #eef1f8; color: var(--navy); border-radius: 4px; padding: 2px 7px; margin-top: 8px; }
+  .card .tag.flag { background: #fbecec; color: var(--red); }
+  .section-heading { margin: 28px 0 6px; font-size: 15px; color: var(--navy); border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+  .supporting { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 14px 0; font-size: 13.5px; }
+  .supporting ul { margin: 8px 0 0; padding-left: 20px; }
+  .supporting li { margin: 6px 0; }
+  .supporting a { color: var(--navy2); }
+  footer { max-width: 980px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TUR00 &mdash; Trade Union Report Index</h1>
+  <p>Index of all Trade Union Reports (TUR01&ndash;TUR12) in this folder. University of East London (UKPRN 10007144).</p>
+</header>
+
+<div class="layout">
+
+  <div class="callout">
+    Click any report title below to open it. Each report is a self-contained HTML file with its exact data sources listed in its own footer. These 12 reports were built from the proposal in <b>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</b>, using only data that is genuinely available and UEL-specific (or clearly flagged where it isn't) &ndash; see that document for the fuller rationale behind each report and what was originally envisioned vs what HESA/OfS/NSS open data can actually support.
+  </div>
+
+  <div class="callout flag">
+    A few reports are explicit about the limits of what open data can show. TUR05 and TUR09 flag that HESA's ethnicity and disability tables are England-wide only, with no UEL breakdown possible. TUR08 reports an honest null result (NSS scores rose every year despite a rising staff-student ratio) rather than forcing a conclusion the data doesn't support. TUR07 and TUR02 both carry the same data-quality caveat about an anomaly in Student Table 37's 2023/24&ndash;2024/25 figures.
+  </div>
+
+  <div class="section-heading">Pay and workforce cost</div>
+
+  <div class="card">
+    <div class="id">01</div>
+    <div class="body">
+      <h2><a href="TUR01 - Casualisation Explorer.html">Casualisation Explorer</a></h2>
+      <p>Fixed-term vs permanent academic contracts at UEL, 2014/15&ndash;2024/25, benchmarked against England-wide sector data.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id">02</div>
+    <div class="body">
+      <h2><a href="TUR02 - Staff Pay Bill vs Staff and Student Numbers.html">Staff Pay Bill vs Staff and Student Numbers</a></h2>
+      <p>Staff costs as a share of income, nominal vs real-terms (CPIH-deflated) trends, and spending per head, 2016/17&ndash;2024/25.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id">03</div>
+    <div class="body">
+      <h2><a href="TUR03 - Senior Pay vs Staff Pay Differential.html">Senior Pay vs Staff Pay Differential</a></h2>
+      <p>Vice-Chancellor pay and VC-to-median-staff pay ratio, cross-validating HESA Finance Table 11 against UEL's own Annual Reports, 2016/17&ndash;2024/25.</p>
+    </div>
+  </div>
+
+  <div class="section-heading">Redundancy, restructuring and financial risk</div>
+
+  <div class="card">
+    <div class="id">04</div>
+    <div class="body">
+      <h2><a href="TUR04 - Redundancy and Restructuring Signal.html">Redundancy and Restructuring Signal</a></h2>
+      <p>Severance costs, headcount affected, and academic staff turnover, 2014/15&ndash;2024/25.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id">10</div>
+    <div class="body">
+      <h2><a href="TUR10 - Financial Health and Risk Explorer.html">Financial Health and Risk Explorer</a></h2>
+      <p>HESA's own Key Financial Indicators &ndash; surplus/deficit, liquidity, reserves, borrowing &ndash; 2015/16&ndash;2024/25, with OfS sector context.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id">11</div>
+    <div class="body">
+      <h2><a href="TUR11 - International Reliance and Redundancy Risk.html">International Reliance and Redundancy Risk</a></h2>
+      <p>Growth of international tuition fee income as a share of total institutional income, 2016/17&ndash;2023/24 &ndash; the revenue concentration behind restructuring risk.</p>
+    </div>
+  </div>
+
+  <div class="section-heading">Equality and staffing profile</div>
+
+  <div class="card">
+    <div class="id">05</div>
+    <div class="body">
+      <h2><a href="TUR05 - Staff Equality Profile.html">Staff Equality Profile</a></h2>
+      <p>Academic staff by nationality (UEL-specific) and gender pay gap trend, 2014/15&ndash;2024/25 &ndash; with an explicit note on what HESA's ethnicity/disability tables cannot show at UEL level.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id">06</div>
+    <div class="body">
+      <h2><a href="TUR06 - Student Equality vs Staffing.html">Student Equality vs Staffing</a></h2>
+      <p>UEL-specific undergraduate entrant diversity (OfS Access and Participation data) set against total staff headcount growth, 2018/19&ndash;2024/25.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id">09</div>
+    <div class="body">
+      <h2><a href="TUR09 - Research Staff Precarity.html">Research Staff Precarity</a></h2>
+      <p>UEL's research-only academic staff trend, set against a striking England-wide finding: research-only staff are far more likely to be on fixed-term contracts than any other academic function group.</p>
+    </div>
+  </div>
+
+  <div class="section-heading">Workload</div>
+
+  <div class="card">
+    <div class="id">07</div>
+    <div class="body">
+      <h2><a href="TUR07 - Staff-Student Ratio Trend.html">Staff-Student Ratio Trend</a></h2>
+      <p>Students per academic FTE, institution-wide and by subject, 2015/16&ndash;2024/25 &ndash; the ratio has roughly doubled since 2015/16.</p>
+      <span class="tag flag">Data-quality caveat on 2023/24&ndash;2024/25</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id">08</div>
+    <div class="body">
+      <h2><a href="TUR08 - NSS as Workload Barometer.html">NSS as Workload Barometer</a></h2>
+      <p>Tests whether NSS satisfaction on staff-facing themes tracks the rising staff-student ratio &ndash; reports an honest null result, with the reasons why this isn't a clean test.</p>
+      <span class="tag flag">Honest null result</span>
+    </div>
+  </div>
+
+  <div class="section-heading">Benchmarking</div>
+
+  <div class="card">
+    <div class="id">12</div>
+    <div class="body">
+      <h2><a href="TUR12 - UEL vs Sector Benchmarking.html">UEL vs Sector Benchmarking</a></h2>
+      <p>OfS Condition B3 student outcomes, NSS 2026, and KEF knowledge-exchange engagement &ndash; UEL vs its statistical benchmark and comparator cluster.</p>
+    </div>
+  </div>
+
+  <div class="section-heading">Supporting documents (not TUR-numbered &mdash; reference/background material)</div>
+
+  <div class="supporting">
+    <ul>
+      <li><a href="../docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md">docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</a> &mdash; the original proposal document these 12 reports were built from, including data-availability notes for each.</li>
+      <li><a href="../docs/VC_Pay_and_Financial_Trends_10yr.md">docs/VC_Pay_and_Financial_Trends_10yr.md</a> &mdash; the 10-year VC pay, restructuring and financial trend research note derived from UEL's Annual Reports, feeding into TUR03, TUR04 and TUR10.</li>
+      <li><a href="../Data/UEL Gender Pay Gap/UEL_Gender_Pay_Gap_Summary.md">Data/UEL Gender Pay Gap/UEL_Gender_Pay_Gap_Summary.md</a> &mdash; full gender pay gap trend summary feeding into TUR05.</li>
+      <li><a href="../Data/Data_Source_Links.md">Data/Data_Source_Links.md</a> &mdash; download links for every data source used across TUR01&ndash;TUR12.</li>
+      <li><a href="../Data/DataIndex.md">Data/DataIndex.md</a> &mdash; full index of the raw <code>Data/</code> folder, including the ALL/UEL convention and extraction-status notes for every table.</li>
+      <li><a href="UDR00 - Catalogue of Reports.html">UDR00 - Catalogue of Reports.html</a> &mdash; the companion index for the general UEL Data Reports (UDR01&ndash;UDR10), covering enrolment, NSS and qualifiers rather than trade union topics.</li>
+      <li><a href="../Catalogues/Report_Catalogue_Simple.md">Catalogues/Report_Catalogue_Simple.md</a> and <a href="../Catalogues/Report_Catalogue_Detailed.md">Catalogues/Report_Catalogue_Detailed.md</a> &mdash; both catalogues now include TUR01&ndash;TUR12 alongside the UDR series.</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>
+  University of East London (UKPRN 10007144). This index links to files in the same <code>Reports/</code> folder (TUR01&ndash;TUR12) and to <code>docs/</code>, <code>Data/</code> and <code>Catalogues/</code> in the parent folder. If a link doesn't open, confirm this file is still sitting alongside the other TUR files in <code>Reports/</code>.
+</footer>
+
+</body>
+</html>

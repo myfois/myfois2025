@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR11 — International Reliance and Redundancy Risk</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR11</span> &mdash; International Reliance and Redundancy Risk</h1>
+  <p>HESA Finance Table 6 (tuition fees by domicile) and Finance Table 7 (income by source), 2016/17&ndash;2023/24. University of East London (UKPRN 10007144).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR11</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout flag">
+    <span class="pill red">HEADLINE</span> International (non-UK domiciled) tuition fee income has grown from <b>14.5% of UEL's total institutional income in 2016/17 to 40.8% by 2023/24</b> &ndash; nearly tripling its share in seven years. This is the flip side of the growth story already documented in student numbers (UDR05/UDR06) and staff numbers (TUR02): the institution's financial health, staffing levels and job security are now substantially more exposed to anything that reduces international recruitment (visa policy changes, currency shifts, competitor country policy, geopolitical events) than they were a decade ago.
+  </div>
+
+  <div class="panel">
+    <h2>Tuition fee income by domicile, UEL, 2016/17&ndash;2023/24</h2>
+    <div class="sub">HESA Finance Table 6, UEL-filtered (UKPRN 10007144), &pound;000s. From 2022/23, HESA's own reporting categories merged EU and Non-EU into a single "Non-UK domicile students" category (a genuine reporting change, not a data gap) &ndash; shown here as a combined "Non-UK" series throughout for a consistent comparison.</div>
+    <canvas id="feesChart" role="img" aria-label="Stacked bar chart of tuition fee income by domicile, 2016/17 to 2023/24." aria-describedby="feesTable"></canvas>
+    <table id="feesTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Non-UK tuition fees as a share of total institutional income</h2>
+    <div class="sub">Non-UK tuition fee income (Finance Table 6) as a % of UEL's total income from all sources (Finance Table 7) &ndash; not just as a % of fee income, but of everything the institution brings in.</div>
+    <canvas id="shareChart" role="img" aria-label="Line chart of non-UK tuition fees as a percentage of total institutional income, 2016/17 to 2023/24."></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout finding">
+      <b>The growth is real and substantial, not a rounding effect.</b> Non-UK fee income rose from &pound;19.2m (2016/17) to &pound;114.1m (2023/24) &ndash; a six-fold increase in cash terms, while UK fee income grew much more modestly (&pound;78.2m &rarr; &pound;107.9m, up about 38%). Total institutional income nearly doubled over the same period (&pound;132.6m &rarr; &pound;279.5m), and non-UK fees supplied the large majority of that additional growth.
+    </div>
+    <div class="callout">
+      This connects directly to the redundancy and restructuring pattern already documented in <code>Reports/TUR04</code>: restructuring costs and headcount reductions have risen in three of the last four years for which data is available, at the same time as the institution has become steadily more dependent on a single, externally volatile revenue stream. A shock to international recruitment (a not-infrequent occurrence across the UK sector in recent years) would remove a much larger share of total income today than it would have in 2016/17.
+    </div>
+    <div class="callout flag">
+      <span class="pill red">CAVEATS</span> This report shows financial exposure, not a prediction &ndash; it does not show that a downturn is coming, only that the institution's income structure is now more concentrated in one variable revenue source than a decade ago. The EU/Non-EU merge into "Non-UK" from 2022/23 means the pre/post-Brexit domicile mix within that combined figure can't be tracked separately in the most recent two years from this table alone. Figures are nominal (not inflation-adjusted); see <code>Reports/TUR02</code> for the CPIH-deflated real-terms treatment of UEL's total income over a similar period.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Finance Table 6 ("Tuition fees and education contracts analysed by domicile"), UEL-filtered (UKPRN 10007144), 2016/17&ndash;2023/24; HESA Finance Table 7 ("Income analysed by source"), UEL-filtered, 2015/16&ndash;2024/25.
+<br><b>Data files:</b> Data/HESA Finance Table 6/UEL/UEL_table6.csv; Data/HESA Finance Table 7/UEL/UEL_table7.csv.
+<br>Part of the trade union report series proposed in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> (report 11 of 12). See <code>Reports/TUR00 - Trade Union Report Index.html</code> for the full series.
+</footer>
+
+<script id="tur11-data" type="application/json">{"years": ["2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24"], "uk_fees": [78220, 79962, 87843, 90191, 94925, 102327, 100257, 107902], "nonuk_fees": [19219, 22856, 17962, 33242, 49753, 55625, 97384, 114126], "total_fees": [97439, 102818, 105805, 123433, 144678, 157952, 197641, 222028], "nonuk_share_fees": [19.7, 22.2, 17.0, 26.9, 34.4, 35.2, 49.3, 51.4], "total_income": [132645, 136083, 141711, 155275, 174851, 191974, 247961, 279541], "nonuk_share_total_income": [14.5, 16.8, 12.7, 21.4, 28.5, 29.0, 39.3, 40.8]}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur11-data').textContent);
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtGBP(v) { return (v == null) ? "–" : '£' + Math.round(v).toLocaleString() + 'k'; }
+function fmtPct(v) { return (v == null) ? "–" : v.toFixed(1) + "%"; }
+
+function renderStatRow() {
+  const last = DATA.years.length - 1;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n flag">${fmtPct(DATA.nonuk_share_total_income[last])}</div><div class="l">Non-UK fees, share of total income</div><div class="s">2023/24, up from ${fmtPct(DATA.nonuk_share_total_income[0])} in 2016/17</div></div>
+    <div class="stat-box"><div class="n">${fmtGBP(DATA.nonuk_fees[last])}</div><div class="l">Non-UK fee income</div><div class="s">2023/24</div></div>
+    <div class="stat-box"><div class="n">${fmtGBP(DATA.uk_fees[last])}</div><div class="l">UK fee income</div><div class="s">2023/24</div></div>
+    <div class="stat-box"><div class="n">${fmtGBP(DATA.total_income[last])}</div><div class="l">Total institutional income</div><div class="s">2023/24</div></div>
+  `;
+}
+
+function renderFeesChart() {
+  destroyChart('fees');
+  charts.fees = new Chart(document.getElementById('feesChart'), {
+    type: 'bar',
+    data: { labels: DATA.years, datasets: [
+      { label: 'UK domicile fees', data: DATA.uk_fees, backgroundColor: '#1F3864', stack: 's' },
+      { label: 'Non-UK domicile fees (EU + Non-EU combined)', data: DATA.nonuk_fees, backgroundColor: '#b02a2a', stack: 's' }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: 'Tuition fee income (£000s)' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>UK domicile fees (£000s)</td>${DATA.uk_fees.map(v=>`<td>${fmtGBP(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Non-UK domicile fees (£000s)</td>${DATA.nonuk_fees.map(v=>`<td class="hi">${fmtGBP(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Total fee income (£000s)</td>${DATA.total_fees.map(v=>`<td>${fmtGBP(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Non-UK share of fee income</td>${DATA.nonuk_share_fees.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  document.getElementById('feesTable').innerHTML = html;
+}
+
+function renderShareChart() {
+  destroyChart('share');
+  charts.share = new Chart(document.getElementById('shareChart'), {
+    type: 'line',
+    data: { labels: DATA.years, datasets: [
+      { label: 'Non-UK fees, % of total institutional income', data: DATA.nonuk_share_total_income, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: '% of total institutional income' } } } }
+  });
+}
+
+renderStatRow();
+renderFeesChart();
+renderShareChart();
+</script>
+</body>
+</html>

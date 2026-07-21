@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UDR08 — UEL Domicile Sources Cross-Check</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .controls { position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 1px solid var(--line); padding: 10px 24px; display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .control-group label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--grey); margin-bottom: 4px; }
+  select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
+  .segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .segmented button { border: none; background: #fff; padding: 6px 12px; font-size: 13px; cursor: pointer; color: #333; }
+  .segmented button.active { background: var(--navy); color: #fff; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.good { background: #eaf6ec; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 360px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; position: sticky; top: 0; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.ok { color: var(--green); }
+  td.warn { color: var(--red); font-weight: 700; }
+  .table-wrap { max-height: 560px; overflow-y: auto; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">UDR08</span> &mdash; UEL Domicile Sources Cross-Check</h1>
+  <p>Independently verifying UEL enrolment figures across four separate HESA tables (28, 39, 49, 59), 2016/17&ndash;2018/19 &ndash; the only years all four cover in this form. University of East London (UKPRN 10007144).</p>
+</header>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Level of study</label>
+    <select id="levelSelect">
+      <option value="All">All</option>
+      <option value="All undergraduate">All undergraduate</option>
+      <option value="First degree">First degree</option>
+      <option value="Other undergraduate">Other undergraduate</option>
+      <option value="All postgraduate">All postgraduate</option>
+      <option value="Postgraduate (taught)">Postgraduate (taught)</option>
+      <option value="Postgraduate (research)">Postgraduate (research)</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label>Mode of study</label>
+    <div class="segmented" id="modeControl">
+      <button data-val="All" class="active">All modes</button>
+      <button data-val="Full-time">Full-time</button>
+      <button data-val="Part-time">Part-time</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <div class="callout flag">
+    <span class="pill">SCOPE</span> Table 39 ("HE student enrolments by provider, domicile, level, mode") only exists for 2016/17&ndash;2018/19 &ndash; HESA discontinued it after that. That's why this cross-check is limited to those 3 years, unlike the Student Origin Explorer's full 2014/15&ndash;2024/25 range built from Tables 28 and 59.
+  </div>
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="panel">
+    <h2>Total enrolment: three sources, three years</h2>
+    <div class="sub" id="totalsSub"></div>
+    <canvas id="totalsChart" role="img" aria-label="Grouped bar chart comparing total enrolment as reported by Table 49, Table 39, and the combination of Tables 28 and 59." aria-describedby="totalsTable"></canvas>
+    <table id="totalsTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>UK vs. Intl: Table 39 vs. Table 28 + 59</h2>
+    <div class="sub" id="ukIntlSub"></div>
+    <canvas id="ukIntlChart" role="img" aria-label="Grouped bar chart comparing UK and international enrolment as reported directly by Table 39 versus the combination of Tables 28 and 59." aria-describedby="ukIntlTable"></canvas>
+    <table id="ukIntlTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Table 39's own angle: EU vs. non-EU, within Intl</h2>
+    <div class="sub" id="euSub">Fixed at All levels / All modes. This split (Other EU vs Non-EU) is unique to Table 39 &ndash; Tables 28/59 give full country/region detail but don't pre-aggregate to an EU/non-EU cut.</div>
+    <canvas id="euChart" role="img" aria-label="Bar chart of UK, other-EU, and non-EU domiciled student numbers by year."></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Full reconciliation &mdash; every level &times; mode &times; year combination</h2>
+    <div class="sub">All 63 combinations (7 levels &times; 3 modes &times; 3 years), not just the one selected above. Click a column to sort. A Diff beyond &plusmn;5 (HESA's own rounding unit) would flag a real discrepancy &ndash; none exist.</div>
+    <div class="table-wrap"><table id="reconTable"></table></div>
+  </div>
+
+  <div class="panel">
+    <h2>Reading this</h2>
+    <div class="callout good">
+      <b>All three sources agree, everywhere, within HESA's rounding tolerance.</b> Across all 63 level &times; mode &times; year combinations, Table 49's total, Table 39's own total, and the sum of Table 28 (non-UK) + Table 59 (UK) never differ by more than &plusmn;5 &ndash; exactly the size of HESA's disclosure-control rounding, and no more. This is a genuine independent cross-check across four separately-published tables, not a single source checked against itself.
+    </div>
+    <div class="callout flag">
+      <span class="pill">LIMITATION</span> Because Table 39 stops at 2018/19, this cross-check can't validate the more recent, much larger international growth documented in the Student Origin Explorer (built from Tables 28/59, which run to 2024/25). It confirms the method is sound for the years it covers, not that later years are correct by extension.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Table 39 ("HE student enrolments (incl. AP designated courses) by HE provider, domicile, level, mode"), Table 49 ("HE student enrolments by HE provider and subject of study"), Table 28 ("Non-UK domiciled HE students by HE provider and country of domicile"), Table 59 ("UK domiciled HE students by HE provider and domicile"). All UEL-filtered (UKPRN 10007144), 2016/17&ndash;2018/19 overlap only for Table 39. Figures rounded to the nearest 5 by HESA's disclosure control.
+<br><b>Data files:</b> Data/HESA Student Table 39/UEL/UEL_table39.csv; Data/HESA Student Table 49/UEL/UEL_table49_2016-17.csv, UEL_table49_2017-18.csv, UEL_table49_2018-19.csv; Data/HESA Student Table 28/UEL/UEL_table28_2016-17.csv, UEL_table28_2017-18.csv, UEL_table28_2018-19.csv; Data/HESA Student Table 59/UEL/UEL_table59_2016-17.csv, UEL_table59_2017-18.csv, UEL_table59_2018-19.csv.
+</footer>
+
+<script id="cc-data" type="application/json">{"years": ["2016/17", "2017/18", "2018/19"], "levels": ["All", "All postgraduate", "All undergraduate", "First degree", "Other undergraduate", "Postgraduate (research)", "Postgraduate (taught)"], "modes": ["All", "Full-time", "Part-time"], "domiciles": ["England", "Non-European Union", "Northern Ireland", "Not known", "Other European Union", "Other UK", "Scotland", "Total", "Total Non-UK", "Total UK", "Wales"], "t39": {"2016/17": {"All": {"All": {"England": 11870.0, "Non-European Union": 750.0, "Northern Ireland": 35.0, "Not known": 0.0, "Other European Union": 445.0, "Other UK": 15.0, "Scotland": 45.0, "Total": 13215.0, "Total Non-UK": 1195.0, "Total UK": 12025.0, "Wales": 60.0}, "Full-time": {"England": 9455.0, "Non-European Union": 520.0, "Northern Ireland": 20.0, "Not known": 0.0, "Other European Union": 350.0, "Other UK": 5.0, "Scotland": 35.0, "Total": 10440.0, "Total Non-UK": 870.0, "Total UK": 9570.0, "Wales": 50.0}, "Part-time": {"England": 2415.0, "Non-European Union": 230.0, "Northern Ireland": 15.0, "Not known": 0.0, "Other European Union": 95.0, "Other UK": 5.0, "Scotland": 10.0, "Total": 2775.0, "Total Non-UK": 325.0, "Total UK": 2455.0, "Wales": 5.0}}, "All postgraduate": {"All": {"England": 2935.0, "Non-European Union": 390.0, "Northern Ireland": 15.0, "Not known": 0.0, "Other European Union": 135.0, "Other UK": 5.0, "Scotland": 20.0, "Total": 3505.0, "Total Non-UK": 530.0, "Total UK": 2980.0, "Wales": 5.0}, "Full-time": {"England": 1325.0, "Non-European Union": 260.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 65.0, "Other UK": 0.0, "Scotland": 5.0, "Total": 1665.0, "Total Non-UK": 325.0, "Total UK": 1335.0, "Wales": 0.0}, "Part-time": {"England": 1610.0, "Non-European Union": 130.0, "Northern Ireland": 15.0, "Not known": 0.0, "Other European Union": 70.0, "Other UK": 5.0, "Scotland": 10.0, "Total": 1845.0, "Total Non-UK": 200.0, "Total UK": 1645.0, "Wales": 5.0}}, "All undergraduate": {"All": {"England": 8935.0, "Non-European Union": 360.0, "Northern Ireland": 25.0, "Not known": 0.0, "Other European Union": 305.0, "Other UK": 5.0, "Scotland": 25.0, "Total": 9710.0, "Total Non-UK": 665.0, "Total UK": 9045.0, "Wales": 55.0}, "Full-time": {"England": 8130.0, "Non-European Union": 260.0, "Northern Ireland": 20.0, "Not known": 0.0, "Other European Union": 285.0, "Other UK": 5.0, "Scotland": 25.0, "Total": 8780.0, "Total Non-UK": 545.0, "Total UK": 8235.0, "Wales": 50.0}, "Part-time": {"England": 805.0, "Non-European Union": 100.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 20.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 930.0, "Total Non-UK": 120.0, "Total UK": 810.0, "Wales": 5.0}}, "First degree": {"All": {"England": 8765.0, "Non-European Union": 275.0, "Northern Ireland": 25.0, "Not known": 0.0, "Other European Union": 300.0, "Other UK": 5.0, "Scotland": 25.0, "Total": 9455.0, "Total Non-UK": 575.0, "Total UK": 8875.0, "Wales": 55.0}, "Full-time": {"England": 7990.0, "Non-European Union": 260.0, "Northern Ireland": 20.0, "Not known": 0.0, "Other European Union": 285.0, "Other UK": 5.0, "Scotland": 25.0, "Total": 8640.0, "Total Non-UK": 540.0, "Total UK": 8095.0, "Wales": 50.0}, "Part-time": {"England": 775.0, "Non-European Union": 15.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 20.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 815.0, "Total Non-UK": 35.0, "Total UK": 780.0, "Wales": 5.0}}, "Other undergraduate": {"All": {"England": 170.0, "Non-European Union": 85.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 5.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 255.0, "Total Non-UK": 90.0, "Total UK": 170.0, "Wales": 0.0}, "Full-time": {"England": 140.0, "Non-European Union": 0.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 0.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 140.0, "Total Non-UK": 0.0, "Total UK": 140.0, "Wales": 0.0}, "Part-time": {"England": 30.0, "Non-European Union": 85.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 5.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 115.0, "Total Non-UK": 85.0, "Total UK": 30.0, "Wales": 0.0}}, "Postgraduate (research)": {"All": {"England": 295.0, "Non-European Union": 85.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 30.0, "Other UK": 0.0, "Scotland": 5.0, "Total": 415.0, "Total Non-UK": 110.0, "Total UK": 300.0, "Wales": 0.0}, "Full-time": {"England": 135.0, "Non-European Union": 70.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 15.0, "Other UK": 0.0, "Scotland": 5.0, "Total": 220.0, "Total Non-UK": 80.0, "Total UK": 140.0, "Wales": 0.0}, "Part-time": {"England": 160.0, "Non-European Union": 15.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 15.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 195.0, "Total Non-UK": 30.0, "Total UK": 165.0, "Wales": 0.0}}, "Postgraduate (taught)": {"All": {"England": 2640.0, "Non-European Union": 310.0, "Northern Ireland": 15.0, "Not known": 0.0, "Other European Union": 110.0, "Other UK": 5.0, "Scotland": 15.0, "Total": 3095.0, "Total Non-UK": 415.0, "Total UK": 2675.0, "Wales": 0.0}, "Full-time": {"England": 1195.0, "Non-European Union": 195.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 50.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 1445.0, "Total Non-UK": 245.0, "Total UK": 1195.0, "Wales": 0.0}, "Part-time": {"England": 1450.0, "Non-European Union": 115.0, "Northern Ireland": 15.0, "Not known": 0.0, "Other European Union": 55.0, "Other UK": 5.0, "Scotland": 10.0, "Total": 1650.0, "Total Non-UK": 170.0, "Total UK": 1480.0, "Wales": 0.0}}}, "2017/18": {"All": {"All": {"England": 11645.0, "Non-European Union": 875.0, "Northern Ireland": 35.0, "Not known": 0.0, "Other European Union": 440.0, "Other UK": 10.0, "Scotland": 30.0, "Total": 13090.0, "Total Non-UK": 1315.0, "Total UK": 11775.0, "Wales": 50.0}, "Full-time": {"England": 9675.0, "Non-European Union": 740.0, "Northern Ireland": 25.0, "Not known": 0.0, "Other European Union": 390.0, "Other UK": 10.0, "Scotland": 25.0, "Total": 10910.0, "Total Non-UK": 1130.0, "Total UK": 9775.0, "Wales": 45.0}, "Part-time": {"England": 1970.0, "Non-European Union": 135.0, "Northern Ireland": 10.0, "Not known": 0.0, "Other European Union": 50.0, "Other UK": 5.0, "Scotland": 5.0, "Total": 2180.0, "Total Non-UK": 180.0, "Total UK": 2000.0, "Wales": 10.0}}, "All postgraduate": {"All": {"England": 2750.0, "Non-European Union": 505.0, "Northern Ireland": 10.0, "Not known": 0.0, "Other European Union": 100.0, "Other UK": 5.0, "Scotland": 10.0, "Total": 3390.0, "Total Non-UK": 610.0, "Total UK": 2785.0, "Wales": 10.0}, "Full-time": {"England": 1425.0, "Non-European Union": 430.0, "Northern Ireland": 5.0, "Not known": 0.0, "Other European Union": 65.0, "Other UK": 5.0, "Scotland": 5.0, "Total": 1930.0, "Total Non-UK": 495.0, "Total UK": 1440.0, "Wales": 0.0}, "Part-time": {"England": 1325.0, "Non-European Union": 80.0, "Northern Ireland": 5.0, "Not known": 0.0, "Other European Union": 35.0, "Other UK": 0.0, "Scotland": 5.0, "Total": 1460.0, "Total Non-UK": 115.0, "Total UK": 1345.0, "Wales": 5.0}}, "All undergraduate": {"All": {"England": 8895.0, "Non-European Union": 370.0, "Northern Ireland": 25.0, "Not known": 0.0, "Other European Union": 340.0, "Other UK": 5.0, "Scotland": 20.0, "Total": 9695.0, "Total Non-UK": 705.0, "Total UK": 8990.0, "Wales": 45.0}, "Full-time": {"England": 8250.0, "Non-European Union": 310.0, "Northern Ireland": 20.0, "Not known": 0.0, "Other European Union": 325.0, "Other UK": 5.0, "Scotland": 20.0, "Total": 8975.0, "Total Non-UK": 640.0, "Total UK": 8340.0, "Wales": 45.0}, "Part-time": {"England": 650.0, "Non-European Union": 55.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 10.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 720.0, "Total Non-UK": 70.0, "Total UK": 655.0, "Wales": 0.0}}, "First degree": {"All": {"England": 8745.0, "Non-European Union": 320.0, "Northern Ireland": 25.0, "Not known": 0.0, "Other European Union": 335.0, "Other UK": 5.0, "Scotland": 20.0, "Total": 9495.0, "Total Non-UK": 655.0, "Total UK": 8840.0, "Wales": 45.0}, "Full-time": {"England": 8115.0, "Non-European Union": 310.0, "Northern Ireland": 20.0, "Not known": 0.0, "Other European Union": 325.0, "Other UK": 5.0, "Scotland": 20.0, "Total": 8840.0, "Total Non-UK": 635.0, "Total UK": 8205.0, "Wales": 45.0}, "Part-time": {"England": 630.0, "Non-European Union": 10.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 10.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 655.0, "Total Non-UK": 20.0, "Total UK": 635.0, "Wales": 0.0}}, "Other undergraduate": {"All": {"England": 150.0, "Non-European Union": 45.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 5.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 200.0, "Total Non-UK": 50.0, "Total UK": 150.0, "Wales": 0.0}, "Full-time": {"England": 135.0, "Non-European Union": 0.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 0.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 135.0, "Total Non-UK": 0.0, "Total UK": 135.0, "Wales": 0.0}, "Part-time": {"England": 20.0, "Non-European Union": 45.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 0.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 65.0, "Total Non-UK": 50.0, "Total UK": 20.0, "Wales": 0.0}}, "Postgraduate (research)": {"All": {"England": 240.0, "Non-European Union": 50.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 15.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 310.0, "Total Non-UK": 65.0, "Total UK": 245.0, "Wales": 0.0}, "Full-time": {"England": 110.0, "Non-European Union": 40.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 10.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 160.0, "Total Non-UK": 50.0, "Total UK": 110.0, "Wales": 0.0}, "Part-time": {"England": 135.0, "Non-European Union": 10.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 5.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 150.0, "Total Non-UK": 15.0, "Total UK": 135.0, "Wales": 0.0}}, "Postgraduate (taught)": {"All": {"England": 2510.0, "Non-European Union": 455.0, "Northern Ireland": 10.0, "Not known": 0.0, "Other European Union": 85.0, "Other UK": 5.0, "Scotland": 10.0, "Total": 3080.0, "Total Non-UK": 545.0, "Total UK": 2540.0, "Wales": 5.0}, "Full-time": {"England": 1320.0, "Non-European Union": 390.0, "Northern Ireland": 5.0, "Not known": 0.0, "Other European Union": 55.0, "Other UK": 5.0, "Scotland": 0.0, "Total": 1770.0, "Total Non-UK": 445.0, "Total UK": 1325.0, "Wales": 0.0}, "Part-time": {"England": 1190.0, "Non-European Union": 70.0, "Northern Ireland": 5.0, "Not known": 0.0, "Other European Union": 30.0, "Other UK": 0.0, "Scotland": 5.0, "Total": 1310.0, "Total Non-UK": 100.0, "Total UK": 1210.0, "Wales": 5.0}}}, "2018/19": {"All": {"All": {"England": 11385.0, "Non-European Union": 1380.0, "Northern Ireland": 40.0, "Not known": 0.0, "Other European Union": 495.0, "Other UK": 5.0, "Scotland": 35.0, "Total": 13395.0, "Total Non-UK": 1875.0, "Total UK": 11520.0, "Wales": 55.0}, "Full-time": {"England": 9530.0, "Non-European Union": 1265.0, "Northern Ireland": 35.0, "Not known": 0.0, "Other European Union": 430.0, "Other UK": 5.0, "Scotland": 30.0, "Total": 11345.0, "Total Non-UK": 1695.0, "Total UK": 9645.0, "Wales": 50.0}, "Part-time": {"England": 1855.0, "Non-European Union": 115.0, "Northern Ireland": 5.0, "Not known": 0.0, "Other European Union": 60.0, "Other UK": 0.0, "Scotland": 10.0, "Total": 2055.0, "Total Non-UK": 175.0, "Total UK": 1875.0, "Wales": 5.0}}, "All postgraduate": {"All": {"England": 2590.0, "Non-European Union": 895.0, "Northern Ireland": 5.0, "Not known": 0.0, "Other European Union": 135.0, "Other UK": 5.0, "Scotland": 15.0, "Total": 3645.0, "Total Non-UK": 1030.0, "Total UK": 2620.0, "Wales": 10.0}, "Full-time": {"England": 1425.0, "Non-European Union": 810.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 80.0, "Other UK": 0.0, "Scotland": 5.0, "Total": 2330.0, "Total Non-UK": 895.0, "Total UK": 1435.0, "Wales": 5.0}, "Part-time": {"England": 1160.0, "Non-European Union": 85.0, "Northern Ireland": 5.0, "Not known": 0.0, "Other European Union": 50.0, "Other UK": 0.0, "Scotland": 10.0, "Total": 1315.0, "Total Non-UK": 135.0, "Total UK": 1180.0, "Wales": 5.0}}, "All undergraduate": {"All": {"England": 8795.0, "Non-European Union": 485.0, "Northern Ireland": 35.0, "Not known": 0.0, "Other European Union": 360.0, "Other UK": 5.0, "Scotland": 25.0, "Total": 9750.0, "Total Non-UK": 845.0, "Total UK": 8905.0, "Wales": 45.0}, "Full-time": {"England": 8105.0, "Non-European Union": 455.0, "Northern Ireland": 30.0, "Not known": 0.0, "Other European Union": 350.0, "Other UK": 5.0, "Scotland": 25.0, "Total": 9015.0, "Total Non-UK": 805.0, "Total UK": 8210.0, "Wales": 45.0}, "Part-time": {"England": 695.0, "Non-European Union": 30.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 10.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 735.0, "Total Non-UK": 40.0, "Total UK": 695.0, "Wales": 0.0}}, "First degree": {"All": {"England": 8535.0, "Non-European Union": 455.0, "Northern Ireland": 35.0, "Not known": 0.0, "Other European Union": 350.0, "Other UK": 5.0, "Scotland": 20.0, "Total": 9450.0, "Total Non-UK": 810.0, "Total UK": 8640.0, "Wales": 45.0}, "Full-time": {"England": 7855.0, "Non-European Union": 455.0, "Northern Ireland": 30.0, "Not known": 0.0, "Other European Union": 340.0, "Other UK": 5.0, "Scotland": 20.0, "Total": 8755.0, "Total Non-UK": 795.0, "Total UK": 7960.0, "Wales": 45.0}, "Part-time": {"England": 680.0, "Non-European Union": 5.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 10.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 695.0, "Total Non-UK": 10.0, "Total UK": 680.0, "Wales": 0.0}}, "Other undergraduate": {"All": {"England": 260.0, "Non-European Union": 30.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 10.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 300.0, "Total Non-UK": 35.0, "Total UK": 265.0, "Wales": 0.0}, "Full-time": {"England": 245.0, "Non-European Union": 0.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 5.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 260.0, "Total Non-UK": 10.0, "Total UK": 250.0, "Wales": 0.0}, "Part-time": {"England": 15.0, "Non-European Union": 25.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 0.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 40.0, "Total Non-UK": 30.0, "Total UK": 15.0, "Wales": 0.0}}, "Postgraduate (research)": {"All": {"England": 250.0, "Non-European Union": 45.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 15.0, "Other UK": 0.0, "Scotland": 5.0, "Total": 320.0, "Total Non-UK": 60.0, "Total UK": 255.0, "Wales": 5.0}, "Full-time": {"England": 110.0, "Non-European Union": 35.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 10.0, "Other UK": 0.0, "Scotland": 5.0, "Total": 160.0, "Total Non-UK": 45.0, "Total UK": 115.0, "Wales": 0.0}, "Part-time": {"England": 140.0, "Non-European Union": 10.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 10.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 160.0, "Total Non-UK": 15.0, "Total UK": 145.0, "Wales": 5.0}}, "Postgraduate (taught)": {"All": {"England": 2335.0, "Non-European Union": 850.0, "Northern Ireland": 5.0, "Not known": 0.0, "Other European Union": 115.0, "Other UK": 5.0, "Scotland": 10.0, "Total": 3330.0, "Total Non-UK": 970.0, "Total UK": 2360.0, "Wales": 5.0}, "Full-time": {"England": 1315.0, "Non-European Union": 775.0, "Northern Ireland": 0.0, "Not known": 0.0, "Other European Union": 75.0, "Other UK": 0.0, "Scotland": 0.0, "Total": 2170.0, "Total Non-UK": 850.0, "Total UK": 1325.0, "Wales": 5.0}, "Part-time": {"England": 1020.0, "Non-European Union": 75.0, "Northern Ireland": 5.0, "Not known": 0.0, "Other European Union": 40.0, "Other UK": 0.0, "Scotland": 10.0, "Total": 1155.0, "Total Non-UK": 120.0, "Total UK": 1040.0, "Wales": 0.0}}}}, "t49": {"2016/17": {"All": {"All": 13215.0, "Full-time": 10440.0, "Part-time": 2775.0}, "All postgraduate": {"All": 3505.0, "Full-time": 1665.0, "Part-time": 1845.0}, "All undergraduate": {"All": 9710.0, "Full-time": 8780.0, "Part-time": 930.0}, "First degree": {"All": 9455.0, "Full-time": 8640.0, "Part-time": 815.0}, "Other undergraduate": {"All": 255.0, "Full-time": 140.0, "Part-time": 115.0}, "Postgraduate (research)": {"All": 415.0, "Full-time": 220.0, "Part-time": 195.0}, "Postgraduate (taught)": {"All": 3095.0, "Full-time": 1445.0, "Part-time": 1650.0}}, "2017/18": {"All": {"All": 13090.0, "Full-time": 10910.0, "Part-time": 2180.0}, "All postgraduate": {"All": 3390.0, "Full-time": 1930.0, "Part-time": 1460.0}, "All undergraduate": {"All": 9695.0, "Full-time": 8975.0, "Part-time": 720.0}, "First degree": {"All": 9495.0, "Full-time": 8840.0, "Part-time": 655.0}, "Other undergraduate": {"All": 200.0, "Full-time": 135.0, "Part-time": 65.0}, "Postgraduate (research)": {"All": 310.0, "Full-time": 160.0, "Part-time": 150.0}, "Postgraduate (taught)": {"All": 3080.0, "Full-time": 1770.0, "Part-time": 1310.0}}, "2018/19": {"All": {"All": 13395.0, "Full-time": 11345.0, "Part-time": 2055.0}, "All postgraduate": {"All": 3645.0, "Full-time": 2330.0, "Part-time": 1315.0}, "All undergraduate": {"All": 9750.0, "Full-time": 9015.0, "Part-time": 735.0}, "First degree": {"All": 9450.0, "Full-time": 8755.0, "Part-time": 695.0}, "Other undergraduate": {"All": 300.0, "Full-time": 260.0, "Part-time": 40.0}, "Postgraduate (research)": {"All": 320.0, "Full-time": 160.0, "Part-time": 160.0}, "Postgraduate (taught)": {"All": 3330.0, "Full-time": 2170.0, "Part-time": 1155.0}}}, "t2859": {"2016/17": {"All": {"All": {"uk": 12025, "nonuk": 1195, "total": 13220}, "Full-time": {"uk": 9570, "nonuk": 870, "total": 10440}, "Part-time": {"uk": 2455, "nonuk": 325, "total": 2780}}, "All postgraduate": {"All": {"uk": 2980, "nonuk": 530, "total": 3510}, "Full-time": {"uk": 1335, "nonuk": 325, "total": 1660}, "Part-time": {"uk": 1645, "nonuk": 200, "total": 1845}}, "All undergraduate": {"All": {"uk": 9045, "nonuk": 665, "total": 9710}, "Full-time": {"uk": 8235, "nonuk": 545, "total": 8780}, "Part-time": {"uk": 810, "nonuk": 120, "total": 930}}, "First degree": {"All": {"uk": 8875, "nonuk": 575, "total": 9450}, "Full-time": {"uk": 8095, "nonuk": 540, "total": 8635}, "Part-time": {"uk": 780, "nonuk": 35, "total": 815}}, "Other undergraduate": {"All": {"uk": 170, "nonuk": 90, "total": 260}, "Full-time": {"uk": 140, "nonuk": 0, "total": 140}, "Part-time": {"uk": 30, "nonuk": 85, "total": 115}}, "Postgraduate (research)": {"All": {"uk": 300, "nonuk": 110, "total": 410}, "Full-time": {"uk": 140, "nonuk": 80, "total": 220}, "Part-time": {"uk": 165, "nonuk": 30, "total": 195}}, "Postgraduate (taught)": {"All": {"uk": 2675, "nonuk": 415, "total": 3090}, "Full-time": {"uk": 1195, "nonuk": 245, "total": 1440}, "Part-time": {"uk": 1480, "nonuk": 170, "total": 1650}}}, "2017/18": {"All": {"All": {"uk": 11775, "nonuk": 1315, "total": 13090}, "Full-time": {"uk": 9775, "nonuk": 1130, "total": 10905}, "Part-time": {"uk": 2000, "nonuk": 180, "total": 2180}}, "All postgraduate": {"All": {"uk": 2785, "nonuk": 610, "total": 3395}, "Full-time": {"uk": 1440, "nonuk": 495, "total": 1935}, "Part-time": {"uk": 1345, "nonuk": 115, "total": 1460}}, "All undergraduate": {"All": {"uk": 8990, "nonuk": 705, "total": 9695}, "Full-time": {"uk": 8340, "nonuk": 640, "total": 8980}, "Part-time": {"uk": 655, "nonuk": 70, "total": 725}}, "First degree": {"All": {"uk": 8840, "nonuk": 655, "total": 9495}, "Full-time": {"uk": 8205, "nonuk": 635, "total": 8840}, "Part-time": {"uk": 635, "nonuk": 20, "total": 655}}, "Other undergraduate": {"All": {"uk": 150, "nonuk": 50, "total": 200}, "Full-time": {"uk": 135, "nonuk": 0, "total": 135}, "Part-time": {"uk": 20, "nonuk": 50, "total": 70}}, "Postgraduate (research)": {"All": {"uk": 245, "nonuk": 65, "total": 310}, "Full-time": {"uk": 110, "nonuk": 50, "total": 160}, "Part-time": {"uk": 135, "nonuk": 15, "total": 150}}, "Postgraduate (taught)": {"All": {"uk": 2540, "nonuk": 545, "total": 3085}, "Full-time": {"uk": 1325, "nonuk": 445, "total": 1770}, "Part-time": {"uk": 1210, "nonuk": 100, "total": 1310}}}, "2018/19": {"All": {"All": {"uk": 11520, "nonuk": 1875, "total": 13395}, "Full-time": {"uk": 9645, "nonuk": 1695, "total": 11340}, "Part-time": {"uk": 1875, "nonuk": 175, "total": 2050}}, "All postgraduate": {"All": {"uk": 2620, "nonuk": 1030, "total": 3650}, "Full-time": {"uk": 1435, "nonuk": 895, "total": 2330}, "Part-time": {"uk": 1180, "nonuk": 135, "total": 1315}}, "All undergraduate": {"All": {"uk": 8905, "nonuk": 845, "total": 9750}, "Full-time": {"uk": 8210, "nonuk": 805, "total": 9015}, "Part-time": {"uk": 695, "nonuk": 40, "total": 735}}, "First degree": {"All": {"uk": 8640, "nonuk": 810, "total": 9450}, "Full-time": {"uk": 7960, "nonuk": 795, "total": 8755}, "Part-time": {"uk": 680, "nonuk": 10, "total": 690}}, "Other undergraduate": {"All": {"uk": 265, "nonuk": 35, "total": 300}, "Full-time": {"uk": 250, "nonuk": 10, "total": 260}, "Part-time": {"uk": 15, "nonuk": 30, "total": 45}}, "Postgraduate (research)": {"All": {"uk": 255, "nonuk": 60, "total": 315}, "Full-time": {"uk": 115, "nonuk": 45, "total": 160}, "Part-time": {"uk": 145, "nonuk": 15, "total": 160}}, "Postgraduate (taught)": {"All": {"uk": 2360, "nonuk": 970, "total": 3330}, "Full-time": {"uk": 1325, "nonuk": 850, "total": 2175}, "Part-time": {"uk": 1040, "nonuk": 120, "total": 1160}}}}}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('cc-data').textContent);
+const YEARS = DATA.years;
+const LEVELS = DATA.levels;
+const MODES = DATA.modes;
+
+const state = { level: 'All', mode: 'All' };
+const charts = {};
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtInt(v) { return v == null ? "–" : Math.round(v).toLocaleString(); }
+function fmtDiff(v) { return v == null ? "–" : (v > 0 ? "+" : "") + Math.round(v); }
+
+function t39(yr) { return DATA.t39[yr][state.level][state.mode]; }
+function t49(yr) { return DATA.t49[yr][state.level][state.mode]; }
+function t2859(yr) { return DATA.t2859[yr][state.level][state.mode]; }
+
+function renderStatRow() {
+  const totals49 = YEARS.map(yr => t49(yr));
+  const totals39 = YEARS.map(yr => t39(yr).Total);
+  const totals2859 = YEARS.map(yr => t2859(yr).total);
+  const maxDiff = Math.max(...YEARS.map((yr,i) => Math.max(
+    Math.abs((totals39[i]||0) - (totals49[i]||0)),
+    Math.abs((totals2859[i]||0) - (totals49[i]||0))
+  )));
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n">${YEARS.length}</div><div class="l">Years cross-checked</div><div class="s">${YEARS.join(' / ')}</div></div>
+    <div class="stat-box"><div class="n">${LEVELS.length * MODES.length * YEARS.length}</div><div class="l">Level &times; Mode &times; Year combinations</div><div class="s">all independently verified</div></div>
+    <div class="stat-box"><div class="n">&plusmn;${maxDiff}</div><div class="l">Largest discrepancy found</div><div class="s">for ${state.level} / ${state.mode}; HESA rounds to nearest 5</div></div>
+  `;
+}
+
+function renderTotalsChart() {
+  destroyChart('totals');
+  const t49v = YEARS.map(yr => t49(yr));
+  const t39v = YEARS.map(yr => t39(yr).Total);
+  const t2859v = YEARS.map(yr => t2859(yr).total);
+  document.getElementById('totalsSub').textContent =
+    `For ${state.level} / ${state.mode}: three independently-published figures for the same population, shown side by side (grouped, not stacked, since these are three measurements of one quantity, not additive parts).`;
+  charts.totals = new Chart(document.getElementById('totalsChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: 'Table 49 total', data: t49v, backgroundColor: '#1F3864' },
+        { label: 'Table 39 total', data: t39v, backgroundColor: '#2E5395' },
+        { label: 'Table 28 + 59 (sum)', data: t2859v, backgroundColor: '#7893c2' }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { title: { display: true, text: 'Enrolments' } } }
+    }
+  });
+  let html = `<tr><th>Source</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Table 49 total</td>${t49v.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Table 39 total</td>${t39v.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Table 28 + 59 (sum)</td>${t2859v.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Max diff vs Table 49</td>${YEARS.map((y,i)=>{
+    const d = Math.max(Math.abs(t39v[i]-t49v[i]), Math.abs(t2859v[i]-t49v[i]));
+    return `<td class="${d>5?'warn':'ok'}">${fmtDiff(d)}</td>`;
+  }).join('')}</tr>`;
+  document.getElementById('totalsTable').innerHTML = html;
+}
+
+function renderUkIntlChart() {
+  destroyChart('ukIntl');
+  const t39uk = YEARS.map(yr => t39(yr)['Total UK']);
+  const t39nonuk = YEARS.map(yr => t39(yr)['Total Non-UK']);
+  const uk2859 = YEARS.map(yr => t2859(yr).uk);
+  const nonuk2859 = YEARS.map(yr => t2859(yr).nonuk);
+  document.getElementById('ukIntlSub').textContent =
+    `For ${state.level} / ${state.mode}: Table 39 publishes its own UK/Intl split directly (it doesn't need Tables 28+59 combined) &ndash; here it's checked against them.`;
+  charts.ukIntl = new Chart(document.getElementById('ukIntlChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: 'Table 39: UK', data: t39uk, backgroundColor: '#1F3864' },
+        { label: 'Table 59: UK', data: uk2859, backgroundColor: '#7893c2' },
+        { label: 'Table 39: Intl', data: t39nonuk, backgroundColor: '#b02a2a' },
+        { label: 'Table 28: Intl', data: nonuk2859, backgroundColor: '#e8c1a0' }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { title: { display: true, text: 'Enrolments' } } }
+    }
+  });
+  let html = `<tr><th>Source</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Table 39: UK</td>${t39uk.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Table 59: UK</td>${uk2859.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Table 39: Intl</td>${t39nonuk.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Table 28: Intl</td>${nonuk2859.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  document.getElementById('ukIntlTable').innerHTML = html;
+}
+
+function renderEuChart() {
+  destroyChart('eu');
+  const uk = YEARS.map(yr => DATA.t39[yr]['All']['All']['Total UK']);
+  const eu = YEARS.map(yr => DATA.t39[yr]['All']['All']['Other European Union']);
+  const nonEu = YEARS.map(yr => DATA.t39[yr]['All']['All']['Non-European Union']);
+  const notKnown = YEARS.map(yr => DATA.t39[yr]['All']['All']['Not known'] || 0);
+  charts.eu = new Chart(document.getElementById('euChart'), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: 'UK', data: uk, backgroundColor: '#1F3864', stack: 's' },
+        { label: 'Other EU', data: eu, backgroundColor: '#FFC000', stack: 's' },
+        { label: 'Non-EU', data: nonEu, backgroundColor: '#b02a2a', stack: 's' },
+        { label: 'Not known', data: notKnown, backgroundColor: '#999999', stack: 's' }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { stacked: true, title: { display: true, text: 'Enrolments' } }, x: { stacked: true } }
+    }
+  });
+}
+
+let sortKey = 'diffMax', sortDir = 'desc';
+function renderReconTable() {
+  const rows = [];
+  YEARS.forEach(yr => {
+    LEVELS.forEach(level => {
+      MODES.forEach(mode => {
+        const t39v = DATA.t39[yr][level][mode];
+        const t49v = DATA.t49[yr][level][mode];
+        const t2859v = DATA.t2859[yr][level][mode];
+        if (t39v.Total == null || t49v == null) return;
+        const diffA = t39v.Total - t49v;
+        const diffB = t2859v.total - t49v;
+        const diffMax = Math.max(Math.abs(diffA), Math.abs(diffB));
+        rows.push({ yr, level, mode, t49: t49v, t39: t39v.Total, t2859: t2859v.total, diffA, diffB, diffMax });
+      });
+    });
+  });
+  rows.sort((a,b) => {
+    let av, bv;
+    if (sortKey === 'yr' || sortKey === 'level' || sortKey === 'mode') { av = a[sortKey]; bv = b[sortKey]; return sortDir==='desc' ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv)); }
+    av = a[sortKey]; bv = b[sortKey];
+    return sortDir === 'desc' ? (bv-av) : (av-bv);
+  });
+  let html = '<tr>' +
+    ['yr:Year','level:Level','mode:Mode','t49:Table 49','t39:Table 39','t2859:Table 28+59','diffA:Diff (39 vs 49)','diffB:Diff (28+59 vs 49)'].map(kv => {
+      const [key,label] = kv.split(':');
+      return `<th data-key="${key}">${label}</th>`;
+    }).join('') + '</tr>';
+  rows.forEach(r => {
+    const clsA = Math.abs(r.diffA) > 5 ? 'warn' : 'ok';
+    const clsB = Math.abs(r.diffB) > 5 ? 'warn' : 'ok';
+    html += `<tr><td>${r.yr}</td><td>${r.level}</td><td>${r.mode}</td><td>${fmtInt(r.t49)}</td><td>${fmtInt(r.t39)}</td><td>${fmtInt(r.t2859)}</td><td class="${clsA}">${fmtDiff(r.diffA)}</td><td class="${clsB}">${fmtDiff(r.diffB)}</td></tr>`;
+  });
+  document.getElementById('reconTable').innerHTML = html;
+  document.querySelectorAll('#reconTable th').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      sortDir = (sortKey === key && sortDir === 'desc') ? 'asc' : 'desc';
+      sortKey = key;
+      renderReconTable();
+    });
+  });
+}
+
+function renderAll() {
+  renderStatRow();
+  renderTotalsChart();
+  renderUkIntlChart();
+}
+
+renderAll();
+renderEuChart();
+renderReconTable();
+
+document.getElementById('levelSelect').addEventListener('change', e => { state.level = e.target.value; renderAll(); });
+document.getElementById('modeControl').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  state.mode = e.target.dataset.val;
+  document.querySelectorAll('#modeControl button').forEach(b => b.classList.toggle('active', b === e.target));
+  renderAll();
+});
+</script>
+</body>
+</html>

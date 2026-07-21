@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UDR00 — UEL Data Reports Catalogue</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .layout { max-width: 980px; margin: 0 auto; padding: 20px 24px 60px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 14px 0; display: flex; gap: 16px; align-items: flex-start; transition: box-shadow .15s, transform .15s; }
+  .card:hover { box-shadow: 0 4px 14px rgba(31,56,100,.12); transform: translateY(-1px); }
+  .card .id { flex: 0 0 60px; font-size: 20px; font-weight: 700; color: var(--navy); }
+  .card .body { flex: 1; }
+  .card h2 { margin: 0 0 4px; font-size: 16px; }
+  .card h2 a { color: var(--navy2); text-decoration: none; }
+  .card h2 a:hover { text-decoration: underline; }
+  .card p { margin: 0; font-size: 13.5px; color: #444; }
+  .card .tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #eef1f8; color: var(--navy); border-radius: 4px; padding: 2px 7px; margin-top: 8px; }
+  .card.superseded { opacity: .82; }
+  .section-heading { margin: 28px 0 6px; font-size: 15px; color: var(--navy); border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+  .supporting { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 14px 0; font-size: 13.5px; }
+  .supporting ul { margin: 8px 0 0; padding-left: 20px; }
+  .supporting li { margin: 6px 0; }
+  .supporting a { color: var(--navy2); }
+  footer { max-width: 980px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>UDR00 &mdash; Catalogue of Reports</h1>
+  <p>Index of all UEL Data Reports (UDR01&ndash;UDR10) in this folder. University of East London (UKPRN 10007144).</p>
+</header>
+
+<div class="layout">
+
+  <div class="callout">
+    Click any report title below to open it. Each report is a self-contained HTML file with its exact data sources listed in its own footer. For fuller detail on methodology and how to recreate each report, see <b>Report_Catalogue_Detailed.md</b> in the <b>Catalogues</b> folder alongside this one; for this same list in plain-text form, see <b>Report_Catalogue_Simple.md</b>.
+  </div>
+
+  <div class="section-heading">National Student Survey (NSS)</div>
+
+  <div class="card">
+    <div class="id">01</div>
+    <div class="body">
+      <h2><a href="UDR01 - NSS Explorer.html">NSS Explorer</a></h2>
+      <p>Interactive explorer of raw National Student Survey results for UEL, 2023&ndash;2026, Registering &amp; Teaching datasets, all subjects and themes.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id">02</div>
+    <div class="body">
+      <h2><a href="UDR02 - NSS Analysis Report.html">NSS Analysis Report</a></h2>
+      <p>Narrative analysis of UEL's NSS results 2023&ndash;2026 &mdash; highlights, lows, trends, and the 2025&rarr;2026 change in particular.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id">03</div>
+    <div class="body">
+      <h2><a href="UDR03 - Subject Size, Growth and NSS Satisfaction Explorer.html">Subject Size, Growth and NSS Satisfaction Explorer</a></h2>
+      <p>Cross-references HESA subject enrolment size/growth against NSS satisfaction scores, by subject.</p>
+    </div>
+  </div>
+
+  <div class="section-heading">Enrolment &amp; subject mix</div>
+
+  <div class="card">
+    <div class="id">04</div>
+    <div class="body">
+      <h2><a href="UDR04 - Enrolment Explorer (Subject, HESA Table 49).html">Enrolment Explorer (Subject, HESA Table 49)</a></h2>
+      <p>UEL student enrolment broken down by subject of study, 2021/22&ndash;2024/25.</p>
+    </div>
+  </div>
+
+  <div class="card superseded">
+    <div class="id">05</div>
+    <div class="body">
+      <h2><a href="UDR05 - International Student Explorer (HESA Table 28).html">International Student Explorer (HESA Table 28)</a></h2>
+      <p>Non-UK domiciled student enrolment by country, 2014/15&ndash;2024/25.</p>
+      <span class="tag">Superseded in scope by UDR06 &mdash; kept as a standalone, narrower view</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id">06</div>
+    <div class="body">
+      <h2><a href="UDR06 - Student Origin Explorer (UK and Intl Domicile).html">Student Origin Explorer (UK and Intl Domicile)</a></h2>
+      <p>Combined UK (Table 59) and international (Table 28) domicile explorer &mdash; countries, UK regions, and undergrad/postgrad &times; UK/Intl breakdown, 2014/15&ndash;2024/25.</p>
+    </div>
+  </div>
+
+  <div class="section-heading">Staff</div>
+
+  <div class="card">
+    <div class="id">07</div>
+    <div class="body">
+      <h2><a href="UDR07 - Staff Number Explorer.html">Staff Number Explorer</a></h2>
+      <p>UEL staff numbers by type, occupation and mode of employment, 2014/15&ndash;2024/25.</p>
+    </div>
+  </div>
+
+  <div class="section-heading">Data-quality cross-checks</div>
+
+  <div class="card">
+    <div class="id">08</div>
+    <div class="body">
+      <h2><a href="UDR08 - Domicile Sources Cross-Check (Table 39 vs 28-49-59).html">Domicile Sources Cross-Check (Table 39 vs 28/49/59)</a></h2>
+      <p>Cross-validates HESA Table 39 against Tables 28, 49 and 59 for the years they overlap (2016/17&ndash;2018/19), to confirm the domicile/subject data sources agree.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id">09</div>
+    <div class="body">
+      <h2><a href="UDR09 - Enrolment Reconciliation (Subject vs Domicile).html">Enrolment Reconciliation (Subject vs Domicile)</a></h2>
+      <p>Reconciles subject-based totals (Table 49) against domicile-based totals (Tables 28+59) across all 11 years, down to CAH3 course level.</p>
+    </div>
+  </div>
+
+  <div class="section-heading">Qualifiers &amp; outcomes</div>
+
+  <div class="card">
+    <div class="id">10</div>
+    <div class="body">
+      <h2><a href="UDR10 - Qualifiers, Degree Classification and Non-Continuation Explorer.html">Qualifiers, Degree Classification and Non-Continuation Explorer</a></h2>
+      <p>HESA Table 16 qualifiers by level and first-degree classification, plus HESA T3/T5 and OfS Condition B3 continuation/completion data for "Other undergraduate" awards.</p>
+    </div>
+  </div>
+
+  <div class="section-heading">Supporting documents (not UDR-numbered &mdash; reference/background material)</div>
+
+  <div class="supporting">
+    <ul>
+      <li><a href="../docs/Other_Undergraduate_Awards_Catalogue.md">docs/Other_Undergraduate_Awards_Catalogue.md</a> &mdash; research note on what "Other undergraduate" qualifiers actually are at UEL, feeding into UDR10.</li>
+      <li><a href="../docs/NSS_Theme_Codes.md">docs/NSS_Theme_Codes.md</a> &mdash; glossary of NSS theme short codes used across UDR01&ndash;UDR03.</li>
+      <li><a href="../docs/Data_Folder_Guide.md">docs/Data_Folder_Guide.md</a> &mdash; guide to the raw <code>Data/</code> folder structure.</li>
+      <li><a href="../docs/UK_HE_Data_Landscape_Catalogue.md">docs/UK_HE_Data_Landscape_Catalogue.md</a> &mdash; general catalogue of UK-wide HE data sources (HESA, OfS, NSS and beyond), independent of this project.</li>
+      <li><a href="../docs/Chart Design Research Paper.docx">docs/Chart Design Research Paper.docx</a> and <a href="../docs/Ideal Chart Spec.docx">docs/Ideal Chart Spec.docx</a> &mdash; design methodology behind the chart conventions used across all UDR reports (three-tier magnitude bands, colour-blind-safe palette, numbers-then-percentages format, etc.).</li>
+      <li><a href="../Catalogues/Report_Catalogue_Simple.md">Catalogues/Report_Catalogue_Simple.md</a> and <a href="../Catalogues/Report_Catalogue_Detailed.md">Catalogues/Report_Catalogue_Detailed.md</a> &mdash; the source catalogues this index page is built from.</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>
+  University of East London (UKPRN 10007144). This index links to files in the same <code>Reports/</code> folder (UDR01&ndash;UDR10) and to <code>docs/</code> and <code>Catalogues/</code> in the parent folder. If a link doesn't open, confirm this file is still sitting alongside the other UDR files in <code>Reports/</code>.
+</footer>
+
+</body>
+</html>

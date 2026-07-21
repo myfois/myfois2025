@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UDR04 — UEL Enrolment Explorer (HESA Table 49)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #1F3864; --midblue: #2E5395; --lightblue: #D9E2F3; --gold: #FFC000;
+    --green: #1e7e34; --red: #b02a2a; --grey: #f2f2f2; --text: #2b2b2b;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, "Segoe UI", sans-serif; margin: 0; background: #f5f6f8; color: var(--text); }
+  header { background: var(--navy); color: #fff; padding: 20px 28px; }
+  header h1 { margin: 0; font-size: 21px; }
+  header p { margin: 5px 0 0; font-size: 13px; color: #cdd7ea; }
+
+  .layout { max-width: 1180px; margin: 0 auto; padding: 22px 24px 60px; }
+
+  .stat-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 22px; }
+  .stat-box { background: #fff; border: 1px solid #e2e2e2; border-radius: 8px; padding: 10px 16px; min-width: 170px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .stat-box .n { font-size: 20px; font-weight: bold; color: var(--navy); }
+  .stat-box .l { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: #888; }
+  .stat-box .s { font-size: 11.5px; color: #999; }
+
+  .panel { background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 20px; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .panel .sub { font-size: 12.5px; color: #888; margin-bottom: 12px; }
+
+  .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; font-size: 13px; }
+  .controls label { font-weight: 600; color: var(--navy); }
+  select, button, input[type=checkbox] { cursor: pointer; }
+  button { padding: 5px 9px; border: 1px solid #bbb; border-radius: 5px; font-size: 13px; background: #fff; }
+  button.active, button:hover { background: var(--lightblue); border-color: var(--navy); }
+  .chk-pill { display: flex; align-items: center; gap: 5px; border: 1px solid #ccc; border-radius: 5px; padding: 4px 8px; font-size: 12.5px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 6px 9px; text-align: right; border-bottom: 1px solid #eee; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: var(--midblue); color: #fff; font-size: 10px; text-transform: uppercase; cursor: pointer; user-select: none; }
+  th:hover { background: var(--navy); }
+  th.sorted::after { content: " \25BC"; font-size: 9px; }
+  th.sorted.asc::after { content: " \25B2"; }
+  tr:nth-child(even) td { background: #fafbfd; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.bar-cell { text-align: left; min-width: 150px; }
+  .bar-track { background: #eef0f4; border-radius: 4px; height: 14px; position: relative; overflow: hidden; }
+  .bar-fill { background: var(--midblue); height: 100%; border-radius: 4px 0 0 4px; }
+  .bar-fill.big { background: var(--navy); }
+  tr.zero td { color: #bbb; }
+
+  canvas { max-height: 400px; }
+  .chart-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+  @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .pill { display: inline-block; background: var(--lightblue); color: var(--navy); font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 9px; margin-right: 5px; }
+
+  footer { font-size: 11.5px; color: #888; padding: 20px 0 0; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">UDR04</span> &mdash; UEL Enrolment Explorer</h1>
+  <p>HESA Table 49 &ndash; HE student enrolments by subject of study, all levels &amp; all modes, 2021/22&ndash;2024/25. University of East London, UKPRN 10007144.</p>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="panel">
+    <h2>What's actually in this data</h2>
+    <div class="sub">Methodology, straight from the source file</div>
+    <div class="callout flag">
+      <span class="pill">LEVEL OF STUDY</span> The download's own filter line reads: <code>Level of study: All</code>. That means every HESA level is summed together in every number on this page &ndash; <b>First degree</b> (bachelor's), <b>Other undergraduate</b> (foundation degrees, HNDs/HNCs, CertHE/DipHE &ndash; roughly Levels 4&ndash;5), <b>Postgraduate taught</b> (MAs, MScs, PGCE) and <b>Postgraduate research</b> (PhDs, research masters) are all combined into one figure per subject per year. So yes, this includes MAs and other postgraduate students, not just undergraduates.
+    </div>
+    <div class="callout">
+      <span class="pill">NO LEVEL 3</span> HESA only covers Higher Education &ndash; it doesn't collect data on Level 3 (A-level/BTEC-equivalent, further education) students at all, regardless of the level filter. So there's no Level 3 contamination here; the "floor" of what's included is Other undergraduate (roughly Level 4&ndash;5), not anything pre-HE.
+    </div>
+    <div class="callout">
+      <span class="pill">HOW TO DIFFERENTIATE</span> To split this by level, you'd re-download Table 49 once per level &ndash; setting the "Level of study" filter to First degree, Other undergraduate, Postgraduate (taught), or Postgraduate (research) individually instead of "All" &ndash; and get four separate provider&times;subject grids. HESA's Table 2 ("HE student enrolment FTE by HE provider and level of study") gives the level breakdown directly, but without the subject dimension, so it's a good cross-check on totals but won't tell you e.g. how much of Computing's growth is postgraduate vs undergraduate on its own.
+    </div>
+    <div class="callout flag">
+      <span class="pill">DOMICILE</span> No &ndash; confirmed again on this specific extract. The filter list has Country/Region of HE provider (i.e. where UEL itself is based), Level of study, Mode of study, and Academic year. There is no domicile, nationality, or fee-status filter or column anywhere in Table 49. That dimension only exists in Table 52 (subject &times; domicile, national totals, no provider split) or in HESA's raw record data / Heidi Plus.
+    </div>
+  </div>
+
+  <div class="callout flag">
+    <span class="pill">SCOPE</span> This covers <b>every enrolled student, every level, every mode, in a given academic year</b> &ndash; undergraduate and postgraduate, first-year through final-year, full-time and part-time. It is not the same population as NSS (which surveys final-year undergraduates only) and the two should not be read as directly comparable head counts. This page is about enrolment patterns on their own terms.
+  </div>
+
+  <div class="panel">
+    <h2>Subject mix, 2024/25</h2>
+    <div class="sub">Where UEL's students are, most recent year available</div>
+    <div id="concentrationNote"></div>
+    <div class="chart-grid">
+      <div><canvas id="enrolChart"></canvas></div>
+      <div><canvas id="shareChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Growth, 2021/22 &rarr; 2024/25</h2>
+    <div class="sub">Toggle which subjects are plotted &ndash; by default just the biggest movers, to keep the chart readable.</div>
+    <div class="controls">
+      <button id="btnTopMovers" class="active">Top movers only</button>
+      <button id="btnAllSubjects">All subjects</button>
+    </div>
+    <canvas id="growthLineChart"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Growth leaders &amp; decliners</h2>
+    <div class="sub">Percentage change in enrolment, 2021/22 &rarr; 2024/25 (subjects with fewer than 20 students in both years excluded as negligible)</div>
+    <canvas id="growthBarChart"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Top growers</h2>
+    <div class="sub">Ranked by % change in enrolment, 2021/22 &rarr; 2024/25</div>
+    <div class="chart-grid">
+      <div><canvas id="topGrowersChart"></canvas></div>
+      <div><table id="topGrowersTable"></table></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Top decliners</h2>
+    <div class="sub">Ranked by % change in enrolment, 2021/22 &rarr; 2024/25</div>
+    <div class="chart-grid">
+      <div><canvas id="topDeclinersChart"></canvas></div>
+      <div><table id="topDeclinersTable"></table></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Full table</h2>
+    <div class="sub">Click a column header to sort. All 22 HESA CAH1 subject categories, including those with zero UEL enrolment.</div>
+    <div class="controls">
+      <label class="chk-pill"><input type="checkbox" id="hideZero" checked> Hide zero-enrolment subjects</label>
+    </div>
+    <table id="mainTable"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout">
+      <b>Business and management</b> is UEL's largest subject by a wide margin: 9,075 enrolments in 2024/25, up 71% from 5,305 in 2021/22. <b>Computing</b> more than doubled over the same period (1,965 &rarr; 4,645, +136%) and is now the second-largest subject. Together they went from 37% of all UEL enrolments in 2021/22 to 51% in 2024/25.
+    </div>
+    <div class="callout">
+      Three subjects shrank noticeably over the same four years: <b>Social sciences</b> (&minus;34%), <b>Psychology</b> and <b>Education and teaching</b> (both &minus;25%). Total UEL enrolment still grew 37% overall, so this is concentration &ndash; growth in a few large subjects outpacing, and partly offsetting, decline elsewhere &ndash; rather than uniform expansion.
+    </div>
+    <p style="font-size:13.5px;color:#555">This page deliberately doesn't cross-reference NSS scores &ndash; the two datasets cover different student populations (all-levels enrolment vs. final-year-undergraduate survey respondents) and mixing them risks implying a comparison the data doesn't actually support. If you want to explore enrolment growth alongside NSS trends specifically, treat that as a separate, clearly-labelled analysis rather than a merged table.</p>
+  </div>
+
+  <footer>
+    Source: HESA Table 49 (dt051-table-49.csv and three prior-year variants, provided by user), "HE student enrolments by HE provider and subject of study", 2021/22&ndash;2024/25, all levels of study and all modes of study, University of East London (UKPRN 10007144). Figures are rounded to the nearest 5 by HESA's disclosure control and may not sum exactly to published totals.
+  <br><b>Data files:</b> Data/HESA Student Table 49/UEL/legacy_manual_extract/dt051-table-49.csv, dt051-table-49 - 2122.csv, dt051-table-49 - 2223.csv, dt051-table-49 - 2324.csv.
+</footer>
+
+</div>
+
+<script id="hesa-data" type="application/json">{"years": ["2021/22", "2022/23", "2023/24", "2024/25"], "totals": {"2021/22": 19550, "2022/23": 22450, "2023/24": 20735, "2024/25": 26755}, "totalGrowthPct": 36.9, "records": [{"subject": "17 Business and management", "enrol": {"2021/22": 5305, "2022/23": 7300, "2023/24": 7305, "2024/25": 9075}, "growthPct": 71.1, "negligible": false}, {"subject": "11 Computing", "enrol": {"2021/22": 1965, "2022/23": 2625, "2023/24": 2580, "2024/25": 4645}, "growthPct": 136.4, "negligible": false}, {"subject": "02 Subjects allied to medicine", "enrol": {"2021/22": 2475, "2022/23": 2735, "2023/24": 2245, "2024/25": 2595}, "growthPct": 4.8, "negligible": false}, {"subject": "25 Design, and creative and performing arts", "enrol": {"2021/22": 1455, "2022/23": 1465, "2023/24": 1330, "2024/25": 1690}, "growthPct": 16.2, "negligible": false}, {"subject": "10 Engineering and technology", "enrol": {"2021/22": 855, "2022/23": 1155, "2023/24": 1185, "2024/25": 1685}, "growthPct": 97.1, "negligible": false}, {"subject": "03 Biological and sport sciences", "enrol": {"2021/22": 1010, "2022/23": 1240, "2023/24": 1200, "2024/25": 1320}, "growthPct": 30.7, "negligible": false}, {"subject": "04 Psychology", "enrol": {"2021/22": 1685, "2022/23": 1345, "2023/24": 1105, "2024/25": 1265}, "growthPct": -24.9, "negligible": false}, {"subject": "22 Education and teaching", "enrol": {"2021/22": 1305, "2022/23": 1255, "2023/24": 750, "2024/25": 980}, "growthPct": -24.9, "negligible": false}, {"subject": "15 Social sciences", "enrol": {"2021/22": 1380, "2022/23": 1040, "2023/24": 910, "2024/25": 905}, "growthPct": -34.4, "negligible": false}, {"subject": "13 Architecture, building and planning", "enrol": {"2021/22": 735, "2022/23": 790, "2023/24": 615, "2024/25": 815}, "growthPct": 10.9, "negligible": false}, {"subject": "24 Media, journalism and communications", "enrol": {"2021/22": 630, "2022/23": 585, "2023/24": 765, "2024/25": 770}, "growthPct": 22.2, "negligible": false}, {"subject": "16 Law", "enrol": {"2021/22": 530, "2022/23": 510, "2023/24": 505, "2024/25": 650}, "growthPct": 22.6, "negligible": false}, {"subject": "07 Physical sciences", "enrol": {"2021/22": 165, "2022/23": 300, "2023/24": 200, "2024/25": 305}, "growthPct": 84.8, "negligible": false}, {"subject": "19 Language and area studies", "enrol": {"2021/22": 60, "2022/23": 55, "2023/24": 35, "2024/25": 30}, "growthPct": -50.0, "negligible": false}, {"subject": "23 Combined and general studies", "enrol": {"2021/22": 5, "2022/23": 55, "2023/24": 5, "2024/25": 15}, "growthPct": 200.0, "negligible": true}, {"subject": "26 Geography, earth and environmental studies (social sciences)", "enrol": {"2021/22": 0, "2022/23": 0, "2023/24": 5, "2024/25": 10}, "growthPct": null, "negligible": true}, {"subject": "01 Medicine and dentistry", "enrol": {"2021/22": 0, "2022/23": 0, "2023/24": 0, "2024/25": 0}, "growthPct": null, "negligible": true}, {"subject": "05 Veterinary sciences", "enrol": {"2021/22": 0, "2022/23": 0, "2023/24": 0, "2024/25": 0}, "growthPct": null, "negligible": true}, {"subject": "06 Agriculture, food and related studies", "enrol": {"2021/22": 0, "2022/23": 0, "2023/24": 0, "2024/25": 0}, "growthPct": null, "negligible": true}, {"subject": "09 Mathematical sciences", "enrol": {"2021/22": 0, "2022/23": 0, "2023/24": 0, "2024/25": 0}, "growthPct": null, "negligible": true}, {"subject": "26 Geography, earth and environmental studies (natural sciences)", "enrol": {"2021/22": 0, "2022/23": 0, "2023/24": 0, "2024/25": 0}, "growthPct": null, "negligible": true}, {"subject": "20 Historical, philosophical and religious studies", "enrol": {"2021/22": 0, "2022/23": 0, "2023/24": 0, "2024/25": 0}, "growthPct": null, "negligible": true}]}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('hesa-data').textContent);
+const YEARS = DATA.years;
+const LATEST = YEARS[YEARS.length - 1];
+const FIRST = YEARS[0];
+
+function fmtInt(v) { return v == null ? "–" : Math.round(v).toLocaleString(); }
+function fmtGrowth(v) { return v == null ? "–" : (v >= 0 ? "+" : "") + v.toFixed(1) + "%"; }
+
+const nonZero = DATA.records.filter(r => r.enrol[LATEST] > 0 || r.enrol[FIRST] > 0);
+const totalLatest = DATA.totals[LATEST];
+
+// --- Stat row ---
+const top2 = [...nonZero].sort((a,b) => b.enrol[LATEST] - a.enrol[LATEST]).slice(0,2);
+const top2PctLatest = (100*(top2[0].enrol[LATEST]+top2[1].enrol[LATEST])/totalLatest).toFixed(1);
+const top2PctFirst = (100*(top2[0].enrol[FIRST]+top2[1].enrol[FIRST])/DATA.totals[FIRST]).toFixed(1);
+document.getElementById('statRow').innerHTML = `
+  <div class="stat-box"><div class="n">${totalLatest.toLocaleString()}</div><div class="l">Total enrolments, ${LATEST}</div><div class="s">up ${fmtGrowth(DATA.totalGrowthPct)} since ${FIRST}</div></div>
+  <div class="stat-box"><div class="n">${top2PctLatest}%</div><div class="l">${top2[0].subject.replace(/^\d+\s/,'')} + ${top2[1].subject.replace(/^\d+\s/,'')}</div><div class="s">was ${top2PctFirst}% in ${FIRST}</div></div>
+  <div class="stat-box"><div class="n">${nonZero.length}</div><div class="l">Subjects with any UEL enrolment</div><div class="s">of ${DATA.records.length} HESA categories</div></div>
+`;
+
+function cleanName(s) { return s.replace(/^\d+\s/, ''); }
+
+// --- Bar chart, latest year ---
+const sortedBySize = [...nonZero].sort((a,b) => b.enrol[LATEST] - a.enrol[LATEST]);
+new Chart(document.getElementById('enrolChart'), {
+  type: 'bar',
+  data: {
+    labels: sortedBySize.map(r => cleanName(r.subject)),
+    datasets: [{ label: `Enrolments ${LATEST}`, data: sortedBySize.map(r => r.enrol[LATEST]), backgroundColor: '#2E5395' }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false }, title: { display: true, text: `Enrolments by subject, ${LATEST}`, font: { size: 12 } } },
+    scales: { x: { title: { display: true, text: 'Enrolments' } } }
+  }
+});
+
+new Chart(document.getElementById('shareChart'), {
+  type: 'doughnut',
+  data: {
+    labels: sortedBySize.map(r => cleanName(r.subject)),
+    datasets: [{ data: sortedBySize.map(r => r.enrol[LATEST]), backgroundColor: [
+      '#1F3864','#2E5395','#4f6ea8','#7893c2','#93a8c9','#a9c2e0','#c4cede','#FFC000','#e8b923','#d9e2f3','#b02a2a','#c96b6b','#e2a9a9','#8e5ea2','#3cba9f'
+    ] }]
+  },
+  options: { plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9.5 } } }, title: { display: true, text: `Share of total, ${LATEST}`, font: { size: 12 } } } }
+});
+
+// --- Growth line chart ---
+const palette = ['#1F3864','#2E5395','#b02a2a','#1e7e34','#FFC000','#7893c2','#c96b6b','#93a8c9','#8e5ea2','#3cba9f','#e8c1a0','#c45850','#556270','#a9a9a9'];
+let growthChart = null;
+function renderGrowthLine(topMoversOnly) {
+  let subset = nonZero.filter(r => r.growthPct != null);
+  if (topMoversOnly) {
+    subset = [...subset].sort((a,b) => Math.abs(b.growthPct) - Math.abs(a.growthPct)).slice(0,6);
+  }
+  const datasets = subset.map((r,i) => ({
+    label: cleanName(r.subject),
+    data: YEARS.map(y => r.enrol[y]),
+    borderColor: palette[i % palette.length],
+    backgroundColor: palette[i % palette.length],
+    fill: false, tension: 0.2, borderWidth: 2.5,
+  }));
+  if (growthChart) growthChart.destroy();
+  growthChart = new Chart(document.getElementById('growthLineChart'), {
+    type: 'line',
+    data: { labels: YEARS, datasets },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10.5 } } } }, scales: { y: { title: { display: true, text: 'Enrolments' } } } }
+  });
+}
+renderGrowthLine(true);
+document.getElementById('btnTopMovers').addEventListener('click', e => {
+  document.getElementById('btnTopMovers').classList.add('active');
+  document.getElementById('btnAllSubjects').classList.remove('active');
+  renderGrowthLine(true);
+});
+document.getElementById('btnAllSubjects').addEventListener('click', e => {
+  document.getElementById('btnAllSubjects').classList.add('active');
+  document.getElementById('btnTopMovers').classList.remove('active');
+  renderGrowthLine(false);
+});
+
+// --- Growth bar chart (leaders & decliners) ---
+const growthRanked = nonZero.filter(r => !r.negligible && r.growthPct != null).sort((a,b) => b.growthPct - a.growthPct);
+new Chart(document.getElementById('growthBarChart'), {
+  type: 'bar',
+  data: {
+    labels: growthRanked.map(r => cleanName(r.subject)),
+    datasets: [{
+      data: growthRanked.map(r => r.growthPct),
+      backgroundColor: growthRanked.map(r => r.growthPct >= 0 ? '#1e7e34' : '#b02a2a')
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false }, title: { display: true, text: `% change in enrolment, ${FIRST} → ${LATEST}`, font: { size: 12 } } },
+    scales: { x: { title: { display: true, text: '% change' } } }
+  }
+});
+
+// --- Top growers / decliners ---
+function miniTable(id, rows, dir) {
+  let html = `<tr><th>Subject</th><th>${FIRST}</th><th>${LATEST}</th><th>Change</th></tr>`;
+  rows.forEach(r => {
+    const cls = r.growthPct >= 0 ? 'pos' : 'neg';
+    html += `<tr><td>${cleanName(r.subject)}</td><td>${fmtInt(r.enrol[FIRST])}</td><td>${fmtInt(r.enrol[LATEST])}</td><td class="${cls}">${fmtGrowth(r.growthPct)}</td></tr>`;
+  });
+  document.getElementById(id).innerHTML = html;
+}
+
+const eligible = nonZero.filter(r => !r.negligible && r.growthPct != null);
+const topGrowers = [...eligible].sort((a,b) => b.growthPct - a.growthPct).slice(0,10);
+const topDecliners = [...eligible].sort((a,b) => a.growthPct - b.growthPct).slice(0,10);
+
+new Chart(document.getElementById('topGrowersChart'), {
+  type: 'bar',
+  data: { labels: topGrowers.map(r => cleanName(r.subject)), datasets: [{ data: topGrowers.map(r => r.growthPct), backgroundColor: '#1e7e34' }] },
+  options: { indexAxis: 'y', plugins: { legend: { display: false }, title: { display: true, text: 'Top 10 growers (%)', font: { size: 12 } } }, scales: { x: { title: { display: true, text: '% change' } } } }
+});
+miniTable('topGrowersTable', topGrowers, 'desc');
+
+new Chart(document.getElementById('topDeclinersChart'), {
+  type: 'bar',
+  data: { labels: topDecliners.map(r => cleanName(r.subject)), datasets: [{ data: topDecliners.map(r => r.growthPct), backgroundColor: '#b02a2a' }] },
+  options: { indexAxis: 'y', plugins: { legend: { display: false }, title: { display: true, text: 'Top 10 decliners (%)', font: { size: 12 } } }, scales: { x: { title: { display: true, text: '% change' } } } }
+});
+miniTable('topDeclinersTable', topDecliners, 'asc');
+
+// --- Table ---
+let sortKey = 'enrolLatest', sortDir = 'desc';
+let hideZero = true;
+function tableVal(r, key) {
+  if (key === 'enrolLatest') return r.enrol[LATEST];
+  if (key === 'growthPct') return r.growthPct;
+  if (key === 'subject') return r.subject;
+  return r.enrol[key];
+}
+function renderTable() {
+  let rows = hideZero ? nonZero : DATA.records;
+  rows = [...rows].sort((a,b) => {
+    if (sortKey === 'subject') {
+      return sortDir === 'desc' ? b.subject.localeCompare(a.subject) : a.subject.localeCompare(b.subject);
+    }
+    const av = tableVal(a, sortKey), bv = tableVal(b, sortKey);
+    if (av == null) return 1; if (bv == null) return -1;
+    return sortDir === 'desc' ? bv - av : av - bv;
+  });
+  const maxEnrol = Math.max(...nonZero.map(r => r.enrol[LATEST]));
+  let html = `<tr>
+    <th data-key="subject">Subject</th>
+    ${YEARS.map(y => `<th data-key="${y}"${y===LATEST?' class="sorted"':''}>${y}</th>`).join('')}
+    <th data-key="growthPct">Growth ${FIRST}&rarr;${LATEST}</th>
+  </tr>`;
+  rows.forEach(r => {
+    const isZero = r.enrol[LATEST] === 0 && r.enrol[FIRST] === 0;
+    const g = r.growthPct;
+    const gCls = g == null ? '' : (g >= 0 ? 'pos' : 'neg');
+    html += `<tr class="${isZero?'zero':''}">
+      <td>${cleanName(r.subject)}</td>
+      ${YEARS.map((y,i) => i === YEARS.length-1
+        ? `<td class="bar-cell"><div class="bar-track"><div class="bar-fill ${r.enrol[y]===maxEnrol?'big':''}" style="width:${maxEnrol?100*r.enrol[y]/maxEnrol:0}%"></div></div> ${fmtInt(r.enrol[y])}</td>`
+        : `<td>${fmtInt(r.enrol[y])}</td>`
+      ).join('')}
+      <td class="${gCls}">${fmtGrowth(g)}</td>
+    </tr>`;
+  });
+  document.getElementById('mainTable').innerHTML = html;
+  document.querySelectorAll('#mainTable th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.key === sortKey);
+    th.classList.toggle('asc', th.dataset.key === sortKey && sortDir === 'asc');
+    th.addEventListener('click', () => {
+      if (sortKey === th.dataset.key) { sortDir = sortDir === 'desc' ? 'asc' : 'desc'; }
+      else { sortKey = th.dataset.key; sortDir = 'desc'; }
+      renderTable();
+    });
+  });
+}
+renderTable();
+document.getElementById('hideZero').addEventListener('change', e => { hideZero = e.target.checked; renderTable(); });
+
+// concentration note
+let cum = 0, n90 = 0;
+const ranked = [...nonZero].sort((a,b) => b.enrol[LATEST]-a.enrol[LATEST]);
+ranked.forEach(r => { r._pct = 100*r.enrol[LATEST]/totalLatest; });
+for (const r of ranked) { cum += r._pct; n90++; if (cum >= 90) break; }
+document.getElementById('concentrationNote').innerHTML =
+  `<p style="font-size:13px;color:#555;margin:0 0 10px">Just the top ${n90} of ${nonZero.length} subjects with any enrolment account for about ${cum.toFixed(0)}% of the total &ndash; UEL's student body is concentrated in a handful of large subjects.</p>`;
+</script>
+
+</body>
+</html>

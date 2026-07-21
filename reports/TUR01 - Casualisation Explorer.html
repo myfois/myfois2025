@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR01 — UEL Casualisation Explorer</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR01</span> &mdash; Casualisation Explorer</h1>
+  <p>HESA Staff Table 7 &mdash; employment conditions, fixed-term vs open-ended/permanent academic staff, 2014/15&ndash;2024/25. University of East London (UKPRN 10007144), benchmarked against the England sector average (HESA Staff Table 4).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR01</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout finding">
+    <span class="pill green">HEADLINE</span> The share of UEL's academic staff on <b>fixed-term contracts rose from 31.5% in 2014/15 to a peak of 46.3% in 2023/24</b> (currently 42.7% in 2024/25) &mdash; while the England-wide sector average moved in the <b>opposite direction</b>, falling from 36.8% to 28.0% over the same period. UEL started this period slightly below the national casualisation rate and now sits well above it.
+  </div>
+
+  <div class="panel">
+    <h2>UEL vs. the England benchmark &mdash; the core finding</h2>
+    <div class="sub">Percentage of academic staff on fixed-term contracts, all modes of employment combined, 2014/15&ndash;2024/25. England benchmark is HESA Staff Table 4, nation-level (no equivalent institution-by-institution comparison is possible &ndash; see caveats below).</div>
+    <canvas id="benchChart" role="img" aria-label="Line chart comparing UEL's fixed-term staff percentage against the England sector average, 2014/15 to 2024/25." aria-describedby="benchTable"></canvas>
+    <table id="benchTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Where does it concentrate? Full-time vs. part-time</h2>
+    <div class="sub">UEL only. Casualisation is heavily concentrated in part-time roles throughout, but the full-time fixed-term rate has also nearly tripled.</div>
+    <div class="two-col">
+      <div>
+        <h3 style="font-size:13px;color:var(--navy);margin:0 0 8px">% fixed-term, by mode of employment</h3>
+        <canvas id="modeChart"></canvas>
+      </div>
+      <div>
+        <h3 style="font-size:13px;color:var(--navy);margin:0 0 8px">Headcount, latest year (2024/25)</h3>
+        <canvas id="modeBarChart"></canvas>
+      </div>
+    </div>
+    <table id="modeTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Academic employment function &mdash; teaching, research, or both</h2>
+    <div class="sub">UEL headcount by function, over time. HESA's open data does not cross this with contract type at institution level, so the England-wide split below (right) is the closest available context, not a UEL figure.</div>
+    <div class="two-col">
+      <div>
+        <h3 style="font-size:13px;color:var(--navy);margin:0 0 8px">UEL staff by function, over time</h3>
+        <canvas id="funcChart"></canvas>
+      </div>
+      <div>
+        <h3 style="font-size:13px;color:var(--navy);margin:0 0 8px">England: % fixed-term <i>within</i> each function, 2024/25</h3>
+        <canvas id="funcBenchChart"></canvas>
+      </div>
+    </div>
+    <div class="callout flag">
+      <span class="pill red">READ WITH CAUTION</span> The right-hand chart is the England sector average, not a UEL figure &ndash; HESA Staff Table 7 does not publish UEL's contract type cross-tabulated by teaching/research function. Nationally, <b>research-only staff are by far the most casualised group (64.7% fixed-term)</b>, versus just 5.9% for staff who are both teaching and research (typically standard permanent lecturer posts). If UEL follows the national pattern, its research-only staff (40 people in 2024/25) are disproportionately exposed &ndash; but this cannot be confirmed from open data at UEL level.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Contract seniority</h2>
+    <div class="sub">UEL headcount by contract level, over time. "Other contract level" is HESA's residual category below Professor and Other senior academic &ndash; growth here, rather than in the senior grades, is consistent with casualisation concentrating in junior/non-senior posts.</div>
+    <canvas id="levelChart"></canvas>
+    <table id="levelTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Full data table</h2>
+    <div class="sub">All years, UEL fixed-term/permanent counts by mode of employment. Click a column to sort.</div>
+    <table id="mainTable"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout finding">
+      <b>The core bargaining fact:</b> UEL's fixed-term share of academic staff grew by roughly 11 percentage points (31.5% &rarr; 42.7%, having peaked at 46.3% the year before) over a decade in which the England sector average fell by almost 9 points (36.8% &rarr; 28.0%). This is not a story of "the whole sector is casualising" &ndash; on this metric, UEL has moved sharply against the national trend.
+    </div>
+    <div class="callout">
+      Casualisation is not evenly spread: part-time roles have been majority fixed-term throughout the period (53.8%&ndash;73.8%), while full-time fixed-term contracts, though a much smaller share (4.5%&ndash;12.5%), have nearly tripled in relative terms. The growth in "Other contract level" headcount (800 &rarr; 1,000, +25%) against flat Professor/Senior academic numbers (110 &rarr; 95) is consistent with this growth sitting in more junior, less secure posts.
+    </div>
+    <div class="callout">
+      This report does not include hourly-paid and specialist lecturers, who HESA Staff Table 7 does not capture on a headcount basis at all (they are effectively invisible to "Terms of employment" here). UEL's own 2024/25 Annual Report discloses <b>641 hourly-paid/specialist lecturers</b> paid £3.46m in 2024/25 (2024: 711 people, £4.96m) &ndash; the University's own illustrative estimate is that this is equivalent to roughly 39 FTE academic posts (2024: 62) if an average lecturer cost were applied. That population sits entirely outside the figures in this report and would make the true casualisation picture look worse, not better, if it could be added in. See <code>Data/UEL Annual Reports/2425/Extraction.md</code> &sect;4.
+    </div>
+    <div class="callout flag">
+      <span class="pill red">CAVEATS</span> Figures are rounded to the nearest 5 by HESA's disclosure control; Fixed-term + Permanent totals may differ from the separately-reported "Total academic staff" figure by up to &plusmn;5 in any given year (rounding, not an error). The England benchmark (HESA Staff Table 4) is nation-level only &ndash; no equivalent sector-comparator or per-institution breakdown exists in HESA's open data for this specific cross-tabulation, so UEL cannot be benchmarked against similar providers directly, only against the whole of England. HESA Staff Table 4 also excludes atypical staff by definition, same as Table 7.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Staff Table 7 ("HE academic staff by HE provider and employment conditions"), 2014/15&ndash;2024/25, University of East London (UKPRN 10007144), <code>Country of HE provider</code>/<code>Region of HE provider</code> filtered to All/All to remove HESA's quadruple-counted rows. England benchmark: HESA Staff Table 4 ("HE academic staff (excluding atypicals) by ethnicity, academic employment function, nationality marker, sex, mode of employment, terms of employment, country of HE provider and academic year"), filtered to Ethnicity=All ethnicities total, Nationality marker=All, Mode of employment=All, Sex=All, Country of HE provider=England &ndash; this table is nation-level only in HESA's open data, with no UKPRN/provider field. Contextual figures on hourly-paid lecturers and Agency-costs staffing from UEL's own 2024/25 Annual Report. Figures rounded to the nearest 5 by HESA's disclosure control.
+<br><b>Data files:</b> Data/HESA Staff Table 7/UEL/UEL_table7_2014-15.csv through UEL_table7_2024-25.csv (11 files); Data/HESA Staff Table 4/ALL/table-4.csv (England benchmark, nation-level); Data/UEL Annual Reports/2425/Extraction.md and Table_Staff_Pay_and_Governance.md (hourly-paid lecturer and agency-cost context).
+<br>Part of the trade union report series proposed in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> (report 1 of 12) &ndash; distinct from the management/prospective-student-facing UDR01&ndash;UDR10 series in this same <code>Reports/</code> folder.
+</footer>
+
+<script id="tur01-data" type="application/json">{"years": ["2014-15", "2015-16", "2016-17", "2017-18", "2018-19", "2019-20", "2020-21", "2021-22", "2022-23", "2023-24", "2024-25"], "uel": {"ft_count": [285.0, 255.0, 280.0, 255.0, 235.0, 260.0, 260.0, 320.0, 435.0, 525.0, 465.0], "perm_count": [620.0, 645.0, 635.0, 600.0, 600.0, 600.0, 555.0, 605.0, 620.0, 610.0, 625.0], "pct_fixed_all": [31.5, 28.3, 30.6, 29.8, 28.1, 30.2, 31.9, 34.6, 41.2, 46.3, 42.7], "pct_fixed_ft_mode": [7.2, 6.1, 5.1, 4.5, 5.7, 4.8, 7.3, 8.0, 10.1, 11.8, 12.5], "pct_fixed_pt_mode": [60.0, 55.7, 60.5, 57.3, 53.8, 54.5, 56.8, 58.8, 67.9, 73.8, 70.2], "ft_mode_counts": [{"Fixed-term": 35.0, "Open-ended/Permanent": 450.0}, {"Fixed-term": 30.0, "Open-ended/Permanent": 465.0}, {"Fixed-term": 25.0, "Open-ended/Permanent": 470.0}, {"Fixed-term": 20.0, "Open-ended/Permanent": 425.0}, {"Fixed-term": 25.0, "Open-ended/Permanent": 415.0}, {"Fixed-term": 20.0, "Open-ended/Permanent": 400.0}, {"Fixed-term": 30.0, "Open-ended/Permanent": 380.0}, {"Fixed-term": 35.0, "Open-ended/Permanent": 405.0}, {"Fixed-term": 50.0, "Open-ended/Permanent": 445.0}, {"Fixed-term": 60.0, "Open-ended/Permanent": 450.0}, {"Fixed-term": 65.0, "Open-ended/Permanent": 455.0}], "pt_mode_counts": [{"Fixed-term": 255.0, "Open-ended/Permanent": 170.0}, {"Fixed-term": 220.0, "Open-ended/Permanent": 175.0}, {"Fixed-term": 260.0, "Open-ended/Permanent": 170.0}, {"Fixed-term": 235.0, "Open-ended/Permanent": 175.0}, {"Fixed-term": 210.0, "Open-ended/Permanent": 180.0}, {"Fixed-term": 240.0, "Open-ended/Permanent": 200.0}, {"Fixed-term": 230.0, "Open-ended/Permanent": 175.0}, {"Fixed-term": 285.0, "Open-ended/Permanent": 200.0}, {"Fixed-term": 380.0, "Open-ended/Permanent": 180.0}, {"Fixed-term": 465.0, "Open-ended/Permanent": 165.0}, {"Fixed-term": 400.0, "Open-ended/Permanent": 170.0}], "total_academic": [910.0, 895.0, 920.0, 860.0, 830.0, 860.0, 815.0, 930.0, 1055.0, 1140.0, 1095.0], "academic_function": {"2014-15": {"Both teaching and research": 635.0, "Research only": 50.0, "Teaching only": 210.0, "Neither teaching nor research": 15.0}, "2015-16": {"Both teaching and research": 640.0, "Research only": 40.0, "Teaching only": 190.0, "Neither teaching nor research": 20.0}, "2016-17": {"Both teaching and research": 640.0, "Research only": 40.0, "Teaching only": 235.0, "Neither teaching nor research": 5.0}, "2017-18": {"Both teaching and research": 585.0, "Research only": 35.0, "Teaching only": 235.0, "Neither teaching nor research": 5.0}, "2018-19": {"Both teaching and research": 595.0, "Research only": 25.0, "Teaching only": 205.0, "Neither teaching nor research": 5.0}, "2019-20": {"Both teaching and research": 600.0, "Research only": 35.0, "Teaching only": 225.0, "Neither teaching nor research": 0.0}, "2020-21": {"Both teaching and research": 580.0, "Research only": 30.0, "Teaching only": 205.0, "Neither teaching nor research": 0.0}, "2021-22": {"Both teaching and research": 635.0, "Research only": 30.0, "Teaching only": 255.0, "Neither teaching nor research": 10.0}, "2022-23": {"Both teaching and research": 640.0, "Research only": 35.0, "Teaching only": 345.0, "Neither teaching nor research": 30.0}, "2023-24": {"Both teaching and research": 635.0, "Research only": 35.0, "Teaching only": 445.0, "Neither teaching nor research": 20.0}, "2024-25": {"Both teaching and research": 635.0, "Research only": 40.0, "Teaching only": 390.0, "Neither teaching nor research": 30.0}}, "contract_levels": {"2014-15": {"Other contract level": 800.0, "Professor": 45.0, "Other senior academic": 65.0}, "2015-16": {"Other contract level": 795.0, "Professor": 40.0, "Other senior academic": 60.0}, "2016-17": {"Other contract level": 815.0, "Professor": 50.0, "Other senior academic": 60.0}, "2017-18": {"Other contract level": 775.0, "Professor": 40.0, "Other senior academic": 40.0}, "2018-19": {"Other contract level": 750.0, "Professor": 40.0, "Other senior academic": 40.0}, "2019-20": {"Other contract level": 775.0, "Professor": 45.0, "Other senior academic": 40.0}, "2020-21": {"Other contract level": 740.0, "Professor": 35.0, "Other senior academic": 40.0}, "2021-22": {"Other contract level": 850.0, "Professor": 35.0, "Other senior academic": 40.0}, "2022-23": {"Other contract level": 980.0, "Professor": 40.0, "Other senior academic": 40.0}, "2023-24": {"Other contract level": 1065.0, "Professor": 35.0, "Other senior academic": 40.0}, "2024-25": {"Other contract level": 1000.0, "Professor": 40.0, "Other senior academic": 55.0}}}, "bench": {"years": ["2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "pct_fixed_all": [36.8, 36.0, 35.2, 34.3, 34.1, 33.8, 32.5, 33.2, 29.4, 28.6, 28.0], "ft_count": [60790.0, 60720.0, 61045.0, 60330.0, 61270.0, 62705.0, 60410.0, 64605.0, 58645.0, 58390.0, 56585.0], "perm_count": [104390.0, 107985.0, 112315.0, 115385.0, 118625.0, 122895.0, 125550.0, 129715.0, 140735.0, 145665.0, 145470.0], "latest_year": "2024/25", "func_term": {"Teaching only": {"Fixed-term": 23190.0, "Open-ended/Permanent": 46885.0}, "Research only": {"Fixed-term": 28000.0, "Open-ended/Permanent": 15245.0}, "Both teaching and research": {"Fixed-term": 5190.0, "Open-ended/Permanent": 82415.0}, "Neither teaching nor research": {"Fixed-term": 205.0, "Open-ended/Permanent": 925.0}}}}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur01-data').textContent);
+const YEARS = DATA.years;
+const FIRST = YEARS[0];
+const LATEST = YEARS[YEARS.length - 1];
+const charts = {};
+
+if (window.ChartDataLabels) {
+  Chart.register(ChartDataLabels);
+  Chart.defaults.set('plugins.datalabels', { display: false });
+}
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtInt(v) { return (v == null) ? "–" : Math.round(v).toLocaleString(); }
+function fmtPct(v) { return (v == null) ? "–" : v.toFixed(1) + "%"; }
+function fmtDelta(v) { return (v == null) ? "–" : (v >= 0 ? "+" : "") + v.toFixed(1) + " pts"; }
+
+function renderStatRow() {
+  const uelLatest = DATA.uel.pct_fixed_all[DATA.uel.pct_fixed_all.length-1];
+  const uelFirst = DATA.uel.pct_fixed_all[0];
+  const uelPeak = Math.max(...DATA.uel.pct_fixed_all);
+  const benchLatest = DATA.bench.pct_fixed_all[DATA.bench.pct_fixed_all.length-1];
+  const benchFirst = DATA.bench.pct_fixed_all[0];
+  const gap = uelLatest - benchLatest;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n flag">${fmtPct(uelLatest)}</div><div class="l">UEL fixed-term, ${LATEST}</div><div class="s">${fmtDelta(uelLatest-uelFirst)} since ${FIRST}</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(uelPeak)}</div><div class="l">UEL peak (2023/24)</div><div class="s">highest point in the series</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(benchLatest)}</div><div class="l">England average, ${LATEST}</div><div class="s">${fmtDelta(benchLatest-benchFirst)} since ${FIRST}</div></div>
+    <div class="stat-box"><div class="n flag">${fmtDelta(gap)}</div><div class="l">UEL vs. England gap</div><div class="s">UEL now ${gap>=0?'above':'below'} the national average</div></div>
+  `;
+}
+
+function renderBenchChart() {
+  destroyChart('bench');
+  charts.bench = new Chart(document.getElementById('benchChart'), {
+    type: 'line',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: 'UEL — % fixed-term', data: DATA.uel.pct_fixed_all, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15, fill: false },
+        { label: 'England average — % fixed-term', data: DATA.bench.pct_fixed_all, borderColor: '#0072B2', backgroundColor: '#0072B2', borderWidth: 2.5, borderDash: [6,3], tension: 0.15, fill: false }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { title: { display: true, text: '% of academic staff on fixed-term contracts' }, suggestedMin: 20, suggestedMax: 50 } }
+    }
+  });
+  let html = `<tr><th>Series</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>UEL — % fixed-term</td>${DATA.uel.pct_fixed_all.map(v=>`<td class="hi">${fmtPct(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>England average — % fixed-term</td>${DATA.bench.pct_fixed_all.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Gap (UEL &minus; England, pts)</td>${YEARS.map((y,i)=>`<td>${fmtDelta(DATA.uel.pct_fixed_all[i]-DATA.bench.pct_fixed_all[i])}</td>`).join('')}</tr>`;
+  document.getElementById('benchTable').innerHTML = html;
+}
+
+function renderModeChart() {
+  destroyChart('mode');
+  charts.mode = new Chart(document.getElementById('modeChart'), {
+    type: 'line',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: 'Part-time — % fixed-term', data: DATA.uel.pct_fixed_pt_mode, borderColor: '#D55E00', backgroundColor: '#D55E00', borderWidth: 3, tension: 0.15 },
+        { label: 'Full-time — % fixed-term', data: DATA.uel.pct_fixed_ft_mode, borderColor: '#009E73', backgroundColor: '#009E73', borderWidth: 2.5, tension: 0.15 }
+      ]
+    },
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: '% fixed-term within mode' }, suggestedMin: 0, suggestedMax: 80 } } }
+  });
+
+  destroyChart('modeBar');
+  const ftLatest = DATA.uel.ft_mode_counts[DATA.uel.ft_mode_counts.length-1];
+  const ptLatest = DATA.uel.pt_mode_counts[DATA.uel.pt_mode_counts.length-1];
+  charts.modeBar = new Chart(document.getElementById('modeBarChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Full-time', 'Part-time'],
+      datasets: [
+        { label: 'Fixed-term', data: [ftLatest['Fixed-term'], ptLatest['Fixed-term']], backgroundColor: '#b02a2a' },
+        { label: 'Open-ended/Permanent', data: [ftLatest['Open-ended/Permanent'], ptLatest['Open-ended/Permanent']], backgroundColor: '#2E5395' }
+      ]
+    },
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { stacked: false, title: { display: true, text: 'Headcount' } }, x: { stacked: false } } }
+  });
+
+  let html = `<tr><th>Mode</th><th>Category</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td rowspan="2">Full-time</td><td>Fixed-term</td>${DATA.uel.ft_mode_counts.map(c=>`<td>${fmtInt(c['Fixed-term'])}</td>`).join('')}</tr>`;
+  html += `<tr><td>Permanent</td>${DATA.uel.ft_mode_counts.map(c=>`<td>${fmtInt(c['Open-ended/Permanent'])}</td>`).join('')}</tr>`;
+  html += `<tr><td rowspan="2">Part-time</td><td>Fixed-term</td>${DATA.uel.pt_mode_counts.map(c=>`<td>${fmtInt(c['Fixed-term'])}</td>`).join('')}</tr>`;
+  html += `<tr><td>Permanent</td>${DATA.uel.pt_mode_counts.map(c=>`<td>${fmtInt(c['Open-ended/Permanent'])}</td>`).join('')}</tr>`;
+  document.getElementById('modeTable').innerHTML = html;
+}
+
+function renderFuncChart() {
+  destroyChart('func');
+  const cats = ['Both teaching and research', 'Teaching only', 'Research only', 'Neither teaching nor research'];
+  const palette = { 'Both teaching and research': '#1F3864', 'Teaching only': '#56B4E9', 'Research only': '#D55E00', 'Neither teaching nor research': '#999999' };
+  const datasets = cats.map(c => ({
+    label: c,
+    data: YEARS.map(y => DATA.uel.academic_function[y][c] ?? 0),
+    backgroundColor: palette[c],
+    stack: 's'
+  }));
+  charts.func = new Chart(document.getElementById('funcChart'), {
+    type: 'bar',
+    data: { labels: YEARS, datasets },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10 } } } }, scales: { y: { stacked: true, title: { display: true, text: 'Headcount' } }, x: { stacked: true } } }
+  });
+
+  destroyChart('funcBench');
+  const ft = DATA.bench.func_term;
+  const labels = Object.keys(ft);
+  const pcts = labels.map(l => { const f = ft[l]['Fixed-term']||0, p = ft[l]['Open-ended/Permanent']||0; return f+p ? 100*f/(f+p) : 0; });
+  charts.funcBench = new Chart(document.getElementById('funcBenchChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: pcts, backgroundColor: labels.map(l=>palette[l]||'#999') }] },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false }, datalabels: { display: true, anchor: 'end', align: 'end', color: '#1F3864', font: { size: 11, weight: 'bold' }, formatter: v => v.toFixed(1)+'%' } },
+      scales: { x: { suggestedMax: 75, title: { display: true, text: '% fixed-term (England, 2024/25)' } } }
+    }
+  });
+}
+
+function renderLevelChart() {
+  destroyChart('level');
+  const cats = ['Other contract level', 'Other senior academic', 'Professor'];
+  const palette = { 'Other contract level': '#0072B2', 'Other senior academic': '#E69F00', 'Professor': '#1F3864' };
+  const datasets = cats.map(c => ({
+    label: c, data: YEARS.map(y => DATA.uel.contract_levels[y][c] ?? 0),
+    borderColor: palette[c], backgroundColor: palette[c], borderWidth: 2.5, tension: 0.15, fill: false
+  }));
+  charts.level = new Chart(document.getElementById('levelChart'), {
+    type: 'line',
+    data: { labels: YEARS, datasets },
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: 'Headcount' } } } }
+  });
+  let html = `<tr><th>Contract level</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}<th>Growth</th></tr>`;
+  cats.forEach(c => {
+    const series = YEARS.map(y => DATA.uel.contract_levels[y][c] ?? 0);
+    const growth = series[0] ? 100*(series[series.length-1]-series[0])/series[0] : null;
+    const cls = growth == null ? '' : (growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${c}</td>${series.map(v=>`<td>${fmtInt(v)}</td>`).join('')}<td class="${cls}">${growth==null?'–':(growth>=0?'+':'')+growth.toFixed(1)+'%'}</td></tr>`;
+  });
+  document.getElementById('levelTable').innerHTML = html;
+}
+
+let sortKey = LATEST, sortDir = 'desc';
+function renderMainTable() {
+  const rows = [
+    { name: 'Full-time — Fixed-term', series: DATA.uel.ft_mode_counts.map(c=>c['Fixed-term']) },
+    { name: 'Full-time — Open-ended/Permanent', series: DATA.uel.ft_mode_counts.map(c=>c['Open-ended/Permanent']) },
+    { name: 'Part-time — Fixed-term', series: DATA.uel.pt_mode_counts.map(c=>c['Fixed-term']) },
+    { name: 'Part-time — Open-ended/Permanent', series: DATA.uel.pt_mode_counts.map(c=>c['Open-ended/Permanent']) },
+    { name: 'All modes — Fixed-term', series: DATA.uel.ft_count },
+    { name: 'All modes — Open-ended/Permanent', series: DATA.uel.perm_count },
+    { name: 'Total academic staff (HESA-reported)', series: DATA.uel.total_academic }
+  ];
+  rows.forEach(r => { r.growth = r.series[0] ? 100*(r.series[r.series.length-1]-r.series[0])/r.series[0] : null; });
+  rows.sort((a,b) => {
+    if (sortKey === 'name') return sortDir==='desc' ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
+    let av, bv;
+    if (sortKey === 'growth') { av = a.growth; bv = b.growth; }
+    else { const idx = YEARS.indexOf(sortKey); av = a.series[idx]; bv = b.series[idx]; }
+    return sortDir === 'desc' ? (bv-av) : (av-bv);
+  });
+  let html = '<tr>';
+  html += `<th data-key="name">Category</th>`;
+  YEARS.forEach(y => html += `<th data-key="${y}">${y}</th>`);
+  html += `<th data-key="growth">Growth</th></tr>`;
+  rows.forEach(r => {
+    const gCls = r.growth == null ? '' : (r.growth >= 0 ? 'pos' : 'neg');
+    html += `<tr><td>${r.name}</td>${r.series.map(v => `<td>${fmtInt(v)}</td>`).join('')}<td class="${gCls}">${r.growth==null?'–':(r.growth>=0?'+':'')+r.growth.toFixed(1)+'%'}</td></tr>`;
+  });
+  document.getElementById('mainTable').innerHTML = html;
+  document.querySelectorAll('#mainTable th').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      sortDir = (sortKey === key && sortDir === 'desc') ? 'asc' : 'desc';
+      sortKey = key;
+      renderMainTable();
+    });
+  });
+}
+
+renderStatRow();
+renderBenchChart();
+renderModeChart();
+renderFuncChart();
+renderLevelChart();
+renderMainTable();
+</script>
+</body>
+</html>

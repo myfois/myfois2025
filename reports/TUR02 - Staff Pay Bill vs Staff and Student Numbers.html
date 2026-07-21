@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR02 — Staff Pay Bill vs. Staff and Student Numbers</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR02</span> &mdash; Staff Pay Bill vs. Staff and Student Numbers</h1>
+  <p>HESA Finance Table 12 (staff costs), Finance Table 1 (total income), Student Table 37 (student FTE), ONS CPIH (inflation), 2016/17&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR02</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout finding">
+    <span class="pill green">HEADLINE</span> Staff costs have <b>not kept pace with UEL's total income</b>: the staff pay bill has fallen from <b>60.2% of total income in 2016/17 to 41.9% in 2024/25</b> &mdash; even though staff costs have grown in real (inflation-adjusted) terms too, income has grown much faster. The "no money for a pay rise" claim doesn't hold up against the institution's own overall resources &mdash; the pay bill's <i>share</i> of a much bigger pie has shrunk by nearly a fifth.
+  </div>
+
+  <div class="panel">
+    <h2>Staff costs as a share of total income</h2>
+    <div class="sub">The core test: is spending on staff keeping pace with the institution's overall resources? Both figures are HESA-reported consolidated totals, so this ratio isn't affected by inflation (both numerator and denominator are same-year cash terms).</div>
+    <canvas id="shareChart" role="img" aria-label="Line chart of staff costs as a percentage of total income, 2016/17 to 2024/25." aria-describedby="shareTable"></canvas>
+    <table id="shareTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Staff costs and total income, nominal vs. real terms</h2>
+    <div class="sub">Real-terms figures are deflated to 2024/25 prices using ONS CPIH (annual rate compounded year-on-year, financial year approximated to the calendar year it ends in &ndash; see caveats). Even adjusting for inflation, staff costs have risen &ndash; the issue is that income has risen faster.</div>
+    <div class="two-col">
+      <div>
+        <h3 style="font-size:13px;color:var(--navy);margin:0 0 8px">Staff costs: nominal vs. real (2024/25 prices)</h3>
+        <canvas id="staffRealChart"></canvas>
+      </div>
+      <div>
+        <h3 style="font-size:13px;color:var(--navy);margin:0 0 8px">Total income: nominal vs. real (2024/25 prices)</h3>
+        <canvas id="incomeRealChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Spending per head &mdash; staff FTE and student FTE</h2>
+    <div class="sub">Staff cost per staff FTE (are individual staff being paid more, on average, in cash terms?) alongside income per student FTE (is the institution getting more resource per student it teaches?). Both are nominal (not inflation-adjusted) &pound;'000s.</div>
+    <canvas id="perHeadChart" role="img" aria-label="Line chart of staff cost per staff FTE and income per student FTE, 2016/17 to 2024/25." aria-describedby="perHeadTable"></canvas>
+    <table id="perHeadTable" style="margin-top:14px"></table>
+    <div class="callout flag">
+      <span class="pill red">DATA CAVEAT</span> The student FTE figure (HESA Student Table 37, "Total academic cost centres") shows an unexplained dip in 2023/24 (12,915, down from 16,670 the year before) before jumping to 20,955 in 2024/25 &ndash; this doesn't match the steady enrolment growth shown elsewhere in this project (UDR04, UDR09, the annual reports' own headcount of 42,062 students in 2024/25). Cost-centre mapping is a known HESA area where definitions and provider submissions can shift year to year (already flagged in this project's catalogue documentation) &ndash; treat the 2023/24 figure specifically as an artefact of that, not a real one-year drop in student numbers, and treat "income per student FTE" in that year with caution.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Full data table</h2>
+    <table id="mainTable"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout finding">
+      <b>The core bargaining fact:</b> staff costs as a share of total income fell every single year in this series bar one small tick, from 60.2% (2016/17) to 41.9% (2024/25) &ndash; a fall of 18.3 percentage points. Meanwhile staff costs in real terms (2024/25 prices) actually grew modestly (&pound;106.2m &rarr; &pound;124.3m), so this isn't a story of the pay bill being cut &ndash; it's a story of the institution's income growing much faster than what it spends on staff, largely on the back of international student fee growth (see TUR11 and UDR06 for the enrolment side of that story).
+    </div>
+    <div class="callout">
+      Staff cost per staff FTE rose from &pound;60.7k (2016/17) to &pound;80.2k (2024/25) in nominal terms &ndash; but this is an average across a headcount that includes very different roles and grades, so it says nothing about whether typical individual pay has kept pace with inflation. For that, see the separate NSS/casualisation reports (TUR01) and the sector-wide pay-award history published by UCU nationally, which sits outside this project's data.
+    </div>
+    <div class="callout flag">
+      <span class="pill red">CAVEATS</span> The CPIH deflator approximates each financial year (Aug&ndash;Jul) to the calendar year it ends in (e.g. 2016/17 &asymp; calendar 2017) &ndash; a simplification, not an exact match to UEL's financial year. "Total staff numbers (FTE) as disclosed in accounts" (Finance Table 12) is UEL's own reported figure in its statutory accounts, not independently verified by HESA. Student FTE figures (Table 37) have a known volatility issue in the most recent two years &ndash; see the flag above.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Finance Table 12 ("Analysis of staff costs by HE provider and academic year"), Finance Table 1 ("Consolidated statement of comprehensive income and expenditure by HE provider and academic year"), Student Table 37 ("HE student enrolment FTE by HE provider, cost centre and academic year"), all UEL-filtered (UKPRN 10007144), 2016/17&ndash;2024/25. ONS CPIH annual rate (series L55O), compounded to build a 2015/16=100 index.
+<br><b>Data files:</b> Data/HESA Finance Table 12/UEL/UEL_table12.csv; Data/HESA Finance Table 1/UEL/UEL_table1.csv; Data/HESA Student Table 37/UEL/UEL_table37.csv; Data/ONS Inflation Index/series-210726.csv.
+<br>Part of the trade union report series proposed in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> (report 2 of 12). See <code>Reports/TUR00 - Trade Union Report Index.html</code> for the full series.
+</footer>
+
+<script id="tur02-data" type="application/json">[{"year": "2016/17", "staff_cost_nominal": 79698.0, "staff_cost_real_2425prices": 106169.0, "salaries_nominal": 60652.0, "salaries_real_2425prices": 80797.1, "income_nominal": 132310.0, "income_real_2425prices": 176255.7, "staff_fte": 1313.0, "student_fte": 10750.0, "staff_cost_pct_of_income": 60.2, "income_per_student_fte_000": 12.31, "staff_cost_per_staff_fte_000": 60.7, "cpih_index": 102.6}, {"year": "2017/18", "staff_cost_nominal": 73765.0, "staff_cost_real_2425prices": 96056.1, "salaries_nominal": 56752.0, "salaries_real_2425prices": 73902.0, "income_nominal": 136084.0, "income_real_2425prices": 177207.4, "staff_fte": 1140.0, "student_fte": 11050.0, "staff_cost_pct_of_income": 54.2, "income_per_student_fte_000": 12.32, "staff_cost_per_staff_fte_000": 64.71, "cpih_index": 104.96}, {"year": "2018/19", "staff_cost_nominal": 75258.0, "staff_cost_real_2425prices": 96362.1, "salaries_nominal": 57052.0, "salaries_real_2425prices": 73050.8, "income_nominal": 141712.0, "income_real_2425prices": 181451.4, "staff_fte": 1114.0, "student_fte": 11200.0, "staff_cost_pct_of_income": 53.1, "income_per_student_fte_000": 12.65, "staff_cost_per_staff_fte_000": 67.56, "cpih_index": 106.74}, {"year": "2019/20", "staff_cost_nominal": 83253.0, "staff_cost_real_2425prices": 105543.7, "salaries_nominal": 62222.0, "salaries_real_2425prices": 78881.7, "income_nominal": 155275.0, "income_real_2425prices": 196849.3, "staff_fte": 1351.0, "student_fte": 12555.0, "staff_cost_pct_of_income": 53.6, "income_per_student_fte_000": 12.37, "staff_cost_per_staff_fte_000": 61.62, "cpih_index": 107.81}, {"year": "2020/21", "staff_cost_nominal": 84525.0, "staff_cost_real_2425prices": 104542.7, "salaries_nominal": 63063.0, "salaries_real_2425prices": 77998.0, "income_nominal": 176607.0, "income_real_2425prices": 218432.1, "staff_fte": 1313.0, "student_fte": 14695.0, "staff_cost_pct_of_income": 47.9, "income_per_student_fte_000": 12.02, "staff_cost_per_staff_fte_000": 64.38, "cpih_index": 110.51}, {"year": "2021/22", "staff_cost_nominal": 90559.0, "staff_cost_real_2425prices": 103805.1, "salaries_nominal": 68107.0, "salaries_real_2425prices": 78069.0, "income_nominal": 191974.0, "income_real_2425prices": 220054.1, "staff_fte": 1418.0, "student_fte": 15825.0, "staff_cost_pct_of_income": 47.2, "income_per_student_fte_000": 12.13, "staff_cost_per_staff_fte_000": 63.86, "cpih_index": 119.24}, {"year": "2022/23", "staff_cost_nominal": 105543.0, "staff_cost_real_2425prices": 113277.9, "salaries_nominal": 82191.0, "salaries_real_2425prices": 88214.5, "income_nominal": 247961.0, "income_real_2425prices": 266133.3, "staff_fte": 1345.0, "student_fte": 16670.0, "staff_cost_pct_of_income": 42.6, "income_per_student_fte_000": 14.87, "staff_cost_per_staff_fte_000": 78.47, "cpih_index": 127.34}, {"year": "2023/24", "staff_cost_nominal": 118020.0, "staff_cost_real_2425prices": 122622.8, "salaries_nominal": 92565.0, "salaries_real_2425prices": 96175.0, "income_nominal": 279541.0, "income_real_2425prices": 290443.1, "staff_fte": 1685.0, "student_fte": 12915.0, "staff_cost_pct_of_income": 42.2, "income_per_student_fte_000": 21.64, "staff_cost_per_staff_fte_000": 70.04, "cpih_index": 131.55}, {"year": "2024/25", "staff_cost_nominal": 124327.0, "staff_cost_real_2425prices": 124327.0, "salaries_nominal": 95921.0, "salaries_real_2425prices": 95921.0, "income_nominal": 296952.0, "income_real_2425prices": 296952.0, "staff_fte": 1551.0, "student_fte": 20955.0, "staff_cost_pct_of_income": 41.9, "income_per_student_fte_000": 14.17, "staff_cost_per_staff_fte_000": 80.16, "cpih_index": 136.68}]
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur02-data').textContent);
+const YEARS = DATA.map(d => d.year);
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtM(v) { return (v == null) ? "–" : "£" + (v/1000).toFixed(1) + "m"; }
+function fmtPct(v) { return (v == null) ? "–" : v.toFixed(1) + "%"; }
+function fmtK(v) { return (v == null) ? "–" : "£" + v.toFixed(1) + "k"; }
+function fmtInt(v) { return (v == null) ? "–" : Math.round(v).toLocaleString(); }
+
+function renderStatRow() {
+  const first = DATA[0], last = DATA[DATA.length-1];
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n flag">${fmtPct(last.staff_cost_pct_of_income)}</div><div class="l">Staff costs as % of income, ${last.year}</div><div class="s">down from ${fmtPct(first.staff_cost_pct_of_income)} in ${first.year}</div></div>
+    <div class="stat-box"><div class="n">${fmtM(last.staff_cost_real_2425prices)}</div><div class="l">Staff costs, ${last.year} (real, 2024/25 prices)</div><div class="s">vs ${fmtM(first.staff_cost_real_2425prices)} in ${first.year}</div></div>
+    <div class="stat-box"><div class="n">${fmtM(last.income_real_2425prices)}</div><div class="l">Total income, ${last.year} (real, 2024/25 prices)</div><div class="s">vs ${fmtM(first.income_real_2425prices)} in ${first.year}</div></div>
+    <div class="stat-box"><div class="n">${fmtK(last.staff_cost_per_staff_fte_000)}</div><div class="l">Staff cost per staff FTE, ${last.year}</div><div class="s">vs ${fmtK(first.staff_cost_per_staff_fte_000)} in ${first.year}</div></div>
+  `;
+}
+
+function renderShareChart() {
+  destroyChart('share');
+  charts.share = new Chart(document.getElementById('shareChart'), {
+    type: 'line',
+    data: { labels: YEARS, datasets: [
+      { label: 'Staff costs as % of total income', data: DATA.map(d=>d.staff_cost_pct_of_income), borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15 }
+    ]},
+    options: { plugins: { legend: { display: false } }, scales: { y: { title: { display: true, text: '% of total income' }, suggestedMin: 35, suggestedMax: 65 } } }
+  });
+  let html = `<tr><th>Year</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Staff costs as % of income</td>${DATA.map(d=>`<td class="hi">${fmtPct(d.staff_cost_pct_of_income)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Staff costs, nominal £'000</td>${DATA.map(d=>`<td>${fmtInt(d.staff_cost_nominal)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Total income, nominal £'000</td>${DATA.map(d=>`<td>${fmtInt(d.income_nominal)}</td>`).join('')}</tr>`;
+  document.getElementById('shareTable').innerHTML = html;
+}
+
+function renderRealCharts() {
+  destroyChart('staffReal');
+  charts.staffReal = new Chart(document.getElementById('staffRealChart'), {
+    type: 'line',
+    data: { labels: YEARS, datasets: [
+      { label: 'Nominal', data: DATA.map(d=>d.staff_cost_nominal), borderColor: '#0072B2', backgroundColor: '#0072B2', borderWidth: 2.5, tension: 0.15 },
+      { label: 'Real (2024/25 prices)', data: DATA.map(d=>d.staff_cost_real_2425prices), borderColor: '#D55E00', backgroundColor: '#D55E00', borderWidth: 2.5, borderDash: [6,3], tension: 0.15 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: "£'000" } } } }
+  });
+  destroyChart('incomeReal');
+  charts.incomeReal = new Chart(document.getElementById('incomeRealChart'), {
+    type: 'line',
+    data: { labels: YEARS, datasets: [
+      { label: 'Nominal', data: DATA.map(d=>d.income_nominal), borderColor: '#0072B2', backgroundColor: '#0072B2', borderWidth: 2.5, tension: 0.15 },
+      { label: 'Real (2024/25 prices)', data: DATA.map(d=>d.income_real_2425prices), borderColor: '#D55E00', backgroundColor: '#D55E00', borderWidth: 2.5, borderDash: [6,3], tension: 0.15 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: "£'000" } } } }
+  });
+}
+
+function renderPerHeadChart() {
+  destroyChart('perHead');
+  charts.perHead = new Chart(document.getElementById('perHeadChart'), {
+    type: 'line',
+    data: { labels: YEARS, datasets: [
+      { label: 'Staff cost per staff FTE (£000s)', data: DATA.map(d=>d.staff_cost_per_staff_fte_000), borderColor: '#009E73', backgroundColor: '#009E73', borderWidth: 2.5, tension: 0.15, yAxisID: 'y' },
+      { label: 'Income per student FTE (£000s)', data: DATA.map(d=>d.income_per_student_fte_000), borderColor: '#CC79A7', backgroundColor: '#CC79A7', borderWidth: 2.5, tension: 0.15, yAxisID: 'y1' }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } },
+      scales: {
+        y: { position: 'left', title: { display: true, text: 'Staff cost per staff FTE (£000s)' } },
+        y1: { position: 'right', title: { display: true, text: 'Income per student FTE (£000s)' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+  let html = `<tr><th>Year</th>${YEARS.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Staff cost per staff FTE (£000s)</td>${DATA.map(d=>`<td>${fmtK(d.staff_cost_per_staff_fte_000)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Income per student FTE (£000s)</td>${DATA.map(d=>`<td>${fmtK(d.income_per_student_fte_000)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Staff FTE</td>${DATA.map(d=>`<td>${fmtInt(d.staff_fte)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Student FTE</td>${DATA.map((d,i)=>`<td${i>=7?' class="hi"':''}>${fmtInt(d.student_fte)}</td>`).join('')}</tr>`;
+  document.getElementById('perHeadTable').innerHTML = html;
+}
+
+function renderMainTable() {
+  let html = `<tr><th>Year</th><th>Staff costs (£'000, nominal)</th><th>Staff costs (£'000, real 2024/25)</th><th>Total income (£'000, nominal)</th><th>Total income (£'000, real 2024/25)</th><th>Staff cost % of income</th><th>Staff FTE</th><th>Student FTE</th><th>CPIH index</th></tr>`;
+  DATA.forEach(d => {
+    html += `<tr><td>${d.year}</td><td>${fmtInt(d.staff_cost_nominal)}</td><td>${fmtInt(d.staff_cost_real_2425prices)}</td><td>${fmtInt(d.income_nominal)}</td><td>${fmtInt(d.income_real_2425prices)}</td><td class="hi">${fmtPct(d.staff_cost_pct_of_income)}</td><td>${fmtInt(d.staff_fte)}</td><td>${fmtInt(d.student_fte)}</td><td>${d.cpih_index}</td></tr>`;
+  });
+  document.getElementById('mainTable').innerHTML = html;
+}
+
+renderStatRow();
+renderShareChart();
+renderRealCharts();
+renderPerHeadChart();
+renderMainTable();
+</script>
+</body>
+</html>

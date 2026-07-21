@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR08 — NSS as Workload Barometer</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR08</span> &mdash; NSS as Workload Barometer</h1>
+  <p>National Student Survey themes 3 &amp; 4 (Assessment and feedback; Academic support) vs the staff-student ratio, 2023&ndash;2026. University of East London (UKPRN 10007144).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR08</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout flag">
+    <span class="pill red">HONEST RESULT</span> This report set out to test whether NSS satisfaction on staff-facing themes tracks the rising staff-student ratio. Over the only four years NSS data covers (2023&ndash;2026), it doesn't: <b>every NSS theme score, including Assessment and feedback and Academic support, has risen every year</b> &ndash; the opposite of what a simple "more students per staff member = lower satisfaction" hypothesis would predict. This is reported as found; it does not support the workload hypothesis in this window, and the limitations below explain why that's not necessarily the end of the story.
+  </div>
+
+  <div class="panel">
+    <h2>NSS: Assessment &amp; feedback and Academic support, UEL vs sector benchmark</h2>
+    <div class="sub">NSS Theme 3 (Assessment and feedback) and Theme 4 (Academic support), % positive, all undergraduates, all subjects. Sector benchmark is HESA/OfS's own calculated benchmark for a provider with UEL's subject/mode/level mix.</div>
+    <canvas id="nssChart" role="img" aria-label="Line chart of NSS Assessment and feedback and Academic support theme scores vs benchmark, 2023 to 2026." aria-describedby="nssTable"></canvas>
+    <table id="nssTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>All seven NSS themes, UEL, 2023&ndash;2026</h2>
+    <div class="sub">For context: every theme improved every year over this period, not just the two staff-facing ones above.</div>
+    <canvas id="allThemesChart" role="img" aria-label="Line chart of all seven NSS theme scores at UEL, 2023 to 2026."></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Staff-student ratio over the same period</h2>
+    <div class="sub">From <code>Reports/TUR07 - Staff-Student Ratio Trend.html</code>. 2023/24 and 2024/25 are flagged there as affected by a Student Table 37 data-quality anomaly &ndash; shown here with a dashed line for that reason.</div>
+    <canvas id="ratioChart" role="img" aria-label="Line chart of students per academic FTE, 2022/23 to 2024/25, with flagged years dashed."></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout flag">
+      <span class="pill red">WHY THIS ISN'T A CLEAN TEST</span> Three real limits mean this comparison can't settle the workload question either way: (1) NSS only covers 2023&ndash;2026 &ndash; four data points, two of which (2023/24, 2024/25) fall in the exact years the staff-student ratio itself is flagged as data-quality-affected. (2) NSS asks graduating final-year students about their whole course experience, which reflects staffing and workload conditions from <i>several years earlier</i>, not the same-year ratio &ndash; a genuine lag this simple year-on-year comparison can't capture. (3) Response rates rose over the same period (75.5% &rarr; 79.6%), which can itself shift which students' views are captured.
+    </div>
+    <div class="callout">
+      <b>What this does show:</b> UEL's NSS scores on every theme, including the two most workload-sensitive ones, have been on a genuinely strong upward trajectory (Assessment and feedback: 84.7% &rarr; 90.8%; Academic support: 82.3% &rarr; 89.7%), moving from below benchmark in 2023 (Academic support 82.3% vs 83.5% benchmark) to at or above benchmark by 2026 (89.7% vs 89.5%). Whatever pressure the rising staff-student ratio has put on staff, it has not (yet, or not visibly) shown up as falling student satisfaction on these measures.
+    </div>
+    <div class="callout">
+      A fairer test of the workload hypothesis would need a longer NSS run matched to the years when the ratio was rising fastest (2018/19&ndash;2021/22, per TUR07) &ndash; NSS scores for those exact years are listed as "still outstanding" in <code>Data/DataIndex.md</code>. If those are ever obtained, this report should be rebuilt with the fuller series before drawing a firmer conclusion.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: National Student Survey (NSS) provider-level results, UEL (UKPRN 10007144), 2023&ndash;2026; staff-student ratio from HESA Staff Table 11 / Student Table 37 (see TUR07).
+<br><b>Data files:</b> Data/NSS Data/UEL/NSS23_10007144.xlsx, NSS24_10007144.xlsx, NSS25_10007144.xlsx, NSS26_10007144.xlsx ("Teaching" sheet, All modes/All undergraduates/All subjects); Reports/TUR07 - Staff-Student Ratio Trend.html.
+<br>Part of the trade union report series proposed in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> (report 8 of 12). See <code>Reports/TUR00 - Trade Union Report Index.html</code> for the full series.
+</footer>
+
+<script id="tur08-data" type="application/json">{"nss_years": ["2023", "2024", "2025", "2026"], "assessment": [84.7, 87.4, 86.3, 90.8], "assessment_bm": [81.1, 81.9, 83.5, 85.1], "academic_support": [82.3, 87.3, 86.7, 89.7], "academic_support_bm": [83.5, 85.5, 87.6, 89.5], "response_rate": [75.5, 75.7, 77.2, 79.6], "all_themes": [{"name": "Teaching on my course", "values": [87.3, 89.6, 89.4, 91.4]}, {"name": "Learning opportunities", "values": [85.5, 88.2, 88.1, 91.0]}, {"name": "Assessment and feedback", "values": [84.7, 87.4, 86.3, 90.8]}, {"name": "Academic support", "values": [82.3, 87.3, 86.7, 89.7]}, {"name": "Organisation and management", "values": [73.3, 76.1, 79.5, 86.3]}, {"name": "Learning resources", "values": [85.2, 88.2, 88.4, 90.6]}, {"name": "Student voice", "values": [78.1, 80.5, 82.1, 86.1]}], "ratio_years": ["2022/23", "2023/24", "2024/25"], "ratio_values": [24.9, 18.7, 30.2]}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur08-data').textContent);
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtPct(v) { return (v == null) ? "–" : v.toFixed(1) + "%"; }
+function fmtRatio(v) { return (v == null) ? "–" : v.toFixed(1); }
+
+function renderStatRow() {
+  const last = DATA.nss_years.length - 1;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n">${fmtPct(DATA.assessment[last])}</div><div class="l">Assessment &amp; feedback, 2026</div><div class="s">up from ${fmtPct(DATA.assessment[0])} in 2023</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(DATA.academic_support[last])}</div><div class="l">Academic support, 2026</div><div class="s">up from ${fmtPct(DATA.academic_support[0])} in 2023</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(DATA.response_rate[last])}</div><div class="l">Response rate, 2026</div><div class="s">up from ${fmtPct(DATA.response_rate[0])} in 2023</div></div>
+    <div class="stat-box"><div class="n flag">0 of 4</div><div class="l">NSS years showing a workload-consistent fall</div><div class="s">every theme rose every year</div></div>
+  `;
+}
+
+function renderNssChart() {
+  destroyChart('nss');
+  charts.nss = new Chart(document.getElementById('nssChart'), {
+    type: 'line',
+    data: { labels: DATA.nss_years, datasets: [
+      { label: 'Assessment & feedback (UEL)', data: DATA.assessment, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15 },
+      { label: 'Assessment & feedback (benchmark)', data: DATA.assessment_bm, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 2, borderDash: [5,3], tension: 0.15 },
+      { label: 'Academic support (UEL)', data: DATA.academic_support, borderColor: '#1F3864', backgroundColor: '#1F3864', borderWidth: 3, tension: 0.15 },
+      { label: 'Academic support (benchmark)', data: DATA.academic_support_bm, borderColor: '#1F3864', backgroundColor: '#1F3864', borderWidth: 2, borderDash: [5,3], tension: 0.15 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: '% positive' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.nss_years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Assessment & feedback (UEL)</td>${DATA.assessment.map(v=>`<td class="hi">${fmtPct(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Assessment & feedback (benchmark)</td>${DATA.assessment_bm.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Academic support (UEL)</td>${DATA.academic_support.map(v=>`<td class="hi">${fmtPct(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Academic support (benchmark)</td>${DATA.academic_support_bm.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Response rate</td>${DATA.response_rate.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  document.getElementById('nssTable').innerHTML = html;
+}
+
+function renderAllThemesChart() {
+  destroyChart('all');
+  const colors = ['#1F3864','#2E5395','#b02a2a','#FFC000','#1e7e34','#9aa3af','#7b4fa3'];
+  charts.all = new Chart(document.getElementById('allThemesChart'), {
+    type: 'line',
+    data: { labels: DATA.nss_years, datasets: DATA.all_themes.map((t,i) => ({
+      label: t.name, data: t.values, borderColor: colors[i], backgroundColor: colors[i], borderWidth: 2, tension: 0.15
+    })) },
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: '% positive' } } } }
+  });
+}
+
+function renderRatioChart() {
+  destroyChart('ratio');
+  charts.ratio = new Chart(document.getElementById('ratioChart'), {
+    type: 'line',
+    data: { labels: DATA.ratio_years, datasets: [
+      { label: 'Students per academic FTE', data: DATA.ratio_values, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15,
+        segment: { borderDash: ctx => (ctx.p1DataIndex >= 1) ? [6,4] : undefined } }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: 'Students per academic FTE' } } } }
+  });
+}
+
+renderStatRow();
+renderNssChart();
+renderAllThemesChart();
+renderRatioChart();
+</script>
+</body>
+</html>

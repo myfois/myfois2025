@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR09 — Research Staff Precarity</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR09</span> &mdash; Research Staff Precarity</h1>
+  <p>HESA Staff Table 7 (academic employment function, UEL) and Staff Table 4 (contract type by function, England benchmark), 2014/15&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR09</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout flag">
+    <span class="pill red">SCOPE NOTE</span> HESA's UEL-level table (Staff Table 7) records academic employment function (teaching/research/both) and contract type (fixed-term/permanent) as <b>separate</b> breakdowns &ndash; it does not cross-tabulate the two, so we cannot say directly what share of UEL's own research-only staff are on fixed-term contracts. The England-wide benchmark (Staff Table 4) <i>does</i> cross-tabulate them, and shows a striking national pattern that is a reasonable basis for questioning UEL's own research-only contract terms directly with the institution.
+  </div>
+
+  <div class="panel">
+    <h2>England-wide: fixed-term contract rate by academic employment function, 2024/25</h2>
+    <div class="sub">HESA Staff Table 4, England, all providers. This is the key national finding this report is built around.</div>
+    <canvas id="benchChart" role="img" aria-label="Bar chart of England-wide fixed-term contract rate by academic employment function, 2024/25." aria-describedby="benchTable"></canvas>
+    <table id="benchTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>UEL: research-only academic staff, 2014/15&ndash;2024/25</h2>
+    <div class="sub">HESA Staff Table 7, UEL-filtered (UKPRN 10007144), academic employment function breakdown. Headcount is small throughout &ndash; treat year-to-year moves of 5&ndash;10 as within rounding noise (HESA rounds to the nearest 5).</div>
+    <canvas id="uelChart" role="img" aria-label="Dual-axis chart of UEL research-only academic staff headcount and share of total academic staff, 2014/15 to 2024/25." aria-describedby="uelTable"></canvas>
+    <table id="uelTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout finding">
+      <b>Nationally, research-only academics are by far the most likely to be on fixed-term contracts</b> &ndash; 64.7% of England's research-only academic staff were fixed-term in 2024/25, compared with 33.1% of teaching-only staff and just 5.9% of staff who do both teaching and research. Research-only contracts being tied to specific, time-limited grant funding is the well-known structural reason for this &ndash; a pattern documented across the sector for years and not specific to UEL, but not something UEL is likely to be exempt from either.
+    </div>
+    <div class="callout">
+      At UEL, research-only academic staff have been a small and fairly stable group throughout the decade &ndash; between 25 and 50 people (headcount), or roughly 3&ndash;5.5% of total academic staff, with a gentle downward drift in share (5.5% in 2014/15 to around 3&ndash;4% in most recent years) even as total academic staff numbers have grown substantially. This is consistent with UEL's own institutional profile as a teaching-intensive, rather than research-intensive, university &ndash; but it also means any precarity affecting this small group is easy for aggregate staff statistics to obscure.
+    </div>
+    <div class="callout flag">
+      <span class="pill red">CAVEATS</span> "Research only" in HESA's classification means staff whose contracted duties are entirely research &ndash; it excludes staff on "Both teaching and research" contracts who may still hold fixed-term research-funded posts alongside teaching duties, so the true number of precariously-employed research-active staff at UEL is very likely higher than the "research only" headcount alone suggests. This report cannot quantify that broader group from HESA's open data. A genuine UEL-specific answer to "how many of our research-only (or research-active) staff are on fixed-term contracts" would need UEL's own HR data, not HESA's aggregated tables.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Staff Table 7 ("Academic staff by contract level, mode of employment, source of basic salary, sex, academic employment function, terms of employment"), UEL-filtered (UKPRN 10007144), 2014/15&ndash;2024/25; HESA Staff Table 4 ("HE academic staff by ethnicity..."), England, "Terms of employment" &times; "Academic employment function" cross-tabulation, 2024/25 (sector-wide only, no UEL breakdown &ndash; see <code>Reports/TUR05 - Staff Equality Profile.html</code> for the equivalent ethnicity/disability scope limits on this same table).
+<br><b>Data files:</b> Data/HESA Staff Table 7/UEL/UEL_table7_YYYY-YY.csv (11 years); Data/HESA Staff Table 4/ALL/table-4.csv.
+<br>Part of the trade union report series proposed in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> (report 9 of 12). See <code>Reports/TUR00 - Trade Union Report Index.html</code> for the full series.
+</footer>
+
+<script id="tur09-data" type="application/json">{"years": ["2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "uel_research_only": [50, 40, 40, 35, 25, 35, 30, 30, 35, 35, 40], "uel_total_academic": [910, 895, 920, 860, 830, 860, 815, 930, 1055, 1140, 1095], "uel_research_pct": [5.5, 4.5, 4.3, 4.1, 3.0, 4.1, 3.7, 3.2, 3.3, 3.1, 3.7], "bench_labels": ["Teaching only", "Research only", "Both teaching and research", "Neither teaching nor research"], "bench_fixed": [23190, 28000, 5190, 205], "bench_perm": [46885, 15245, 82415, 925], "bench_fixed_pct": [33.1, 64.7, 5.9, 18.1]}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur09-data').textContent);
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtInt(v) { return (v == null) ? "–" : Math.round(v).toLocaleString(); }
+function fmtPct(v) { return (v == null) ? "–" : v.toFixed(1) + "%"; }
+
+function renderStatRow() {
+  const last = DATA.years.length - 1;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n flag">${fmtPct(DATA.bench_fixed_pct[1])}</div><div class="l">England fixed-term rate, research-only staff</div><div class="s">2024/25</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(DATA.bench_fixed_pct[2])}</div><div class="l">England fixed-term rate, "both" staff</div><div class="s">2024/25, for comparison</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(DATA.uel_research_only[last])}</div><div class="l">UEL research-only academic staff</div><div class="s">2024/25 headcount</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(DATA.uel_research_pct[last])}</div><div class="l">Share of UEL academic staff</div><div class="s">2024/25</div></div>
+  `;
+}
+
+function renderBenchChart() {
+  destroyChart('bench');
+  charts.bench = new Chart(document.getElementById('benchChart'), {
+    type: 'bar',
+    data: { labels: DATA.bench_labels, datasets: [
+      { label: 'Fixed-term contract rate (%)', data: DATA.bench_fixed_pct, backgroundColor: DATA.bench_labels.map(l => l === 'Research only' ? '#b02a2a' : '#2E5395') }
+    ]},
+    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: '% on fixed-term contracts' }, max: 100 } } }
+  });
+  let html = `<tr><th>Function</th><th>Fixed-term</th><th>Permanent</th><th>Total</th><th>% fixed-term</th></tr>`;
+  for (let i = 0; i < DATA.bench_labels.length; i++) {
+    html += `<tr><td>${DATA.bench_labels[i]}</td><td>${fmtInt(DATA.bench_fixed[i])}</td><td>${fmtInt(DATA.bench_perm[i])}</td><td>${fmtInt(DATA.bench_fixed[i]+DATA.bench_perm[i])}</td><td class="hi">${fmtPct(DATA.bench_fixed_pct[i])}</td></tr>`;
+  }
+  document.getElementById('benchTable').innerHTML = html;
+}
+
+function renderUelChart() {
+  destroyChart('uel');
+  charts.uel = new Chart(document.getElementById('uelChart'), {
+    data: { labels: DATA.years, datasets: [
+      { type: 'bar', label: 'Research-only staff (headcount)', data: DATA.uel_research_only, backgroundColor: '#b02a2a', yAxisID: 'y', order: 2 },
+      { type: 'line', label: 'Share of total academic staff (%)', data: DATA.uel_research_pct, borderColor: '#1F3864', backgroundColor: '#1F3864', borderWidth: 3, tension: 0.15, yAxisID: 'y1', order: 1 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } },
+      scales: {
+        y: { position: 'left', title: { display: true, text: 'Headcount' } },
+        y1: { position: 'right', title: { display: true, text: '% of total academic staff' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+  let html = `<tr><th>Year</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Research-only staff</td>${DATA.uel_research_only.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Total academic staff</td>${DATA.uel_total_academic.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Share of total (%)</td>${DATA.uel_research_pct.map(v=>`<td class="hi">${fmtPct(v)}</td>`).join('')}</tr>`;
+  document.getElementById('uelTable').innerHTML = html;
+}
+
+renderStatRow();
+renderBenchChart();
+renderUelChart();
+</script>
+</body>
+</html>

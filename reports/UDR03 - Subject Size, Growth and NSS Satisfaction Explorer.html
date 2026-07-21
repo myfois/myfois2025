@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UDR03 — UEL Subject Size, Growth & NSS Satisfaction Explorer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #1F3864; --midblue: #2E5395; --lightblue: #D9E2F3; --gold: #FFC000;
+    --green: #1e7e34; --red: #b02a2a; --grey: #f2f2f2; --text: #2b2b2b;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, "Segoe UI", sans-serif; margin: 0; background: #f5f6f8; color: var(--text); }
+  header { background: var(--navy); color: #fff; padding: 20px 28px; }
+  header h1 { margin: 0; font-size: 21px; }
+  header p { margin: 5px 0 0; font-size: 13px; color: #cdd7ea; }
+
+  .layout { max-width: 1220px; margin: 0 auto; padding: 22px 24px 60px; }
+
+  .stat-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 22px; }
+  .stat-box { background: #fff; border: 1px solid #e2e2e2; border-radius: 8px; padding: 10px 16px; min-width: 170px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .stat-box .n { font-size: 20px; font-weight: bold; color: var(--navy); }
+  .stat-box .l { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: #888; }
+  .stat-box .s { font-size: 11.5px; color: #999; }
+
+  .panel { background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 20px; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .panel .sub { font-size: 12.5px; color: #888; margin-bottom: 12px; }
+
+  .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; font-size: 13px; }
+  .controls label { font-weight: 600; color: var(--navy); }
+  select, button { padding: 5px 9px; border: 1px solid #bbb; border-radius: 5px; font-size: 13px; background: #fff; cursor: pointer; }
+  button.active, button:hover { background: var(--lightblue); border-color: var(--navy); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid #eee; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: var(--midblue); color: #fff; font-size: 10px; text-transform: uppercase; cursor: pointer; user-select: none; }
+  th:hover { background: var(--navy); }
+  th.sorted::after { content: " \25BC"; font-size: 9px; }
+  th.sorted.asc::after { content: " \25B2"; }
+  tr:nth-child(even) td { background: #fafbfd; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.bar-cell { text-align: left; min-width: 130px; }
+  .bar-track { background: #eef0f4; border-radius: 4px; height: 13px; position: relative; overflow: hidden; }
+  .bar-fill { background: var(--midblue); height: 100%; border-radius: 4px 0 0 4px; }
+  .bar-fill.big { background: var(--navy); }
+
+  canvas { max-height: 380px; }
+  .chart-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+  @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.good { background: #eaf4ea; border-left-color: var(--green); }
+  .pill { display: inline-block; background: var(--lightblue); color: var(--navy); font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 9px; margin-right: 5px; }
+
+  footer { font-size: 11.5px; color: #888; padding: 20px 0 0; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">UDR03</span> &mdash; UEL: Subject Size, Growth &amp; NSS Satisfaction Explorer</h1>
+  <p>HESA Table 49 enrolment mix, 2021/22&ndash;2024/25 (all levels &amp; modes), cross-referenced against NSS theme positivity 2023&ndash;2026 (final-year undergraduates, Teaching &amp; Registering)</p>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="panel">
+    <h2>Enrolment concentration, 2024/25</h2>
+    <div class="sub">Where UEL's students actually are, by subject &ndash; all levels and modes</div>
+    <div id="concentrationNote"></div>
+    <div class="chart-grid">
+      <div><canvas id="enrolChart"></canvas></div>
+      <div><canvas id="shareChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Four-year growth, 2021/22&rarr;2024/25</h2>
+    <div class="sub">Total enrolment (all subjects, all levels/modes) grew <b id="totalGrowthInline"></b> over this period. But growth wasn't even &ndash; some subjects doubled, others shrank by a quarter.</div>
+    <canvas id="growthLineChart"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Growth vs. NSS change &ndash; the lag-aligned test</h2>
+    <div class="sub">
+      Each point plots a subject's HESA enrolment growth (year-on-year) against the NSS score change for the <i>matching</i> academic year (HESA 2023/24 aligns with NSS 2024, since NSS surveys final-year students during that academic year). This is the closest thing to a direct test of "does faster growth coincide with bigger NSS swings?" that these two datasets allow.
+    </div>
+    <div class="controls">
+      <label>Dataset:</label>
+      <button data-ds="Teaching" class="active">Teaching</button>
+      <button data-ds="Registering">Registering</button>
+      <label style="margin-left:14px">Aligned pair:</label>
+      <button data-pair="2223-2024" class="active">HESA 22/23&rarr;23/24 vs NSS 23&rarr;24</button>
+      <button data-pair="2324-2025">HESA 23/24&rarr;24/25 vs NSS 24&rarr;25</button>
+    </div>
+    <canvas id="alignScatter"></canvas>
+    <div class="callout flag" style="margin-top:14px">
+      <span class="pill">KEY LIMITATION</span> The biggest NSS jump in the whole dataset is 2025&rarr;2026 &ndash; and there is no HESA enrolment release yet for the matching academic year (2025/26), since HESA data lags about a year behind. So the single most interesting NSS movement <b>cannot currently be tested against enrolment growth at all</b>. Everything below the 2025&rarr;2026 change is inference from the years that do overlap, not a direct read of the year that matters most.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Full table</h2>
+    <div class="sub">Click a column header to sort.</div>
+    <table id="mainTable"></table>
+  </div>
+
+  <div class="panel">
+    <h2>What the numbers actually show</h2>
+    <div class="callout">
+      <b>Computing roughly doubled in size</b> (1,965 &rarr; 4,645 enrolments, +136% over four years) and <b>Business and management grew 71%</b> (5,305 &rarr; 9,075). Together they went from 37% of UEL's enrolment in 2021/22 to 52% in 2024/25 &ndash; a real, substantial concentration shift, not a rounding artefact.
+    </div>
+    <div class="callout flag">
+      <span class="pill">DOESN'T FIT THE SIMPLE STORY</span> If rapid growth alone explained rising NSS scores, Computing's NSS positivity should have tracked its enrolment upward through 2022&ndash;2024. It didn't: Computing's Teaching/Registering positivity was essentially flat-to-declining across that period (90.2% in 2023 &rarr; 87.7% in both 2024 and 2025) even as enrolment surged. Its NSS score only jumped in 2026 (91.9&ndash;92.0%) &ndash; the one year we have no matching enrolment figure for. So the data we <i>can</i> check doesn't support "growth drove the improvement" for Computing; the year it might support is exactly the year we can't check yet.
+    </div>
+    <div class="callout">
+      Business and management is more consistent with your thesis: its biggest single-year enrolment jump (7,305&rarr;9,075, +24%) landed in 2024/25, the same year its Teaching NSS score jumped most (89.5%&rarr;94.1%, matching NSS 2025). But Registering fell in that same window (89.4%&rarr;82.8% the year before, only partially recovering), so even this one is a mixed, not clean, signal.
+    </div>
+    <div class="callout good">
+      Meanwhile Psychology, Education and teaching, and Social sciences all <i>shrank</i> 25&ndash;34% over the same four years &ndash; and Psychology and Education are two of the subjects flagged elsewhere as NSS underperformers. That's the opposite pairing to your thesis (shrinking, not growing, subjects showing weaker scores), which is worth holding alongside the Computing/Business evidence rather than instead of it.
+    </div>
+    <p style="font-size:13.5px;color:#555">Bottom line: this is genuine, useful context, and the size argument (Business + Computing = 52% of UEL, so their trends dominate institutional averages almost mechanically) stands regardless. But the direct "growth causes NSS improvement" test is inconclusive with the years available, and the year that matters most for it isn't in the HESA data yet. Still no domicile split anywhere in this analysis &ndash; that remains the open thread if you want to pursue the international-mix angle specifically.</p>
+  </div>
+
+  <footer>
+    Sources: HESA Table 49 (dt051-table-49.csv and three prior-year variants, provided by user; 2021/22&ndash;2024/25; all levels/modes; UEL UKPRN 10007144) and NSS23&ndash;26_10007144.xlsx (Registering &amp; Teaching tabs, final-year undergraduates, All modes). NSS figures are averages across the 7 core NSS themes for the relevant subject/dataset/year. HESA-to-NSS year alignment assumes NSS academic year X surveys final-year students enrolled during HESA academic year X (e.g. HESA 2023/24 &harr; NSS 2024).
+  <br><b>Data files:</b> Data/HESA Student Table 49/UEL/legacy_manual_extract/dt051-table-49.csv, dt051-table-49 - 2122.csv, dt051-table-49 - 2223.csv, dt051-table-49 - 2324.csv; Data/NSS Data/UEL/NSS23_10007144.xlsx&ndash;NSS26_10007144.xlsx (Registering &amp; Teaching tabs).
+</footer>
+
+</div>
+
+<script id="merge-data" type="application/json">{
+  "total": {
+    "2021/22": 19550,
+    "2022/23": 22450,
+    "2023/24": 20735,
+    "2024/25": 26755
+  },
+  "totalGrowthPct": 36.9,
+  "records": [
+    {
+      "subject": "Subjects allied to medicine",
+      "enrol": {
+        "2021/22": 2475,
+        "2022/23": 2735,
+        "2023/24": 2245,
+        "2024/25": 2595
+      },
+      "growthPct4yr": 4.8,
+      "nss": {
+        "2023": {
+          "teach": 81.6,
+          "reg": 81.6
+        },
+        "2024": {
+          "teach": 83.6,
+          "reg": 83.6
+        },
+        "2025": {
+          "teach": 84.4,
+          "reg": 84.4
+        },
+        "2026": {
+          "teach": 85.9,
+          "reg": 85.9
+        }
+      }
+    },
+    {
+      "subject": "Biological and sport sciences",
+      "enrol": {
+        "2021/22": 1010,
+        "2022/23": 1240,
+        "2023/24": 1200,
+        "2024/25": 1320
+      },
+      "growthPct4yr": 30.7,
+      "nss": {
+        "2023": {
+          "teach": 76.0,
+          "reg": 76.0
+        },
+        "2024": {
+          "teach": 83.4,
+          "reg": 84.2
+        },
+        "2025": {
+          "teach": 83.8,
+          "reg": 86.1
+        },
+        "2026": {
+          "teach": 89.1,
+          "reg": 86.8
+        }
+      }
+    },
+    {
+      "subject": "Psychology",
+      "enrol": {
+        "2021/22": 1685,
+        "2022/23": 1345,
+        "2023/24": 1105,
+        "2024/25": 1265
+      },
+      "growthPct4yr": -24.9,
+      "nss": {
+        "2023": {
+          "teach": 75.2,
+          "reg": 75.2
+        },
+        "2024": {
+          "teach": 78.0,
+          "reg": 78.0
+        },
+        "2025": {
+          "teach": 82.7,
+          "reg": 82.8
+        },
+        "2026": {
+          "teach": 80.9,
+          "reg": 80.9
+        }
+      }
+    },
+    {
+      "subject": "Physical sciences",
+      "enrol": {
+        "2021/22": 165,
+        "2022/23": 300,
+        "2023/24": 200,
+        "2024/25": 305
+      },
+      "growthPct4yr": 84.8,
+      "nss": {
+        "2023": {
+          "teach": null,
+          "reg": null
+        },
+        "2024": {
+          "teach": 86.6,
+          "reg": 86.6
+        },
+        "2025": {
+          "teach": 85.0,
+          "reg": 85.0
+        },
+        "2026": {
+          "teach": 95.4,
+          "reg": 95.4
+        }
+      }
+    },
+    {
+      "subject": "Engineering and technology",
+      "enrol": {
+        "2021/22": 855,
+        "2022/23": 1155,
+        "2023/24": 1185,
+        "2024/25": 1685
+      },
+      "growthPct4yr": 97.1,
+      "nss": {
+        "2023": {
+          "teach": 86.4,
+          "reg": 86.4
+        },
+        "2024": {
+          "teach": 85.5,
+          "reg": 85.4
+        },
+        "2025": {
+          "teach": 82.9,
+          "reg": 82.9
+        },
+        "2026": {
+          "teach": 83.0,
+          "reg": 83.0
+        }
+      }
+    },
+    {
+      "subject": "Computing",
+      "enrol": {
+        "2021/22": 1965,
+        "2022/23": 2625,
+        "2023/24": 2580,
+        "2024/25": 4645
+      },
+      "growthPct4yr": 136.4,
+      "nss": {
+        "2023": {
+          "teach": 90.2,
+          "reg": 90.2
+        },
+        "2024": {
+          "teach": 87.7,
+          "reg": 87.8
+        },
+        "2025": {
+          "teach": 87.7,
+          "reg": 87.7
+        },
+        "2026": {
+          "teach": 91.9,
+          "reg": 92.0
+        }
+      }
+    },
+    {
+      "subject": "Architecture, building and planning",
+      "enrol": {
+        "2021/22": 735,
+        "2022/23": 790,
+        "2023/24": 615,
+        "2024/25": 815
+      },
+      "growthPct4yr": 10.9,
+      "nss": {
+        "2023": {
+          "teach": 88.1,
+          "reg": 88.1
+        },
+        "2024": {
+          "teach": 86.7,
+          "reg": 86.7
+        },
+        "2025": {
+          "teach": 95.1,
+          "reg": 95.1
+        },
+        "2026": {
+          "teach": 90.4,
+          "reg": 90.4
+        }
+      }
+    },
+    {
+      "subject": "Social sciences",
+      "enrol": {
+        "2021/22": 1380,
+        "2022/23": 1040,
+        "2023/24": 910,
+        "2024/25": 905
+      },
+      "growthPct4yr": -34.4,
+      "nss": {
+        "2023": {
+          "teach": 80.7,
+          "reg": 80.7
+        },
+        "2024": {
+          "teach": 84.9,
+          "reg": 84.9
+        },
+        "2025": {
+          "teach": 84.6,
+          "reg": 84.6
+        },
+        "2026": {
+          "teach": 90.2,
+          "reg": 90.2
+        }
+      }
+    },
+    {
+      "subject": "Law",
+      "enrol": {
+        "2021/22": 530,
+        "2022/23": 510,
+        "2023/24": 505,
+        "2024/25": 650
+      },
+      "growthPct4yr": 22.6,
+      "nss": {
+        "2023": {
+          "teach": 77.4,
+          "reg": 77.4
+        },
+        "2024": {
+          "teach": 87.8,
+          "reg": 83.9
+        },
+        "2025": {
+          "teach": 82.7,
+          "reg": 81.7
+        },
+        "2026": {
+          "teach": 90.5,
+          "reg": 88.8
+        }
+      }
+    },
+    {
+      "subject": "Business and management",
+      "enrol": {
+        "2021/22": 5305,
+        "2022/23": 7300,
+        "2023/24": 7305,
+        "2024/25": 9075
+      },
+      "growthPct4yr": 71.1,
+      "nss": {
+        "2023": {
+          "teach": 89.4,
+          "reg": 89.4
+        },
+        "2024": {
+          "teach": 89.5,
+          "reg": 82.8
+        },
+        "2025": {
+          "teach": 94.1,
+          "reg": 87.7
+        },
+        "2026": {
+          "teach": 94.3,
+          "reg": 90.9
+        }
+      }
+    },
+    {
+      "subject": "Education and teaching",
+      "enrol": {
+        "2021/22": 1305,
+        "2022/23": 1255,
+        "2023/24": 750,
+        "2024/25": 980
+      },
+      "growthPct4yr": -24.9,
+      "nss": {
+        "2023": {
+          "teach": 82.2,
+          "reg": 82.2
+        },
+        "2024": {
+          "teach": 85.2,
+          "reg": 85.3
+        },
+        "2025": {
+          "teach": 85.8,
+          "reg": 85.9
+        },
+        "2026": {
+          "teach": 90.9,
+          "reg": 90.9
+        }
+      }
+    },
+    {
+      "subject": "Media, journalism and communications",
+      "enrol": {
+        "2021/22": 630,
+        "2022/23": 585,
+        "2023/24": 765,
+        "2024/25": 770
+      },
+      "growthPct4yr": 22.2,
+      "nss": {
+        "2023": {
+          "teach": 79.5,
+          "reg": 79.5
+        },
+        "2024": {
+          "teach": 88.9,
+          "reg": 80.0
+        },
+        "2025": {
+          "teach": 83.1,
+          "reg": 80.5
+        },
+        "2026": {
+          "teach": 82.8,
+          "reg": 78.4
+        }
+      }
+    },
+    {
+      "subject": "Design, and creative and performing arts",
+      "enrol": {
+        "2021/22": 1455,
+        "2022/23": 1465,
+        "2023/24": 1330,
+        "2024/25": 1690
+      },
+      "growthPct4yr": 16.2,
+      "nss": {
+        "2023": {
+          "teach": 79.9,
+          "reg": 78.9
+        },
+        "2024": {
+          "teach": 86.4,
+          "reg": 87.1
+        },
+        "2025": {
+          "teach": 79.4,
+          "reg": 78.9
+        },
+        "2026": {
+          "teach": 84.0,
+          "reg": 84.0
+        }
+      }
+    }
+  ]
+}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('merge-data').textContent);
+const records = DATA.records;
+const HESA_YEARS = ["2021/22","2022/23","2023/24","2024/25"];
+
+function fmtPct(v) { return v == null ? "–" : v.toFixed(1) + "%"; }
+function fmtPpt(v) { return v == null ? "–" : (v >= 0 ? "+" : "") + v.toFixed(1); }
+function fmtInt(v) { return v == null ? "–" : Math.round(v).toLocaleString(); }
+
+// --- Stat row ---
+const latest = records.map(r => ({ subject: r.subject, enrol: r.enrol["2024/25"] }));
+const totalLatest = DATA.total["2024/25"];
+const top2 = [...latest].sort((a,b) => b.enrol - a.enrol).slice(0,2);
+const top2Pct = (100 * (top2[0].enrol + top2[1].enrol) / totalLatest).toFixed(1);
+const top2Pct2122 = (100 * records.filter(r=>r.subject==='Business and management'||r.subject==='Computing').reduce((a,r)=>a+r.enrol["2021/22"],0) / DATA.total["2021/22"]).toFixed(0);
+document.getElementById('statRow').innerHTML = `
+  <div class="stat-box"><div class="n">${totalLatest.toLocaleString()}</div><div class="l">Total enrolments 2024/25</div><div class="s">up ${DATA.totalGrowthPct}% since 2021/22</div></div>
+  <div class="stat-box"><div class="n">${top2Pct}%</div><div class="l">Business + Computing share, 2024/25</div><div class="s">was ${top2Pct2122}% in 2021/22</div></div>
+  <div class="stat-box"><div class="n">${records.length}</div><div class="l">Subjects tracked (in both datasets)</div></div>
+`;
+document.getElementById('totalGrowthInline').textContent = DATA.totalGrowthPct + '%';
+
+// --- Enrolment bar chart (2024/25) ---
+const sortedBySize = [...records].sort((a,b) => b.enrol["2024/25"] - a.enrol["2024/25"]);
+new Chart(document.getElementById('enrolChart'), {
+  type: 'bar',
+  data: {
+    labels: sortedBySize.map(r => r.subject),
+    datasets: [{ label: 'Enrolments 2024/25', data: sortedBySize.map(r => r.enrol["2024/25"]), backgroundColor: '#2E5395' }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false }, title: { display: true, text: 'Enrolments by subject, 2024/25', font: { size: 12 } } },
+    scales: { x: { title: { display: true, text: 'Enrolments' } } }
+  }
+});
+
+new Chart(document.getElementById('shareChart'), {
+  type: 'doughnut',
+  data: {
+    labels: sortedBySize.map(r => r.subject),
+    datasets: [{ data: sortedBySize.map(r => r.enrol["2024/25"]), backgroundColor: [
+      '#1F3864','#2E5395','#4f6ea8','#7893c2','#93a8c9','#a9c2e0','#c4cede','#FFC000','#e8b923','#d9e2f3','#b02a2a','#c96b6b','#e2a9a9'
+    ] }]
+  },
+  options: { plugins: { legend: { position: 'right', labels: { boxWidth: 11, font: { size: 10 } } }, title: { display: true, text: 'Share of total, 2024/25', font: { size: 12 } } } }
+});
+
+// --- Growth line chart ---
+const palette = ['#1F3864','#2E5395','#b02a2a','#1e7e34','#FFC000','#7893c2','#c96b6b','#93a8c9','#8e5ea2','#3cba9f','#e8c1a0','#c45850','#556270'];
+const growthDatasets = [...records].sort((a,b) => b.growthPct4yr - a.growthPct4yr).map((r,i) => ({
+  label: r.subject,
+  data: HESA_YEARS.map(y => r.enrol[y]),
+  borderColor: palette[i % palette.length],
+  backgroundColor: palette[i % palette.length],
+  fill: false,
+  tension: 0.2,
+  borderWidth: (r.subject === 'Computing' || r.subject === 'Business and management') ? 3 : 1.5,
+}));
+new Chart(document.getElementById('growthLineChart'), {
+  type: 'line',
+  data: { labels: HESA_YEARS, datasets: growthDatasets },
+  options: {
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10 } } } },
+    scales: { y: { title: { display: true, text: 'Enrolments' } } }
+  }
+});
+
+// --- Table ---
+let sortKey = 'enrolLatest', sortDir = 'desc';
+function tableVal(r, key) {
+  if (key === 'enrolLatest') return r.enrol["2024/25"];
+  if (key === 'growthPct4yr') return r.growthPct4yr;
+  if (key === 'subject') return r.subject;
+  return r.nss[key.split('_')[1]] ? r.nss[key.split('_')[1]][key.split('_')[0]] : null;
+}
+function renderTable() {
+  const rows = [...records].sort((a,b) => {
+    const av = tableVal(a, sortKey), bv = tableVal(b, sortKey);
+    if (typeof av === 'string') return sortDir === 'desc' ? bv.localeCompare ? 0 : 0 : 0;
+    if (av == null) return 1; if (bv == null) return -1;
+    return sortDir === 'desc' ? bv - av : av - bv;
+  });
+  const maxEnrol = Math.max(...records.map(r => r.enrol["2024/25"]));
+  let html = `<tr>
+    <th data-key="subject">Subject</th>
+    <th data-key="enrolLatest" class="sorted">Enrol. 24/25</th>
+    <th data-key="growthPct4yr">Growth 21/22&rarr;24/25</th>
+    <th data-key="teach_2024">Teaching NSS24</th>
+    <th data-key="teach_2025">NSS25</th>
+    <th data-key="teach_2026">NSS26</th>
+    <th data-key="reg_2024">Reg. NSS24</th>
+    <th data-key="reg_2025">NSS25</th>
+    <th data-key="reg_2026">NSS26</th>
+  </tr>`;
+  rows.forEach(r => {
+    const g = r.growthPct4yr;
+    const gCls = g == null ? '' : (g >= 0 ? 'pos' : 'neg');
+    html += `<tr>
+      <td>${r.subject}</td>
+      <td class="bar-cell"><div class="bar-track"><div class="bar-fill ${r.enrol["2024/25"]===maxEnrol?'big':''}" style="width:${100*r.enrol["2024/25"]/maxEnrol}%"></div></div> ${fmtInt(r.enrol["2024/25"])}</td>
+      <td class="${gCls}">${g==null?'–':(g>=0?'+':'')+g.toFixed(1)+'%'}</td>
+      <td>${fmtPct(r.nss["2024"] && r.nss["2024"].teach)}</td>
+      <td>${fmtPct(r.nss["2025"] && r.nss["2025"].teach)}</td>
+      <td>${fmtPct(r.nss["2026"] && r.nss["2026"].teach)}</td>
+      <td>${fmtPct(r.nss["2024"] && r.nss["2024"].reg)}</td>
+      <td>${fmtPct(r.nss["2025"] && r.nss["2025"].reg)}</td>
+      <td>${fmtPct(r.nss["2026"] && r.nss["2026"].reg)}</td>
+    </tr>`;
+  });
+  document.getElementById('mainTable').innerHTML = html;
+  document.querySelectorAll('#mainTable th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.key === sortKey);
+    th.classList.toggle('asc', th.dataset.key === sortKey && sortDir === 'asc');
+    th.addEventListener('click', () => {
+      if (sortKey === th.dataset.key) { sortDir = sortDir === 'desc' ? 'asc' : 'desc'; }
+      else { sortKey = th.dataset.key; sortDir = 'desc'; }
+      renderTable();
+    });
+  });
+}
+renderTable();
+
+// --- Aligned scatter: HESA growth (yoy) vs NSS change (yoy), for a chosen aligned pair ---
+let alignDs = 'Teaching', alignPair = '2223-2024';
+let alignChart = null;
+const PAIR_DEF = {
+  "2223-2024": { hesaFrom: "2022/23", hesaTo: "2023/24", nssFrom: "2023", nssTo: "2024" },
+  "2324-2025": { hesaFrom: "2023/24", hesaTo: "2024/25", nssFrom: "2024", nssTo: "2025" },
+};
+function renderAlignScatter() {
+  const def = PAIR_DEF[alignPair];
+  const pts = records.map(r => {
+    const e0 = r.enrol[def.hesaFrom], e1 = r.enrol[def.hesaTo];
+    const growth = e0 ? 100*(e1-e0)/e0 : null;
+    const n0 = r.nss[def.nssFrom] ? r.nss[def.nssFrom][alignDs === 'Teaching' ? 'teach' : 'reg'] : null;
+    const n1 = r.nss[def.nssTo] ? r.nss[def.nssTo][alignDs === 'Teaching' ? 'teach' : 'reg'] : null;
+    const nssChange = (n0 != null && n1 != null) ? n1 - n0 : null;
+    return { x: growth, y: nssChange, label: r.subject, r: 7 };
+  }).filter(p => p.x != null && p.y != null);
+
+  if (alignChart) alignChart.destroy();
+  alignChart = new Chart(document.getElementById('alignScatter'), {
+    type: 'bubble',
+    data: { datasets: [{ data: pts, backgroundColor: 'rgba(176,42,42,0.55)', borderColor: '#b02a2a' }] },
+    options: {
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => `${ctx.raw.label}: enrolment ${ctx.raw.x>=0?'+':''}${ctx.raw.x.toFixed(1)}%, NSS ${ctx.raw.y>=0?'+':''}${ctx.raw.y.toFixed(1)}ppt` } }
+      },
+      scales: {
+        x: { title: { display: true, text: `Enrolment growth, ${def.hesaFrom}→${def.hesaTo} (%)` } },
+        y: { title: { display: true, text: `${alignDs} NSS change, ${def.nssFrom}→${def.nssTo} (ppt)` } }
+      }
+    }
+  });
+}
+renderAlignScatter();
+
+document.querySelectorAll('[data-ds]').forEach(b => b.addEventListener('click', e => {
+  document.querySelectorAll('[data-ds]').forEach(x => x.classList.toggle('active', x===e.target));
+  alignDs = e.target.dataset.ds; renderAlignScatter();
+}));
+document.querySelectorAll('[data-pair]').forEach(b => b.addEventListener('click', e => {
+  document.querySelectorAll('[data-pair]').forEach(x => x.classList.toggle('active', x===e.target));
+  alignPair = e.target.dataset.pair; renderAlignScatter();
+}));
+
+// concentration note
+let cum = 0, n90 = 0;
+const sorted2425 = [...records].sort((a,b)=>b.enrol["2024/25"]-a.enrol["2024/25"]);
+sorted2425.forEach(r => { r._pct = 100*r.enrol["2024/25"]/totalLatest; });
+for (const r of sorted2425) { cum += r._pct; n90++; if (cum >= 90) break; }
+document.getElementById('concentrationNote').innerHTML =
+  `<p style="font-size:13px;color:#555;margin:0 0 10px">Just the top ${n90} of ${records.length} subjects account for about ${cum.toFixed(0)}% of enrolments &ndash; UEL's student body is heavily concentrated in a handful of large subjects rather than spread evenly.</p>`;
+</script>
+
+</body>
+</html>
