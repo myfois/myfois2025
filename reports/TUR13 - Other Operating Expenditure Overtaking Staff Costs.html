@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR13 — Other Operating Expenditure Overtaking Staff Costs</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR13</span> &mdash; Other Operating Expenditure Overtaking Staff Costs</h1>
+  <p>UEL Annual Report and Financial Statements, Notes on staff costs and other operating expenses, 2014/15&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR13</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout flag">
+    <span class="pill red">HEADLINE</span> "Other operating expenses" &ndash; everything that isn't pay, restructuring, depreciation or interest &ndash; overtook staff costs for the first time in <b>2022/23</b> (&pound;121.5m vs &pound;105.5m) and has stayed above it ever since, reaching <b>&pound;139.6m vs &pound;124.3m in 2024/25</b>. For most of the decade before that, other operating expenses ran at 60&ndash;75% of the staff cost total; they now sit at 112&ndash;117%.
+  </div>
+
+  <div class="panel">
+    <h2>Staff costs vs other operating expenses, 2014/15&ndash;2024/25</h2>
+    <div class="sub">UEL Annual Report and Financial Statements, Income and Expenditure Account, Note 6/7 (Staff costs) and Note 9 (Other operating expenses), consolidated, &pound;000s.</div>
+    <canvas id="costsChart" role="img" aria-label="Grouped bar chart of staff costs vs other operating expenses, 2014/15 to 2024/25." aria-describedby="costsTable"></canvas>
+    <table id="costsTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Both as a share of total institutional income</h2>
+    <div class="sub">Staff costs and other operating expenses each expressed as a % of UEL's total income for that year &ndash; removes the effect of the institution simply getting bigger, and isolates which cost base is growing faster than income.</div>
+    <canvas id="shareChart" role="img" aria-label="Line chart of staff costs and other operating expenses as a percentage of total income, 2014/15 to 2024/25." aria-describedby="shareTable"></canvas>
+    <table id="shareTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>What's driving the growth: two categories inside "other operating expenses"</h2>
+    <div class="sub">Note 9's own activity breakdown, consolidated, &pound;000s. These are the two lines the Annual Reports' own financial commentary repeatedly names as the reason for year-on-year increases in other operating expenditure.</div>
+    <canvas id="driverChart" role="img" aria-label="Grouped bar chart of Administration and central services vs Academic departments spend, 2017/18 to 2024/25." aria-describedby="driverTable"></canvas>
+    <table id="driverTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout finding">
+      <b>The crossover is real and has now held for three consecutive years.</b> Other operating expenses were consistently well below staff costs from 2014/15 to 2020/21 (60&ndash;79% of the staff cost figure). From 2021/22 the ratio climbed every year &ndash; 89% &rarr; 115% &rarr; 117% &rarr; 112% &ndash; overtaking staff costs in 2022/23 and never falling back below. As a share of total income, staff costs fell from a 2016/17 peak of 60.1% to 41.9% by 2024/25, while other operating expenses rose from a fairly flat 35&ndash;39% band to 47&ndash;49%.
+    </div>
+    <div class="callout finding">
+      <b>"Administration and central services" is the single largest driver.</b> This Note 9 sub-line grew from &pound;13.1m (2017/18) to &pound;61.1m (2024/25) &ndash; a 4.7&times; increase &ndash; including a 65% jump in one year alone (2021/22&rarr;2022/23, &pound;30.3m&rarr;&pound;49.8m). The Annual Reports' own financial commentary attributes this repeatedly, across three consecutive years, to "an increase in recruitment agent commission due to increased overseas recruitment" and, from 2022/23 onward, "the use of external consultancy."
+    </div>
+    <div class="callout">
+      <b>"Academic departments" spend also jumped sharply from 2021/22</b> (&pound;8.0m &rarr; &pound;20.6m &rarr; &pound;30.2m &rarr; &pound;38.1m, before easing to &pound;34.6m in 2024/25), a 5.7&times; increase from its 2017/18 base. The Annual Reports attribute this specifically to "the introduction of the UCFB partnership and payments made to partners" &ndash; i.e. this is money paid out to a franchise/validation partner, not spending on UEL's own academic departments despite the line's name.
+    </div>
+    <div class="callout">
+      This sits alongside two trends already documented elsewhere in this series: the international-income concentration in <code>Reports/TUR11</code> (non-UK fees at 40.8% of total income by 2023/24, much of it plausibly recruited via the agent commission structure sitting inside "Administration and central services" here), and the renewed three-year climb in restructuring costs in <code>Reports/TUR04</code> (&pound;345k &rarr; &pound;495k &rarr; &pound;651k &rarr; &pound;886k, 2021/22&ndash;2024/25). All three point to the same period, 2021/22 onward, as a structural turning point in UEL's cost base.
+    </div>
+    <div class="callout flag">
+      <span class="pill red">CAVEATS</span> The Annual Reports do not itemise "Administration and central services" or "Academic departments" beyond these headline totals &ndash; the specific split between recruitment agent commission, external consultancy fees, UCFB partnership payments, and other items within each line is not disclosed in the published accounts and would need an FOI request or further internal disclosure to establish precisely. Figures are nominal (not inflation-adjusted); see <code>Reports/TUR02</code> for the CPIH-deflated real-terms treatment of UEL's staff costs over a similar period. "Total income" figures are the Income and Expenditure Account total (Consolidated), not any single income source table.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: UEL Annual Report and Financial Statements, Income and Expenditure Account and accompanying Notes (Staff costs; Analysis of other operating expenses by activity), each year's report for the year shown, 2014/15&ndash;2024/25; cross-validated year-on-year via each report's prior-year comparative column.
+<br><b>Data files:</b> Data/UEL Annual Reports/PDFs/ (report-and-financial-statements-of-the-year-ended-31-july-2016.pdf through uel-annual-report-2024-25.pdf); docs/VC_Pay_and_Financial_Trends_10yr.md.
+<br>Not part of the original 12-report proposal in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> &ndash; added after a direct query about the 2024/25 expenditure breakdown. See <code>Reports/TUR00 - Trade Union Report Index.html</code> for the full series.
+</footer>
+
+<script id="tur13-data" type="application/json">{"years": ["2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "staff_costs": [73256, 78907, 79698, 73765, 75259, 83253, 84525, 90559, 105543, 118020, 124327], "other_opex": [57944, 52101, 47887, 49688, 50675, 59580, 63528, 80853, 121530, 138206, 139640], "total_income": [147747, 138011, 132645, 136083, 141711, 155275, 174851, 191974, 247961, 279500, 296900], "staff_pct_income": [49.6, 57.2, 60.1, 54.2, 53.1, 53.6, 48.3, 47.2, 42.6, 42.2, 41.9], "other_pct_income": [39.2, 37.8, 36.1, 36.5, 35.8, 38.4, 36.3, 42.1, 49.0, 49.4, 47.0], "driver_years": ["2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "admin_central": [13092, 14787, 22809, 24212, 30271, 49819, 57530, 61096], "academic_dept": [6082, 6421, 6718, 7999, 20589, 30176, 38136, 34606]}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur13-data').textContent);
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtGBP(v) { return (v == null) ? "–" : '£' + Math.round(v).toLocaleString() + 'k'; }
+function fmtPct(v) { return (v == null) ? "–" : v.toFixed(1) + "%"; }
+
+const otherPctStaff = DATA.other_opex.map((v,i) => v / DATA.staff_costs[i] * 100);
+
+function renderStatRow() {
+  const last = DATA.years.length - 1;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n flag">${fmtPct(otherPctStaff[last])}</div><div class="l">Other operating expenses, as % of staff costs</div><div class="s">2024/25 &ndash; first exceeded staff costs in 2022/23 (${fmtPct(otherPctStaff[otherPctStaff.length-3])})</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(DATA.other_pct_income[last])}</div><div class="l">Other operating expenses, % of total income</div><div class="s">up from ${fmtPct(DATA.other_pct_income[2])} in 2016/17</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(DATA.staff_pct_income[last])}</div><div class="l">Staff costs, % of total income</div><div class="s">down from ${fmtPct(DATA.staff_pct_income[2])} in 2016/17</div></div>
+    <div class="stat-box"><div class="n flag">${fmtGBP(DATA.admin_central[DATA.admin_central.length-1])}</div><div class="l">"Administration &amp; central services" spend</div><div class="s">up from ${fmtGBP(DATA.admin_central[0])} in 2017/18 (&times;4.7)</div></div>
+  `;
+}
+
+function renderCostsChart() {
+  destroyChart('costs');
+  charts.costs = new Chart(document.getElementById('costsChart'), {
+    type: 'bar',
+    data: { labels: DATA.years, datasets: [
+      { label: 'Staff costs', data: DATA.staff_costs, backgroundColor: '#1F3864' },
+      { label: 'Other operating expenses', data: DATA.other_opex, backgroundColor: '#b02a2a' }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: '£000s' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Staff costs (£000s)</td>${DATA.staff_costs.map(v=>`<td>${fmtGBP(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Other operating expenses (£000s)</td>${DATA.other_opex.map(v=>`<td>${fmtGBP(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Other as % of staff costs</td>${otherPctStaff.map(v=>`<td class="${v>100?'hi':''}">${fmtPct(v)}</td>`).join('')}</tr>`;
+  document.getElementById('costsTable').innerHTML = html;
+}
+
+function renderShareChart() {
+  destroyChart('share');
+  charts.share = new Chart(document.getElementById('shareChart'), {
+    type: 'line',
+    data: { labels: DATA.years, datasets: [
+      { label: 'Staff costs, % of total income', data: DATA.staff_pct_income, borderColor: '#1F3864', backgroundColor: '#1F3864', borderWidth: 3, tension: 0.15, order: 1 },
+      { label: 'Other operating expenses, % of total income', data: DATA.other_pct_income, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15, order: 2 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: '% of total income' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Staff costs, % of income</td>${DATA.staff_pct_income.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Other operating expenses, % of income</td>${DATA.other_pct_income.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  document.getElementById('shareTable').innerHTML = html;
+}
+
+function renderDriverChart() {
+  destroyChart('driver');
+  charts.driver = new Chart(document.getElementById('driverChart'), {
+    type: 'bar',
+    data: { labels: DATA.driver_years, datasets: [
+      { label: 'Administration and central services', data: DATA.admin_central, backgroundColor: '#b02a2a' },
+      { label: 'Academic departments (incl. UCFB partnership payments)', data: DATA.academic_dept, backgroundColor: '#FFC000' }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: '£000s' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.driver_years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Administration and central services (£000s)</td>${DATA.admin_central.map(v=>`<td class="hi">${fmtGBP(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Academic departments (£000s)</td>${DATA.academic_dept.map(v=>`<td>${fmtGBP(v)}</td>`).join('')}</tr>`;
+  document.getElementById('driverTable').innerHTML = html;
+}
+
+renderStatRow();
+renderCostsChart();
+renderShareChart();
+renderDriverChart();
+</script>
+</body>
+</html>
