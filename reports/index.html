@@ -1,70 +1,388 @@
-rts<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reports</title>
-  <link rel="stylesheet" href="../styles.css">
+<meta charset="UTF-8">
+<title>All Reports — Thematic Index</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #1a1a1a; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 20px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 23px; }
+  header p { margin: 0; font-size: 13px; color: #e3e9f5; max-width: 800px; }
+  .layout { max-width: 1140px; margin: 0 auto; padding: 20px 24px 60px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; color: #1a1a1a; }
+  .legend { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 14px 0; font-size: 12.5px; color: #333; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .legend b { color: var(--navy); }
+  .theme-row { display: grid; grid-template-columns: 190px 1fr; gap: 22px; margin: 34px 0; align-items: start; }
+  .theme-label h2 { margin: 0 0 6px; font-size: 21px; font-weight: 700; color: var(--navy); line-height: 1.2; }
+  .theme-label p { margin: 0; font-size: 12.5px; color: #555; line-height: 1.4; }
+  .theme-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-content: start; }
+  @media (max-width: 760px) {
+    .theme-row { grid-template-columns: 1fr; }
+    .theme-cards { grid-template-columns: 1fr; }
+  }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 15px 18px; display: flex; gap: 14px; align-items: flex-start; transition: box-shadow .15s, transform .15s; }
+  .card:hover { box-shadow: 0 4px 14px rgba(31,56,100,.12); transform: translateY(-1px); }
+  .card .id { flex: 0 0 40px; font-size: 18px; font-weight: 700; color: var(--navy); }
+  .card .id.tur { color: var(--red); }
+  .card .body { flex: 1; min-width: 0; }
+  .card h2 { margin: 0 0 4px; font-size: 15px; }
+  .card h2 a { color: var(--navy2); text-decoration: none; }
+  .card h2 a:hover { text-decoration: underline; }
+  .card p { margin: 0; font-size: 12.5px; color: #2a2a2a; line-height: 1.45; }
+  .badges { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .03em; border-radius: 4px; padding: 2px 7px; }
+  .badge.origin-udr { background: #eef1f8; color: var(--navy); }
+  .badge.origin-tur { background: #fbecec; color: var(--red); }
+  .badge.subject { background: #eef6ee; color: var(--green); }
+  .badge.subject.partial { background: #fff8e6; color: #7a5f00; }
+  .supporting { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 14px 0; font-size: 13.5px; color: #1a1a1a; }
+  .supporting ul { margin: 8px 0 0; padding-left: 20px; }
+  .supporting li { margin: 6px 0; }
+  .supporting a { color: var(--navy2); }
+  footer { max-width: 1140px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #666; }
+</style>
 </head>
 <body>
-  <main class="container">
-    <nav class="top-nav">
-      
-      <div class="nav-links">
-      
-      
+
+<header>
+  <h1>All Reports &mdash; Thematic Index</h1>
+  <p>Every report in <code>Reports/</code>, organised by topic instead of by the UDR/TUR series it happened to be built under. University of East London (UKPRN 10007144).</p>
+</header>
+
+<div class="layout">
+
+  <div class="callout">
+    This is an additional way into the same 24 reports &ndash; nothing has been renamed, renumbered or merged. The original series indexes are still there and still work: <a href="UDR00 - Catalogue of Reports.html">UDR00 &ndash; Catalogue of Reports</a> and <a href="TUR00 - Trade Union Report Index.html">TUR00 &ndash; Trade Union Report Index</a>. This page groups the same reports by what they're about, so you can start from a question ("what's happening with pay?", "is my subject growing or shrinking?") rather than needing to know which series a report was filed under.
+  </div>
+
+  <div class="legend">
+    <span><b>Origin:</b> <span class="badge origin-udr">UDR</span> general data report &nbsp; <span class="badge origin-tur">TUR</span> trade union report</span>
+    <span><b>Drill-down:</b> <span class="badge subject">Subject/CAH drill-down</span> &ndash; can look up an individual subject, department or course, not just UEL as a whole</span>
+    <span><span class="badge subject partial">Partial</span> &ndash; some subject-level content, but not a full interactive drill-down</span>
+  </div>
+
+  <div class="theme-row">
+    <div class="theme-label">
+      <h2>Pay and the pay bill</h2>
+      <p>What UEL spends on staff overall, and how senior pay compares to everyone else's.</p>
+    </div>
+    <div class="theme-cards">
+
+      <div class="card">
+        <div class="id tur">02</div>
+        <div class="body">
+          <h2><a href="TUR02 - Staff Pay Bill vs Staff and Student Numbers.html">Staff Pay Bill vs Staff and Student Numbers</a></h2>
+          <p>Staff costs as a share of income, nominal vs real-terms (CPIH-deflated) trends, and spending per head, 2016/17&ndash;2024/25.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
       </div>
-    </nav>
 
-    <header class="hero">
-      <h1>Reports</h1>
-      <p class="lede">REPORTS....</p>
-    </header>
+      <div class="card">
+        <div class="id tur">03</div>
+        <div class="body">
+          <h2><a href="TUR03 - Senior Pay vs Staff Pay Differential.html">Senior Pay vs Staff Pay Differential</a></h2>
+          <p>Vice-Chancellor pay and the VC-to-median-staff pay ratio, 2016/17&ndash;2024/25.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
 
-    <section class="card">
-      <h2>Reports</h2>
-      <table class="index-table">
-        <thead>
-          <tr>
+      <div class="card">
+        <div class="id">07</div>
+        <div class="body">
+          <h2><a href="UDR07 - Staff Number Explorer.html">Staff Number Explorer</a></h2>
+          <p>UEL staff numbers by type, occupation and mode of employment, 2014/15&ndash;2024/25 &ndash; the neutral background numbers behind the pay and casualisation reports.</p>
+          <div class="badges"><span class="badge origin-udr">UDR</span></div>
+        </div>
+      </div>
 
-            <th>&nbsp;</th>
-            <th>Description</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
+    </div>
+  </div>
 
+  <div class="theme-row">
+    <div class="theme-label">
+      <h2>Casualisation and job security</h2>
+      <p>Fixed-term vs permanent, full-time vs part-time, guest/hourly-paid lecturers, and who's most exposed.</p>
+    </div>
+    <div class="theme-cards">
 
+      <div class="card">
+        <div class="id tur">01</div>
+        <div class="body">
+          <h2><a href="TUR01 - Casualisation Explorer.html">Casualisation Explorer</a></h2>
+          <p>Fixed-term vs permanent academic contracts at UEL, 2014/15&ndash;2024/25, benchmarked against the England-wide sector average.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
 
+      <div class="card">
+        <div class="id tur">14</div>
+        <div class="body">
+          <h2><a href="TUR14 - Academic Staffing by Employment Type, FTE and Costs.html">Academic Staffing by Employment Type: Headcount, FTE and Costs</a></h2>
+          <p>Full-time/part-time and fixed-term/open-ended headcount, guest/HPL headcount and cost, and genuine FTE where it exists &ndash; with a clear map of what's available, approximate, or unpublished, 2014/15&ndash;2024/25.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
 
+      <div class="card">
+        <div class="id tur">09</div>
+        <div class="body">
+          <h2><a href="TUR09 - Research Staff Precarity.html">Research Staff Precarity</a></h2>
+          <p>UEL's research-only academic staff trend, set against an England-wide finding that research-only staff are far more likely to be on fixed-term contracts than any other function group.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
 
-          <tr>
+    </div>
+  </div>
 
-            <td>&nbsp;</td>
-            <td>TUR00 - Trade Union Report Index</td>
-            <td><a class="button-link" href="TUR00 - Trade Union Report Index.html">View</a></td>
-          </tr>
+  <div class="theme-row">
+    <div class="theme-label">
+      <h2>Redundancy, restructuring and financial risk</h2>
+      <p>Severance, financial health, revenue concentration, and where the money's actually going.</p>
+    </div>
+    <div class="theme-cards">
 
+      <div class="card">
+        <div class="id tur">04</div>
+        <div class="body">
+          <h2><a href="TUR04 - Redundancy and Restructuring Signal.html">Redundancy and Restructuring Signal</a></h2>
+          <p>Severance costs, headcount affected, and academic staff turnover, 2014/15&ndash;2024/25.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
 
+      <div class="card">
+        <div class="id tur">10</div>
+        <div class="body">
+          <h2><a href="TUR10 - Financial Health and Risk Explorer.html">Financial Health and Risk Explorer</a></h2>
+          <p>HESA's own Key Financial Indicators &ndash; surplus/deficit, liquidity, reserves, borrowing &ndash; 2015/16&ndash;2024/25, with OfS sector context.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
 
-          
-          <tr>
-            <td>&nbsp;</td>
-            <td>UDR - Data Reports</td>
-            <td><a class="button-link" href="UDR00 - Catalogue of Reports.html">View</a></td>
-          </tr>
+      <div class="card">
+        <div class="id tur">11</div>
+        <div class="body">
+          <h2><a href="TUR11 - International Reliance and Redundancy Risk.html">International Reliance and Redundancy Risk</a></h2>
+          <p>Growth of international tuition fee income as a share of total institutional income, 2016/17&ndash;2023/24 (14.5% &rarr; 40.8%) &ndash; the revenue concentration behind restructuring risk.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
 
-          
-         
-        </tbody>
-      </table>
-    </section>
+      <div class="card">
+        <div class="id tur">13</div>
+        <div class="body">
+          <h2><a href="TUR13 - Other Operating Expenditure Overtaking Staff Costs.html">Other Operating Expenditure Overtaking Staff Costs</a></h2>
+          <p>Staff costs vs "other operating expenses" from UEL's own Annual Reports, 2014/15&ndash;2024/25 &ndash; other expenditure overtook staff costs in 2022/23, driven mainly by administration/central services and UCFB partnership payments.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
 
-    <footer class="foi-footer">
-    </footer>
+    </div>
+  </div>
 
-  </main>
+  <div class="theme-row">
+    <div class="theme-label">
+      <h2>Equality</h2>
+      <p>Staff and student diversity, and the gender pay gap.</p>
+    </div>
+    <div class="theme-cards">
+
+      <div class="card">
+        <div class="id tur">05</div>
+        <div class="body">
+          <h2><a href="TUR05 - Staff Equality Profile.html">Staff Equality Profile</a></h2>
+          <p>Academic staff by nationality (UEL-specific) and gender pay gap trend, 2014/15&ndash;2024/25, with an explicit note on what HESA's ethnicity/disability tables cannot show at UEL level.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="id tur">06</div>
+        <div class="body">
+          <h2><a href="TUR06 - Student Equality vs Staffing.html">Student Equality vs Staffing</a></h2>
+          <p>UEL-specific undergraduate entrant diversity (OfS Access and Participation data) set against total staff headcount growth, 2018/19&ndash;2024/25.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="theme-row">
+    <div class="theme-label">
+      <h2>Workload and the student experience (NSS)</h2>
+      <p>Staff-student ratios, National Student Survey scores, and whether the two connect.</p>
+    </div>
+    <div class="theme-cards">
+
+      <div class="card">
+        <div class="id tur">07</div>
+        <div class="body">
+          <h2><a href="TUR07 - Staff-Student Ratio Trend.html">Staff-Student Ratio Trend</a></h2>
+          <p>Students per academic FTE, institution-wide and by subject, 2015/16&ndash;2024/25 &ndash; the ratio has roughly doubled since 2015/16.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span> <span class="badge subject">Subject drill-down</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="id tur">08</div>
+        <div class="body">
+          <h2><a href="TUR08 - NSS as Workload Barometer.html">NSS as Workload Barometer</a></h2>
+          <p>Tests whether NSS satisfaction on staff-facing themes tracks the rising staff-student ratio &ndash; reports an honest null result.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="id">01</div>
+        <div class="body">
+          <h2><a href="UDR01 - NSS Explorer.html">NSS Explorer</a></h2>
+          <p>Interactive explorer of raw National Student Survey results for UEL, 2023&ndash;2026, all subjects and themes.</p>
+          <div class="badges"><span class="badge origin-udr">UDR</span> <span class="badge subject">Subject drill-down</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="id">02</div>
+        <div class="body">
+          <h2><a href="UDR02 - NSS Analysis Report.html">NSS Analysis Report</a></h2>
+          <p>Narrative analysis of UEL's NSS results 2023&ndash;2026 &ndash; highlights, lows, trends, and the 2025&rarr;2026 change in particular.</p>
+          <div class="badges"><span class="badge origin-udr">UDR</span> <span class="badge subject partial">Partial</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="id">03</div>
+        <div class="body">
+          <h2><a href="UDR03 - Subject Size, Growth and NSS Satisfaction Explorer.html">Subject Size, Growth and NSS Satisfaction Explorer</a></h2>
+          <p>Cross-references HESA subject enrolment size/growth against NSS satisfaction scores, by subject.</p>
+          <div class="badges"><span class="badge origin-udr">UDR</span> <span class="badge subject">Subject drill-down</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="theme-row">
+    <div class="theme-label">
+      <h2>Students: numbers, origin and outcomes</h2>
+      <p>Enrolment by subject, where students come from, and what happens to them.</p>
+    </div>
+    <div class="theme-cards">
+
+      <div class="card">
+        <div class="id">04</div>
+        <div class="body">
+          <h2><a href="UDR04 - Enrolment Explorer (Subject, HESA Table 49).html">Enrolment Explorer (Subject)</a></h2>
+          <p>UEL student enrolment broken down by subject of study, 2021/22&ndash;2024/25.</p>
+          <div class="badges"><span class="badge origin-udr">UDR</span> <span class="badge subject">Subject drill-down</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="id">09</div>
+        <div class="body">
+          <h2><a href="UDR09 - Enrolment Reconciliation (Subject vs Domicile).html">Enrolment Reconciliation (Subject vs Domicile)</a></h2>
+          <p>Reconciles subject-based totals against domicile-based totals across all 11 years, down to individual course (CAH3) level &ndash; the deepest drill-down of any report here.</p>
+          <div class="badges"><span class="badge origin-udr">UDR</span> <span class="badge subject">Subject drill-down</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="id">05</div>
+        <div class="body">
+          <h2><a href="UDR05 - International Student Explorer (HESA Table 28).html">International Student Explorer</a></h2>
+          <p>Non-UK domiciled student enrolment by country, 2014/15&ndash;2024/25. Narrower in scope than UDR06 below, kept as a standalone view.</p>
+          <div class="badges"><span class="badge origin-udr">UDR</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="id">06</div>
+        <div class="body">
+          <h2><a href="UDR06 - Student Origin Explorer (UK and Intl Domicile).html">Student Origin Explorer (UK and International)</a></h2>
+          <p>Combined UK and international domicile explorer &ndash; countries, UK regions, and undergrad/postgrad &times; UK/international breakdown, 2014/15&ndash;2024/25.</p>
+          <div class="badges"><span class="badge origin-udr">UDR</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="id">10</div>
+        <div class="body">
+          <h2><a href="UDR10 - Qualifiers, Degree Classification and Non-Continuation Explorer.html">Qualifiers, Degree Classification and Non-Continuation Explorer</a></h2>
+          <p>Degree classification and non-continuation/completion rates, including a subject-level breakdown for "Other undergraduate" awards.</p>
+          <div class="badges"><span class="badge origin-udr">UDR</span> <span class="badge subject partial">Partial</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="theme-row">
+    <div class="theme-label">
+      <h2>Benchmarking: UEL vs the sector</h2>
+      <p>How UEL compares to its statistical benchmark and peer institutions.</p>
+    </div>
+    <div class="theme-cards">
+
+      <div class="card">
+        <div class="id tur">12</div>
+        <div class="body">
+          <h2><a href="TUR12 - UEL vs Sector Benchmarking.html">UEL vs Sector Benchmarking</a></h2>
+          <p>OfS Condition B3 student outcomes, NSS 2026, and KEF knowledge-exchange engagement &ndash; UEL vs its statistical benchmark and comparator cluster.</p>
+          <div class="badges"><span class="badge origin-tur">TUR</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="theme-row">
+    <div class="theme-label">
+      <h2>Methodology and cross-checks</h2>
+      <p>Not a topic in its own right &ndash; how the underlying data was validated. Included for transparency.</p>
+    </div>
+    <div class="theme-cards">
+
+      <div class="card">
+        <div class="id">08</div>
+        <div class="body">
+          <h2><a href="UDR08 - Domicile Sources Cross-Check (Table 39 vs 28-49-59).html">Domicile Sources Cross-Check</a></h2>
+          <p>Cross-validates HESA Table 39 against Tables 28, 49 and 59 for the years they overlap, to confirm the domicile/subject data sources agree with each other.</p>
+          <div class="badges"><span class="badge origin-udr">UDR</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="theme-row">
+    <div class="theme-label">
+      <h2>Original indexes &amp; supporting documents</h2>
+      <p>The two series indexes this page sits alongside, plus background research notes.</p>
+    </div>
+    <div class="supporting">
+      <ul>
+        <li><a href="UDR00 - Catalogue of Reports.html">UDR00 &ndash; Catalogue of Reports</a> &mdash; the original general-reports index, organised by build order rather than theme.</li>
+        <li><a href="TUR00 - Trade Union Report Index.html">TUR00 &ndash; Trade Union Report Index</a> &mdash; the original trade-union-reports index.</li>
+        <li><a href="../Catalogues/Report_Catalogue_Simple.md">Catalogues/Report_Catalogue_Simple.md</a> and <a href="../Catalogues/Report_Catalogue_Detailed.md">Catalogues/Report_Catalogue_Detailed.md</a> &mdash; full source/methodology detail for every report.</li>
+        <li><a href="../docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md">docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</a>, <a href="../docs/VC_Pay_and_Financial_Trends_10yr.md">docs/VC_Pay_and_Financial_Trends_10yr.md</a>, <a href="../Data/UEL Gender Pay Gap/UEL_Gender_Pay_Gap_Summary.md">Data/UEL Gender Pay Gap/UEL_Gender_Pay_Gap_Summary.md</a> &mdash; background research notes feeding several reports above.</li>
+        <li><a href="../Data/Data_Source_Links.md">Data/Data_Source_Links.md</a> and <a href="../Data/DataIndex.md">Data/DataIndex.md</a> &mdash; download links and full raw-data index.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  University of East London (UKPRN 10007144). This page links to files in the same <code>Reports/</code> folder and to <code>docs/</code>, <code>Data/</code> and <code>Catalogues/</code> in the parent folder. Experimental: an additive, thematic alternative to the UDR00/TUR00 indexes &ndash; nothing has been renamed or moved. If a link doesn't open, confirm this file is still sitting alongside the other report files in <code>Reports/</code>.
+</footer>
+
 </body>
 </html>
-
-
