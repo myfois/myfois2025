@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TUR14 — Academic Staffing by Employment Type: Headcount, FTE and Costs</title>
+<style>
+  :root {
+    --navy: #1F3864; --navy2: #2E5395; --red: #b02a2a; --gold: #FFC000; --green: #1e7e34;
+    --grey: #6b7280; --bg: #f7f8fa; --line: #dfe3e8;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #cdd7ec; }
+  .audience-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.16); color: #fff; border-radius: 4px; padding: 2px 8px; margin-top: 6px; }
+  .layout { max-width: 1180px; margin: 0 auto; padding: 20px 24px 60px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .n { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .stat-box .n.flag { color: var(--red); }
+  .stat-box .l { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stat-box .s { font-size: 11.5px; color: #888; margin-top: 4px; }
+  .callout { background: #fff8e6; border-left: 4px solid var(--gold); padding: 10px 16px; margin: 12px 0; font-size: 13.5px; }
+  .callout.flag { background: #fbecec; border-left-color: var(--red); }
+  .callout.finding { background: #eef6ee; border-left-color: var(--green); }
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; background: #1F3864; color: #fff; border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .pill.red { background: var(--red); }
+  .pill.green { background: var(--green); }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .panel h2 { margin: 0 0 4px; font-size: 16.5px; color: var(--navy); }
+  .sub { font-size: 12.5px; color: var(--grey); margin-bottom: 12px; }
+  canvas { max-height: 400px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #f0f3f8; cursor: pointer; white-space: nowrap; }
+  td.pos { color: var(--green); font-weight: 600; }
+  td.neg { color: var(--red); font-weight: 600; }
+  td.hi { background: #fbecec; font-weight: 700; }
+  td.ok { background: #eef6ee; }
+  .map-table td:first-child, .map-table th:first-child { text-align: left; }
+  .map-table td, .map-table th { text-align: left; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 10px 24px 40px; font-size: 11.5px; color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span style="opacity:.75;font-weight:600">TUR14</span> &mdash; Academic Staffing by Employment Type: Headcount, FTE and Costs</h1>
+  <p>HESA Staff Tables 1, 7 and 11, plus UEL's own Annual Report staff notes, 2014/15&ndash;2024/25. University of East London (UKPRN 10007144).</p>
+  <span class="audience-tag">TRADE UNION REPORT SERIES &middot; TUR14</span>
+</header>
+
+<div class="layout">
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="callout flag">
+    <span class="pill red">HEADLINE</span> UEL has no single published table that gives headcount, full-time-equivalent (FTE) and cost together, cut consistently by full-time/part-time, fixed-term/open-ended, and guest/hourly-paid lecturer (HPL) status. This report brings together three genuinely different, independently-sourced counting systems &ndash; HESA's Staff Tables 1/7/11, and UEL's own Annual Report staff notes &ndash; to build the fullest view available, and marks clearly where a real gap remains (principally: FTE and cost are not available broken down by full-time/part-time or fixed-term/open-ended at all).
+  </div>
+
+  <div class="panel">
+    <h2>Academic staff (excluding atypical/guest staff), by mode and terms of employment</h2>
+    <div class="sub">HESA Staff Table 7 ("HE academic staff (excluding atypicals) by HE provider, mode of employment... terms of employment..."), headcount, UEL-filtered (UKPRN 10007144). This explicitly excludes guest/HPL staff &ndash; see the panel below for that population. Cross-referenced in more depth in <code>Reports/TUR01</code> (fixed-term share vs England sector average).</div>
+    <canvas id="modeChart" role="img" aria-label="Grouped bar chart of academic staff by full-time/part-time and fixed-term/open-ended status, 2014/15 to 2024/25." aria-describedby="modeTable"></canvas>
+    <table id="modeTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Guest / hourly-paid and specialist lecturers ("HPL"): headcount and cost</h2>
+    <div class="sub">UEL's own Annual Report and Financial Statements, staff costs note, every year 2014/15&ndash;2024/25 (cross-validated via each report's prior-year comparative). This is the "academic atypical" population in HESA terms (see <code>Reports/UDR07</code>) &ndash; but the headcount and cost figures here come directly from UEL's own accounts, not from HESA. The salaries shown are already included within the total staff costs figure used in <code>Reports/TUR02</code> and <code>Reports/TUR13</code> &ndash; HPL pay is booked as a staff cost, not as "other operating expenditure".</div>
+    <canvas id="hplChart" role="img" aria-label="Combination bar and line chart of hourly-paid and specialist lecturer headcount and cost, 2014/15 to 2024/25." aria-describedby="hplTable"></canvas>
+    <table id="hplTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>FTE: what HESA actually publishes for UEL</h2>
+    <div class="sub">HESA Staff Table 11 ("HE staff FTE by HE provider, cost centre, contract marker and academic year"), summed across all 14 UEL cost-centre groups, 2015/16&ndash;2024/25. This is the only genuine FTE (not headcount) figure available for UEL by staff category &ndash; but it is cut by cost centre, not by mode of employment or terms of employment, so it cannot be crossed with the full-time/part-time/fixed-term breakdown above.</div>
+    <canvas id="fteChart" role="img" aria-label="Line chart of academic, non-academic and academic-atypical FTE, 2015/16 to 2024/25." aria-describedby="fteTable"></canvas>
+    <table id="fteTable" style="margin-top:14px"></table>
+    <div class="callout flag" style="margin-top:14px;margin-bottom:0">
+      <span class="pill red">CAVEAT</span> The "Academic atypical" FTE line is small enough (0&ndash;20 FTE across the whole institution) that HESA's disclosure-control rounding (each cost-centre cell rounded independently to the nearest 5, many rounding to 0) makes the summed total unreliable as an exact figure &ndash; treat it as "genuinely small" rather than a precise number. 2024/25 sums to exactly 0 for this reason, not because atypical staff had zero FTE that year.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Two different ways UEL counts its own staff &ndash; and why they don't match HESA</h2>
+    <div class="sub">Neither of these next two series comes from HESA. Both are UEL's own internal categorisations, published in the Annual Report, and neither is designed to reconcile with HESA's Staff Tables.</div>
+    <canvas id="reconChart" role="img" aria-label="Line chart comparing HESA academic-atypical headcount against UEL's own hourly-paid lecturer headcount, 2014/15 to 2024/25." aria-describedby="reconTable"></canvas>
+    <table id="reconTable" style="margin-top:14px"></table>
+    <div class="sub" style="margin-top:14px">UEL's Annual Report separately publishes "Average staff numbers by major category" &ndash; a completely different four-way split (Senior Management / Teaching / Research / Professional, Administrative, Technical and Other Support) that explicitly <b>excludes</b> guest/HPL staff (stated directly in every report: "the number of staff paid cannot be readily converted into full time equivalents so has not been included in the staff number table above"). This is the categorisation behind UEL's headline "1,551 staff in 2024/25" figure, and it is not the same population as either HESA table above.</div>
+    <table id="avgCatTable" style="margin-top:14px"></table>
+  </div>
+
+  <div class="panel">
+    <h2>What fits where &ndash; a map of the eight lines</h2>
+    <div class="sub">Status of each requested cut, against what's genuinely obtainable from public data.</div>
+    <table class="map-table">
+      <tr><th>Line</th><th>Status</th><th>Source</th><th>Note</th></tr>
+      <tr><td>No. full-time</td><td class="ok">Available</td><td>HESA Table 7</td><td>Academic staff excl. atypical only; 520 in 2024/25</td></tr>
+      <tr><td>No. part-time</td><td class="ok">Available</td><td>HESA Table 7</td><td>Academic staff excl. atypical only; 570 in 2024/25 &ndash; now the majority</td></tr>
+      <tr><td>FTE, part-time</td><td class="hi">Not available</td><td>&mdash;</td><td>No HESA open-data table crosses FTE with mode of employment for a single provider</td></tr>
+      <tr><td>No. fixed-term</td><td class="ok">Available</td><td>HESA Table 7</td><td>Academic staff excl. atypical only; 465 in 2024/25 (42.7% of the total)</td></tr>
+      <tr><td>FTE, fixed-term</td><td class="hi">Not available</td><td>&mdash;</td><td>Same gap as FTE part-time</td></tr>
+      <tr><td>No. guest/HPL</td><td class="ok">Available</td><td>UEL Annual Report</td><td>641 in 2024/25 (whole-year cumulative, not a snapshot &ndash; see reconciliation panel)</td></tr>
+      <tr><td>FTE, guest/HPL</td><td class="hi">Approximate only</td><td>UEL Annual Report (narrative) / HESA Table 11</td><td>UEL's own naive "average lecturer cost" conversion (39 FTE-equivalent in 2024/25) &ndash; UEL itself says this "cannot be readily converted"; HESA Table 11's genuine FTE figure is too rounded to be reliable at UEL's scale (see caveat above)</td></tr>
+      <tr><td>Expenditure, each line</td><td class="hi">Partial</td><td>UEL Annual Report</td><td>Guest/HPL cost is directly disclosed (&pound;3.46m in 2024/25); cost split by full-time/part-time/fixed-term/open-ended is <b>not published anywhere</b> &ndash; would need internal payroll data</td></tr>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>Reading these numbers</h2>
+    <div class="callout finding">
+      <b>Part-time and fixed-term shares have both risen among standard-contract academic staff.</b> Part-time staff rose from 46.7% of the academic (excl. atypical) headcount in 2014/15 to 52.3% in 2024/25 &ndash; now the majority. Fixed-term share rose from 31.9% to 42.7% over the same period, consistent with the pattern already documented in <code>Reports/TUR01</code>.
+    </div>
+    <div class="callout finding">
+      <b>Guest/HPL cost has risen far faster than headcount, and roughly tracks the "other operating expenses" story in TUR13 in timing, if not in accounting treatment.</b> Spend on hourly-paid and specialist lecturers fell to a low of &pound;1.71m in 2018/19, then rose almost every year to a peak of &pound;4.96m in 2023/24 (2.9&times;), before easing to &pound;3.46m in 2024/25. Headcount over the same window moved far less consistently (559 &rarr; 711 &rarr; 641), meaning average cost per HPL member has grown substantially &ndash; consistent with more hours per person, higher hourly rates, or both. <b>This spend sits inside the Staff Costs line, not Other Operating Expenses</b> &ndash; a correction to a hypothesis raised when TUR13 was built.
+    </div>
+    <div class="callout">
+      <b>HESA's own atypical-staff headcount and UEL's HPL headcount diverge, especially since 2022/23</b> (HESA: 455/535/430 for 2022/23&ndash;2024/25; UEL: 493/711/641) &ndash; before that they tracked reasonably closely (e.g. 2018/19: 550 vs 559). The most likely explanation is reference period: HESA's Staff Table 1 counts atypical staff active around a specific point in the year, while UEL's own note counts everyone paid at any point across the full August&ndash;July financial year &ndash; a whole-year cumulative count will run higher than a snapshot whenever there's turnover among casual staff, and the gap widening in the most recent two years may itself be a signal of increased HPL turnover, though that can't be confirmed from these figures alone.
+    </div>
+    <div class="callout flag">
+      <span class="pill red">CAVEATS</span> HESA Table 7 figures (mode/terms of employment) exclude atypical staff by definition &ndash; they are not a full-institution count. HESA Table 11 FTE figures are summed across independently-rounded cost-centre cells, so small-category totals (especially "Academic atypical") should be read as approximate. UEL's own "average lecturer cost" FTE conversion for guest/HPL is explicitly flagged by UEL itself as an approximation, not a true FTE calculation. Figures are nominal (not inflation-adjusted) throughout.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sources: HESA Staff Table 7 ("HE academic staff (excluding atypicals) by HE provider, mode of employment, activity SOC, sex, source of basic salary, academic employment function, terms of employment, contract levels and academic year"), UEL-filtered, 2014/15&ndash;2024/25; HESA Staff Table 1 ("HE staff by HE provider, mode of employment, atypical marker, academic marker and SOC"), UEL-filtered, 2014/15&ndash;2024/25; HESA Staff Table 11 ("HE staff FTE by HE provider, cost centre, contract marker and academic year"), UEL-filtered, 2015/16&ndash;2024/25; UEL Annual Report and Financial Statements, staff costs note (hourly paid and specialist lecturers) and "Average staff numbers by major category" note, each year's report, 2014/15&ndash;2024/25.
+<br><b>Data files:</b> Data/HESA Staff Table 7/UEL/; Data/HESA Staff Table 1/UEL/UEL_staff_table1.csv; Data/HESA Staff Table 11/UEL/; Data/UEL Annual Reports/PDFs/.
+<br>Not part of the original 12-report proposal in <code>docs/Potential_Future_Reports_Trade_Union_Briefings_v2.md</code> &ndash; added as a follow-on to TUR13, prompted by a direct question about FTE and expenditure for guest/HPL staff. See <code>Reports/TUR00 - Trade Union Report Index.html</code> for the full series.
+</footer>
+
+<script id="tur14-data" type="application/json">{"years": ["2014/15", "2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "ft_fixed": [35, 30, 25, 20, 25, 20, 30, 35, 50, 60, 65], "ft_open": [450, 465, 470, 425, 415, 400, 380, 405, 445, 450, 455], "pt_fixed": [255, 220, 260, 235, 210, 240, 230, 285, 380, 465, 400], "pt_open": [170, 175, 170, 175, 180, 200, 175, 200, 180, 165, 170], "hpl_headcount": [958, 760, 719, 682, 559, 567, 383, 507, 493, 711, 641], "hpl_cost": [2093457, 1891400, 1738890, 1740027, 1707293, 2012000, 2425637, 3029330, 4107000, 4958000, 3458000], "hpl_implied_fte": [42, 38, 35, 34, 33, 38, 33, 43, 54, 62, 39], "hesa_atypical_headcount": [1085, 770, 790, 785, 550, 525, 705, 685, 455, 535, 430], "avg_sr_mgmt": [6, 6, 6, 6, 14, 10, 8, 8, 8, 9, 9], "avg_teaching": [529, 559, 553, 494, 471, 488, 507, 557, 595, 613, 608], "avg_research": [35, 34, 26, 23, 17, 20, 19, 27, 34, 31, 30], "avg_prof_admin": [710, 736, 728, 617, 612, 744, 779, 826, 975, 1031, 904], "avg_total": [1280, 1335, 1313, 1140, 1114, 1262, 1313, 1418, 1612, 1684, 1551], "fte_years": ["2015/16", "2016/17", "2017/18", "2018/19", "2019/20", "2020/21", "2021/22", "2022/23", "2023/24", "2024/25"], "fte_academic_excl_atypical": [655, 625, 600, 570, 585, 585, 610, 655, 680, 685], "fte_non_academic": [760, 725, 640, 655, 770, 760, 780, 880, 1030, 1070], "fte_academic_atypical": [20, 15, 10, 5, 5, 5, 15, 5, 5, 0]}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DATA = JSON.parse(document.getElementById('tur14-data').textContent);
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+function fmtInt(v) { return (v == null) ? "–" : Math.round(v).toLocaleString(); }
+function fmtGBP(v) { return (v == null) ? "–" : '£' + Math.round(v).toLocaleString(); }
+function fmtGBPk(v) { return (v == null) ? "–" : '£' + (v/1000).toFixed(1) + 'm'.replace('m','k').replace('k','k'); }
+function fmtPct(v) { return (v == null) ? "–" : v.toFixed(1) + "%"; }
+
+const ftTotal = DATA.ft_fixed.map((v,i) => v + DATA.ft_open[i]);
+const ptTotal = DATA.pt_fixed.map((v,i) => v + DATA.pt_open[i]);
+const allTotal = ftTotal.map((v,i) => v + ptTotal[i]);
+const fixedTotal = DATA.ft_fixed.map((v,i) => v + DATA.pt_fixed[i]);
+const ptShare = ptTotal.map((v,i) => v / allTotal[i] * 100);
+const fixedShare = fixedTotal.map((v,i) => v / allTotal[i] * 100);
+
+function renderStatRow() {
+  const last = DATA.years.length - 1;
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-box"><div class="n flag">${fmtPct(ptShare[last])}</div><div class="l">Part-time share, academic staff (excl. atypical)</div><div class="s">2024/25, up from ${fmtPct(ptShare[0])} in 2014/15</div></div>
+    <div class="stat-box"><div class="n">${fmtPct(fixedShare[last])}</div><div class="l">Fixed-term share, academic staff (excl. atypical)</div><div class="s">2024/25, up from ${fmtPct(fixedShare[0])} in 2014/15</div></div>
+    <div class="stat-box"><div class="n">${fmtInt(DATA.hpl_headcount[last])}</div><div class="l">Guest/HPL staff paid during the year</div><div class="s">2024/25 (UEL's own count, not a HESA snapshot)</div></div>
+    <div class="stat-box"><div class="n flag">${fmtGBP(DATA.hpl_cost[last])}</div><div class="l">Guest/HPL salary cost</div><div class="s">2024/25 &ndash; peaked at ${fmtGBP(DATA.hpl_cost[9])} in 2023/24</div></div>
+  `;
+}
+
+function renderModeChart() {
+  destroyChart('mode');
+  charts.mode = new Chart(document.getElementById('modeChart'), {
+    type: 'bar',
+    data: { labels: DATA.years, datasets: [
+      { label: 'Full-time, fixed-term', data: DATA.ft_fixed, backgroundColor: '#b02a2a' },
+      { label: 'Full-time, open-ended/permanent', data: DATA.ft_open, backgroundColor: '#1F3864' },
+      { label: 'Part-time, fixed-term', data: DATA.pt_fixed, backgroundColor: '#FFC000' },
+      { label: 'Part-time, open-ended/permanent', data: DATA.pt_open, backgroundColor: '#2E5395' }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: 'Headcount' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Full-time, fixed-term</td>${DATA.ft_fixed.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Full-time, open-ended/permanent</td>${DATA.ft_open.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Part-time, fixed-term</td>${DATA.pt_fixed.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Part-time, open-ended/permanent</td>${DATA.pt_open.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Total (excl. atypical)</td>${allTotal.map(v=>`<td class="hi">${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Part-time share</td>${ptShare.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Fixed-term share</td>${fixedShare.map(v=>`<td>${fmtPct(v)}</td>`).join('')}</tr>`;
+  document.getElementById('modeTable').innerHTML = html;
+}
+
+function renderHplChart() {
+  destroyChart('hpl');
+  charts.hpl = new Chart(document.getElementById('hplChart'), {
+    data: { labels: DATA.years, datasets: [
+      { type: 'bar', label: 'Guest/HPL headcount (paid during year)', data: DATA.hpl_headcount, backgroundColor: '#2E5395', yAxisID: 'y', order: 2 },
+      { type: 'line', label: 'Guest/HPL salary cost (£)', data: DATA.hpl_cost, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15, yAxisID: 'y1', order: 1 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: {
+      y: { position: 'left', title: { display: true, text: 'Headcount' } },
+      y1: { position: 'right', title: { display: true, text: 'Cost (£)' }, grid: { drawOnChartArea: false } }
+    } }
+  });
+  let html = `<tr><th>Year</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Headcount (paid during year)</td>${DATA.hpl_headcount.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Salary cost</td>${DATA.hpl_cost.map(v=>`<td class="hi">${fmtGBP(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>UEL's own "implied FTE" estimate*</td>${DATA.hpl_implied_fte.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Average cost per head</td>${DATA.hpl_cost.map((v,i)=>`<td>${fmtGBP(v/DATA.hpl_headcount[i])}</td>`).join('')}</tr>`;
+  document.getElementById('hplTable').innerHTML = html;
+  document.getElementById('hplTable').insertAdjacentHTML('afterend', "<div class=\"sub\" style=\"margin-top:8px\">*UEL's own stated method: total spend &divide; an assumed average lecturer cost. UEL's Annual Report explicitly states this population \"cannot be readily converted into full time equivalents\" &ndash; treat as an approximation only.</div>");
+}
+
+function renderFteChart() {
+  destroyChart('fte');
+  charts.fte = new Chart(document.getElementById('fteChart'), {
+    type: 'line',
+    data: { labels: DATA.fte_years, datasets: [
+      { label: 'Academic (excl. atypical) FTE', data: DATA.fte_academic_excl_atypical, borderColor: '#1F3864', backgroundColor: '#1F3864', borderWidth: 3, tension: 0.15 },
+      { label: 'Non-academic FTE', data: DATA.fte_non_academic, borderColor: '#2E5395', backgroundColor: '#2E5395', borderWidth: 3, tension: 0.15 },
+      { label: 'Academic atypical FTE (guest/HPL)', data: DATA.fte_academic_atypical, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: 'FTE' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.fte_years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>Academic (excl. atypical) FTE</td>${DATA.fte_academic_excl_atypical.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Non-academic FTE</td>${DATA.fte_non_academic.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Academic atypical FTE (guest/HPL)</td>${DATA.fte_academic_atypical.map(v=>`<td class="hi">${fmtInt(v)}</td>`).join('')}</tr>`;
+  document.getElementById('fteTable').innerHTML = html;
+}
+
+function renderReconChart() {
+  destroyChart('recon');
+  charts.recon = new Chart(document.getElementById('reconChart'), {
+    type: 'line',
+    data: { labels: DATA.years, datasets: [
+      { label: 'HESA Table 1: academic-atypical headcount (snapshot)', data: DATA.hesa_atypical_headcount, borderColor: '#1F3864', backgroundColor: '#1F3864', borderWidth: 3, tension: 0.15 },
+      { label: "UEL's own guest/HPL headcount (whole-year, from Annual Report)", data: DATA.hpl_headcount, borderColor: '#b02a2a', backgroundColor: '#b02a2a', borderWidth: 3, tension: 0.15 }
+    ]},
+    options: { plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: 'Headcount' } } } }
+  });
+  let html = `<tr><th>Year</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html += `<tr><td>HESA academic-atypical headcount</td>${DATA.hesa_atypical_headcount.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>UEL guest/HPL headcount</td>${DATA.hpl_headcount.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html += `<tr><td>Difference</td>${DATA.hesa_atypical_headcount.map((v,i)=>`<td class="${Math.abs(v-DATA.hpl_headcount[i])>150?'hi':''}">${fmtInt(v-DATA.hpl_headcount[i])}</td>`).join('')}</tr>`;
+  document.getElementById('reconTable').innerHTML = html;
+
+  let html2 = `<tr><th>Average staff numbers by major category</th>${DATA.years.map(y=>`<th>${y}</th>`).join('')}</tr>`;
+  html2 += `<tr><td>Senior Management</td>${DATA.avg_sr_mgmt.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html2 += `<tr><td>Teaching</td>${DATA.avg_teaching.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html2 += `<tr><td>Research</td>${DATA.avg_research.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html2 += `<tr><td>Professional, Administrative, Technical and Other Support</td>${DATA.avg_prof_admin.map(v=>`<td>${fmtInt(v)}</td>`).join('')}</tr>`;
+  html2 += `<tr><td>Total</td>${DATA.avg_total.map(v=>`<td class="hi">${fmtInt(v)}</td>`).join('')}</tr>`;
+  document.getElementById('avgCatTable').innerHTML = html2;
+}
+
+renderStatRow();
+renderModeChart();
+renderHplChart();
+renderFteChart();
+renderReconChart();
+</script>
+</body>
+</html>
